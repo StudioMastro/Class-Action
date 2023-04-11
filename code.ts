@@ -1,33 +1,48 @@
-// This plugin will open a window to prompt the user to enter a number, and
-// it will then create that many rectangles on the screen.
+figma.showUI(__html__, { width: 400, height: 600 });
 
-// This file holds the main code for the plugins. It has access to the *document*.
-// You can access browser APIs in the <script> tag inside "ui.html" which has a
-// full browser environment (see documentation).
+const savedClasses: { [key: string]: object } = JSON.parse(figma.root.getPluginData('savedClasses') || '{}');
 
-// This shows the HTML page in "ui.html".
-figma.showUI(__html__);
+figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
 
-// Calls to "parent.postMessage" from within the HTML page will trigger this
-// callback. The callback will be passed the "pluginMessage" property of the
-// posted message.
-figma.ui.onmessage = msg => {
-  // One way of distinguishing between different types of messages sent from
-  // your HTML page is to use an object with a "type" property like this.
-  if (msg.type === 'create-rectangles') {
-    const nodes: SceneNode[] = [];
-    for (let i = 0; i < msg.count; i++) {
-      const rect = figma.createEllipse();
-      rect.x = i * 150;
-      rect.fills = [{type: 'SOLID', color: {r: 1, g: 0.5, b: 0}}];
-      figma.currentPage.appendChild(rect);
-      nodes.push(rect);
+function extractDesignProperties(node: FrameNode) {
+  return {
+    fills: node.fills,
+    strokes: node.strokes,
+    strokeWeight: node.strokeWeight,
+    strokeMiterLimit: node.strokeMiterLimit,
+    strokeJoin: node.strokeJoin,
+    strokeCap: node.strokeCap,
+    dashPattern: node.dashPattern,
+    blendMode: node.blendMode,
+    effects: node.effects,
+    // Add any other design properties you want to save here
+  };
+}
+
+figma.ui.onmessage = async (msg) => {
+  if (msg.type === 'save-class') {
+    const nodes = figma.currentPage.selection;
+
+    if (nodes.length === 1 && nodes[0].type === 'FRAME') {
+      const frame = nodes[0] as FrameNode;
+      const className = msg.className || frame.name;
+      savedClasses[className] = extractDesignProperties(frame);
+      figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
+      figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
+    } else {
+      figma.notify('Please select a single frame to save the class.');
     }
-    figma.currentPage.selection = nodes;
-    figma.viewport.scrollAndZoomIntoView(nodes);
+  } else if (msg.type === 'delete-class') {
+    delete savedClasses[msg.className];
+    figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
+    figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
+  } else if (msg.type === 'rename-class') {
+    const { oldName, newName } = msg;
+    if (oldName !== newName) {
+      savedClasses[newName] = savedClasses[oldName];
+      delete savedClasses[oldName];
+      figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
+      figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
+    }
   }
-
-  // Make sure to close the plugin when you're done. Otherwise the plugin will
-  // keep running, which shows the cancel button at the bottom of the screen.
-  figma.closePlugin();
 };

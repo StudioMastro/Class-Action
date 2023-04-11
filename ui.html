@@ -1,17 +1,95 @@
-<h2>Rectangle Creator</h2>
-<p>Count: <input id="count" value="5"></p>
-<button id="create">Create</button>
-<button id="cancel">Cancel</button>
-<script>
+<!DOCTYPE html>
+<html lang="en">
 
-document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-rectangles', count } }, '*')
-}
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Figma Plugin</title>
+</head>
 
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
+<body>
+  <h3>Save Class</h3>
+  <input type="text" id="className" placeholder="Enter class name" />
+  <button id="saveClass">Save Class</button>
 
-</script>
+  <h3>Saved Classes</h3>
+  <div id="savedClasses"></div>
+
+  <script>
+    window.addEventListener('message', async (event) => {
+      const pluginMessage = event.data.pluginMessage;
+      if (pluginMessage.type === 'display-saved-classes') {
+        const savedClasses = pluginMessage.savedClasses;
+        displaySavedClasses(savedClasses);
+      }
+    });
+
+    function displaySavedClasses(savedClasses) {
+      const savedClassesDiv = document.getElementById('savedClasses');
+      savedClassesDiv.innerHTML = '';
+
+      for (const className in savedClasses) {
+        const classDiv = document.createElement('div');
+        classDiv.className = 'savedClass';
+        classDiv.dataset.name = className;
+
+        classDiv.innerHTML = `
+                    <input type="text" class="class-name-input" value="${className}" readonly />
+                    <button class="edit-class-button">Rename</button>
+                    <button class="save-class-button" style="display:none">Save</button>
+                    <button class="cancel-class-button" style="display:none">Cancel</button>
+                    <button class="delete-class-button">Delete</button>
+                    <pre>${JSON.stringify(savedClasses[className], null, 2)}</pre>
+                `;
+        savedClassesDiv.appendChild(classDiv);
+      }
+    }
+
+    document.getElementById('saveClass').onclick = () => {
+      const className = document.getElementById('className').value || null;
+      window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
+    };
+
+    document.addEventListener('click', (event) => {
+      if (event.target && event.target.classList.contains('delete-class-button')) {
+        const classDiv = event.target.closest('.savedClass');
+        const className = classDiv.dataset.name;
+        window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
+      } else if (event.target && event.target.classList.contains('edit-class-button')) {
+        const classDiv = event.target.closest('.savedClass');
+        toggleEditMode(classDiv, true);
+      } else if (event.target && event.target.classList.contains('save-class-button')) {
+        const classDiv = event.target.closest('.savedClass');
+        const oldName = classDiv.dataset.name;
+        const newName = classDiv.querySelector('.class-name-input').value;
+        window.parent.postMessage({ pluginMessage: { type: 'rename-class', oldName, newName } }, '*');
+        toggleEditMode(classDiv, false);
+      } else if (event.target && event.target.classList.contains('cancel-class-button')) {
+        const classDiv = event.target.closest('.savedClass');
+        toggleEditMode(classDiv, false);
+      }
+    });
+
+    function toggleEditMode(classDiv, editMode) {
+      const nameInput = classDiv.querySelector('.class-name-input');
+      const editButton = classDiv.querySelector('.edit-class-button');
+      const saveButton = classDiv.querySelector('.save-class-button');
+      const cancelButton = classDiv.querySelector('.cancel-class-button');
+
+      if (editMode) {
+        nameInput.readOnly = false;
+        nameInput.focus();
+        editButton.style.display = 'none';
+        saveButton.style.display = 'inline-block';
+        cancelButton.style.display = 'inline-block';
+      } else {
+        nameInput.readOnly = true;
+        editButton.style.display = 'inline-block';
+        saveButton.style.display = 'none';
+        cancelButton.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+
+</html>
