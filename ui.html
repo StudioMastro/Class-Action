@@ -1,94 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Figma Plugin</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 16px;
+    }
+
+    .class-input {
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .class-list {
+      margin-bottom: 16px;
+    }
+
+    .class-actions {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .rename-button,
+    .delete-button,
+    .apply-button {
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .rename-button:hover,
+    .delete-button:hover {
+      text-decoration: underline;
+    }
+
+    .apply-button {
+      background-color: #18a0fb;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
-  <h3>Save Class</h3>
-  <input type="text" id="className" placeholder="Enter class name" />
-  <button id="saveClass">Save Class</button>
-
-  <h3>Saved Classes</h3>
-  <div id="savedClasses"></div>
-
+  <div class="class-input">
+    <input type="text" id="classNameInput" placeholder="Class name" />
+    <button onclick="saveClass()">Save class</button>
+  </div>
+  <div id="classList"></div>
   <script>
-    window.addEventListener('message', async (event) => {
-      const pluginMessage = event.data.pluginMessage;
-      if (pluginMessage.type === 'display-saved-classes') {
-        const savedClasses = pluginMessage.savedClasses;
-        displaySavedClasses(savedClasses);
-      }
-    });
-
-    function displaySavedClasses(savedClasses) {
-      const savedClassesDiv = document.getElementById('savedClasses');
-      savedClassesDiv.innerHTML = '';
-
-      for (const className in savedClasses) {
-        const classDiv = document.createElement('div');
-        classDiv.className = 'savedClass';
-        classDiv.dataset.name = className;
-
-        classDiv.innerHTML = `
-                    <input type="text" class="class-name-input" value="${className}" readonly />
-                    <button class="edit-class-button">Rename</button>
-                    <button class="save-class-button" style="display:none">Save</button>
-                    <button class="cancel-class-button" style="display:none">Cancel</button>
-                    <button class="delete-class-button">Delete</button>
-                    <pre>${JSON.stringify(savedClasses[className], null, 2)}</pre>
-                `;
-        savedClassesDiv.appendChild(classDiv);
-      }
-    }
-
-    document.getElementById('saveClass').onclick = () => {
-      const className = document.getElementById('className').value || null;
+    function saveClass() {
+      const className = document.getElementById('classNameInput').value;
       window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
-    };
+    }
 
-    document.addEventListener('click', (event) => {
-      if (event.target && event.target.classList.contains('delete-class-button')) {
-        const classDiv = event.target.closest('.savedClass');
-        const className = classDiv.dataset.name;
-        window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
-      } else if (event.target && event.target.classList.contains('edit-class-button')) {
-        const classDiv = event.target.closest('.savedClass');
-        toggleEditMode(classDiv, true);
-      } else if (event.target && event.target.classList.contains('save-class-button')) {
-        const classDiv = event.target.closest('.savedClass');
-        const oldName = classDiv.dataset.name;
-        const newName = classDiv.querySelector('.class-name-input').value;
+    function deleteClass(className) {
+      window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
+    }
+
+    function renameClass(oldName) {
+      const newName = prompt('Enter new class name:', oldName);
+      if (newName && newName !== oldName) {
         window.parent.postMessage({ pluginMessage: { type: 'rename-class', oldName, newName } }, '*');
-        toggleEditMode(classDiv, false);
-      } else if (event.target && event.target.classList.contains('cancel-class-button')) {
-        const classDiv = event.target.closest('.savedClass');
-        toggleEditMode(classDiv, false);
-      }
-    });
-
-    function toggleEditMode(classDiv, editMode) {
-      const nameInput = classDiv.querySelector('.class-name-input');
-      const editButton = classDiv.querySelector('.edit-class-button');
-      const saveButton = classDiv.querySelector('.save-class-button');
-      const cancelButton = classDiv.querySelector('.cancel-class-button');
-
-      if (editMode) {
-        nameInput.readOnly = false;
-        nameInput.focus();
-        editButton.style.display = 'none';
-        saveButton.style.display = 'inline-block';
-        cancelButton.style.display = 'inline-block';
-      } else {
-        nameInput.readOnly = true;
-        editButton.style.display = 'inline-block';
-        saveButton.style.display = 'none';
-        cancelButton.style.display = 'none';
       }
     }
+
+    function applyClass(className) {
+      window.parent.postMessage({ pluginMessage: { type: 'apply-class', className } }, '*');
+    }
+
+    onmessage = (event) => {
+      if (event.data.pluginMessage.type === 'display-saved-classes') {
+        const savedClasses = event.data.pluginMessage.savedClasses;
+        const classList = document.getElementById('classList');
+        classList.innerHTML = '';
+
+        for (const className in savedClasses) {
+          const classDiv = document.createElement('div');
+          classDiv.innerHTML = `
+              <div class="class-actions">
+                <span>${className}</span>
+                <div>
+                  <button class="apply-button" onclick="applyClass('${className}')">Apply</button>
+                  <button class="rename-button" onclick="renameClass('${className}')">Rename</button>
+                  <button class="delete-button" onclick="deleteClass('${className}')">Delete</button>
+                </div>
+              </div>
+            `;
+          classList.appendChild(classDiv);
+        }
+      }
+    };
   </script>
 </body>
 
