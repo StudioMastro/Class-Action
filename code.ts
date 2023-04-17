@@ -1,4 +1,6 @@
-figma.showUI(__html__, { width: 400, height: 600 });
+figma.showUI(__html__);
+
+figma.ui.resize(500,500);
 
 const savedClasses: { [key: string]: object } = JSON.parse(figma.root.getPluginData('savedClasses') || '{}');
 

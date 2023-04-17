@@ -1,101 +1,85 @@
-<!DOCTYPE html>
-<html>
+<link rel="stylesheet" href="../../node_modules/figma-plugin-ds/dist/figma-plugin-ds.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap"
+  rel="stylesheet">
 
-<head>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 16px;
+
+<style>
+  body {
+    font-family: 'DM Sans', sans-serif;
+    padding: 2rem;
+  }
+
+  div {
+    margin: 1rem;
+  }
+
+  input {
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .class-actions {
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+
+<h1>Class Action</h1>
+
+<div class="switch">
+  <input class="switch__toggle" type="checkbox" id="dark-mode-on">
+  <label class="switch__label" for="dark-mode-on">Dark Mode</label>
+</div>
+
+<div>
+  <label for="classNameInput">Class name</label>
+  <input class="input__field" type="text" id="classNameInput" placeholder="Choose Class name" />
+  <button onclick="saveClass()">Save class</button>
+</div>
+<div id="classList"></div>
+<script>
+  function saveClass() {
+    const className = document.getElementById('classNameInput').value;
+    window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
+  }
+
+  function deleteClass(className) {
+    window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
+  }
+
+  function renameClass(oldName) {
+    const newName = prompt('Enter new class name:', oldName);
+    if (newName && newName !== oldName) {
+      window.parent.postMessage({ pluginMessage: { type: 'rename-class', oldName, newName } }, '*');
     }
+  }
 
-    .class-input {
-      display: flex;
-      margin-bottom: 16px;
-    }
+  function applyClass(className) {
+    window.parent.postMessage({ pluginMessage: { type: 'apply-class', className } }, '*');
+  }
 
-    .class-list {
-      margin-bottom: 16px;
-    }
+  onmessage = (event) => {
+    if (event.data.pluginMessage.type === 'display-saved-classes') {
+      const savedClasses = event.data.pluginMessage.savedClasses;
+      const classList = document.getElementById('classList');
+      classList.innerHTML = '';
 
-    .class-actions {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .rename-button,
-    .delete-button,
-    .apply-button {
-      background-color: transparent;
-      border: none;
-      cursor: pointer;
-    }
-
-    .rename-button:hover,
-    .delete-button:hover {
-      text-decoration: underline;
-    }
-
-    .apply-button {
-      background-color: #18a0fb;
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="class-input">
-    <input type="text" id="classNameInput" placeholder="Class name" />
-    <button onclick="saveClass()">Save class</button>
-  </div>
-  <div id="classList"></div>
-  <script>
-    function saveClass() {
-      const className = document.getElementById('classNameInput').value;
-      window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
-    }
-
-    function deleteClass(className) {
-      window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
-    }
-
-    function renameClass(oldName) {
-      const newName = prompt('Enter new class name:', oldName);
-      if (newName && newName !== oldName) {
-        window.parent.postMessage({ pluginMessage: { type: 'rename-class', oldName, newName } }, '*');
-      }
-    }
-
-    function applyClass(className) {
-      window.parent.postMessage({ pluginMessage: { type: 'apply-class', className } }, '*');
-    }
-
-    onmessage = (event) => {
-      if (event.data.pluginMessage.type === 'display-saved-classes') {
-        const savedClasses = event.data.pluginMessage.savedClasses;
-        const classList = document.getElementById('classList');
-        classList.innerHTML = '';
-
-        for (const className in savedClasses) {
-          const classDiv = document.createElement('div');
-          classDiv.innerHTML = `
+      for (const className in savedClasses) {
+        const classDiv = document.createElement('div');
+        classDiv.innerHTML = `
               <div class="class-actions">
                 <span>${className}</span>
                 <div>
-                  <button class="apply-button" onclick="applyClass('${className}')">Apply</button>
-                  <button class="rename-button" onclick="renameClass('${className}')">Rename</button>
-                  <button class="delete-button" onclick="deleteClass('${className}')">Delete</button>
+                  <button class="button button--primary" onclick="applyClass('${className}')">Apply</button>
+                  <button class="button button--secondary" onclick="renameClass('${className}')">Rename</button>
+                  <button class="button button--secondary" onclick="deleteClass('${className}')">Delete</button>
                 </div>
               </div>
             `;
-          classList.appendChild(classDiv);
-        }
+        classList.appendChild(classDiv);
       }
-    };
-  </script>
-</body>
-
-</html>
+    }
+  };
+</script>
