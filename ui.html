@@ -1,9 +1,8 @@
-<link rel="stylesheet" href="../../node_modules/figma-plugin-ds/dist/figma-plugin-ds.css">
+<link rel="stylesheet" href="../node_modules/figma-plugin-ds/dist/figma-plugin-ds.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap"
   rel="stylesheet">
-
 
 <style>
   body {
@@ -11,13 +10,58 @@
     padding: 2rem;
   }
 
-  div {
-    margin: 1rem;
+  .input__field {
+    font-size: 14px;
+    padding: 10px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    outline: none;
+    flex: 1;
+    margin-right: 8px;
   }
 
-  input {
-    display: block;
+  .input__field:focus {
+    background-color: #fff;
+    border-color: #18a0fb;
+  }
+
+  .input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
     margin-bottom: 1rem;
+  }
+
+  .input-button-group {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .input-label {
+    padding: 0px 12px;
+  }
+
+  .save-class-btn {
+    padding: 10px 12px;
+    background-color: #18a0fb;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+
+  .save-class-btn:hover {
+    background-color: #3b79c9;
+  }
+
+  .save-class-btn:focus {
+    outline: none;
   }
 
   .class-actions {
@@ -28,18 +72,25 @@
 
 <h1>Class Action</h1>
 
-<div class="switch">
+<!-- <div class="switch">
   <input class="switch__toggle" type="checkbox" id="dark-mode-on">
   <label class="switch__label" for="dark-mode-on">Dark Mode</label>
+</div> -->
+
+<div class="input-container">
+  <label class="input-label" for="classNameInput">Class name</label>
+  <div class="input-button-group">
+    <input class="input__field" type="text" id="classNameInput" placeholder="Choose Class name" />
+    <button class="save-class-btn" onclick="saveClass()">Save class</button>
+  </div>
 </div>
 
-<div>
-  <label for="classNameInput">Class name</label>
-  <input class="input__field" type="text" id="classNameInput" placeholder="Choose Class name" />
-  <button onclick="saveClass()">Save class</button>
-</div>
 <div id="classList"></div>
+
+<script src="../node_modules/figma-plugin-ds/dist/figma-plugin-ds.min.js"></script>
+
 <script>
+
   function saveClass() {
     const className = document.getElementById('classNameInput').value;
     window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
@@ -49,10 +100,17 @@
     window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
   }
 
+
   function renameClass(oldName) {
     const newName = prompt('Enter new class name:', oldName);
-    if (newName && newName !== oldName) {
-      window.parent.postMessage({ pluginMessage: { type: 'rename-class', oldName, newName } }, '*');
+    if (newName === null) {
+      // User clicked "Cancel", do nothing
+      return;
+    } else if (newName.trim() === '') {
+      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
+    } else {
+      // Send the keys as oldName and newName
+      window.parent.postMessage({ pluginMessage: { type: 'rename-class', oldName: oldName, newName: newName } }, '*');
     }
   }
 
