@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="../node_modules/figma-plugin-ds/dist/figma-plugin-ds.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap"
@@ -10,30 +10,29 @@
     padding: 2rem;
   }
 
+  .input__label {
+    padding: 0 0.5rem;
+  }
+
   .input__field {
-    font-size: 14px;
-    padding: 10px 12px;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    width: 100%;
-    box-sizing: border-box;
-    transition: all 0.3s ease;
-    outline: none;
-    flex: 1;
+    border: 1px solid var(--black1);
+    flex-grow: 1;
     margin-right: 8px;
   }
 
-  .input__field:focus {
-    background-color: #fff;
-    border-color: #18a0fb;
-  }
-
-  .input-container {
+  .input__container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: 0.25rem;
     margin-bottom: 1rem;
+  }
+
+  .input__group {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    flex-grow: 1;
   }
 
   .input-button-group {
@@ -45,97 +44,102 @@
     padding: 0px 12px;
   }
 
-  .save-class-btn {
-    padding: 10px 12px;
-    background-color: #18a0fb;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s ease;
-  }
-
-  .save-class-btn:hover {
-    background-color: #3b79c9;
-  }
-
-  .save-class-btn:focus {
-    outline: none;
-  }
-
   .class-actions {
     display: flex;
     justify-content: space-between;
+    gap: 1rem;
   }
 </style>
 
-<h1>Class Action</h1>
 
-<!-- <div class="switch">
-  <input class="switch__toggle" type="checkbox" id="dark-mode-on">
-  <label class="switch__label" for="dark-mode-on">Dark Mode</label>
-</div> -->
-
-<div class="input-container">
-  <label class="input-label" for="classNameInput">Class name</label>
-  <div class="input-button-group">
-    <input class="input__field" type="text" id="classNameInput" placeholder="Choose Class name" />
-    <button class="save-class-btn" onclick="saveClass()">Save class</button>
+<div id="app">
+  <h1>Class Action</h1>
+  <div class="input__container">
+    <label class="input__label" for="className">Class Name</label>
+    <div class="input__group">
+      <input class="input__field" type="text" id="className" name="className">
+      <button class="button button--primary" onclick="saveClass()">Save Class</button>
+    </div>
   </div>
+
+  <hr>
+  <h2>Saved Classes</h2>
+  <div id="classList"></div>
 </div>
 
-<div id="classList"></div>
-
-<script src="../node_modules/figma-plugin-ds/dist/figma-plugin-ds.min.js"></script>
-
 <script>
-
   function saveClass() {
-    const className = document.getElementById('classNameInput').value;
-    window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
+    const className = document.getElementById('className').value.trim();
+    if (className === '') {
+      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
+    } else {
+      window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
+    }
   }
 
   function deleteClass(className) {
     window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
   }
 
-
-  function renameClass(oldName) {
-    const newName = prompt('Enter new class name:', oldName);
-    if (newName === null) {
-      // User clicked "Cancel", do nothing
-      return;
-    } else if (newName.trim() === '') {
-      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
-    } else {
-      // Send the keys as oldName and newName
-      window.parent.postMessage({ pluginMessage: { type: 'rename-class', oldName: oldName, newName: newName } }, '*');
-    }
-  }
-
   function applyClass(className) {
     window.parent.postMessage({ pluginMessage: { type: 'apply-class', className } }, '*');
   }
 
-  onmessage = (event) => {
-    if (event.data.pluginMessage.type === 'display-saved-classes') {
-      const savedClasses = event.data.pluginMessage.savedClasses;
-      const classList = document.getElementById('classList');
-      classList.innerHTML = '';
+  function startEditingClassName(oldName) {
+    const classDiv = document.getElementById(`classDiv-${oldName}`);
+    classDiv.querySelector('.class-name').style.display = 'none';
+    classDiv.querySelector('.class-name-input').style.display = 'inline';
+    classDiv.querySelector('.class-name-input').focus();
+    classDiv.querySelector('.rename-btn').style.display = 'none';
+    classDiv.querySelector('.save-btn').style.display = 'inline';
+    classDiv.querySelector('.cancel-btn').style.display = 'inline';
+  }
 
+  function cancelEditingClassName(oldName) {
+    const classDiv = document.getElementById(`classDiv-${oldName}`);
+    classDiv.querySelector('.class-name').style.display = 'inline';
+    classDiv.querySelector('.class-name-input').style.display = 'none';
+    classDiv.querySelector('.rename-btn').style.display = 'inline';
+    classDiv.querySelector('.save-btn').style.display = 'none';
+    classDiv.querySelector('.cancel-btn').style.display = 'none';
+  }
+
+  function saveEditedClassName(oldName) {
+    const classDiv = document.getElementById(`classDiv-${oldName}`);
+    const newName = classDiv.querySelector('.class-name-input').value.trim();
+    if (newName === '') {
+      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
+    } else {
+      window.parent.postMessage({ pluginMessage: { type: 'rename-class', className: oldName, newClassName: newName } }, '*');
+    }
+  }
+
+  function renameClass(oldName) {
+    startEditingClassName(oldName);
+  }
+
+  onmessage = (event) => {
+    const { type, savedClasses } = event.data.pluginMessage;
+    const classList = document.getElementById('classList');
+    classList.innerHTML = '';
+
+    if (type === 'display-saved-classes') {
       for (const className in savedClasses) {
         const classDiv = document.createElement('div');
+        classDiv.id = `classDiv-${className}`;
         classDiv.innerHTML = `
-              <div class="class-actions">
-                <span>${className}</span>
-                <div>
-                  <button class="button button--primary" onclick="applyClass('${className}')">Apply</button>
-                  <button class="button button--secondary" onclick="renameClass('${className}')">Rename</button>
-                  <button class="button button--secondary" onclick="deleteClass('${className}')">Delete</button>
-                </div>
-              </div>
-            `;
+                  <div class="class-actions">
+                      <span class="class-name">${className}</span>
+                      <input class="class-name-input" type="text" value="${className}" style="display:none;" />
+                            <div>
+                                <button class="button button--primary" onclick="applyClass('${className}')">Apply</button>
+                                <button class="button button--secondary rename-btn" onclick="renameClass('${className}')">Rename</button>
+                                <button class="button button--secondary" onclick="deleteClass('${className}')">Delete</button>
+                                <button class="button button--secondary save-btn" onclick="saveEditedClassName('${className}')" style="display:none;">Save</button>
+                                <button class="button button--secondary cancel-btn" onclick="cancelEditingClassName('${className}')" style="display:none;">Cancel</button>
+                            </div>
+                        </div>
+                    `;
         classList.appendChild(classDiv);
       }
     }

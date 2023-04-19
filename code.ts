@@ -1,6 +1,6 @@
 figma.showUI(__html__);
 
-figma.ui.resize(500,500);
+figma.ui.resize(500, 500);
 
 const savedClasses: { [key: string]: object } = JSON.parse(figma.root.getPluginData('savedClasses') || '{}');
 
@@ -74,12 +74,18 @@ figma.ui.onmessage = async (msg) => {
     figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
     figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
   } else if (msg.type === 'rename-class') {
-    const { oldName, newName } = msg;
-    if (oldName !== newName) {
-      savedClasses[newName] = savedClasses[oldName];
-      delete savedClasses[oldName];
-      figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
-      figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
+    const { className } = msg;
+    const newClassName = msg.newClassName;
+    if (className !== newClassName) {
+      if (savedClasses[newClassName]) {
+        figma.notify(`A class with the name "${newClassName}" already exists.`);
+      } else {
+        savedClasses[newClassName] = savedClasses[className];
+        delete savedClasses[className];
+        figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
+        figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
+        figma.notify(`Class "${className}" renamed to "${newClassName}".`);
+      }
     }
   } else if (msg.type === 'apply-class') {
     const className = msg.className;
