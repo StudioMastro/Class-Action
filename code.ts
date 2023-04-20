@@ -3,8 +3,9 @@ figma.showUI(__html__);
 figma.ui.resize(500, 500);
 
 const savedClasses: { [key: string]: object } = JSON.parse(figma.root.getPluginData('savedClasses') || '{}');
+const savedClassNames: string[] = JSON.parse(figma.root.getPluginData('savedClassNames') || '[]');
 
-figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
+figma.ui.postMessage({ type: 'display-saved-classes', savedClasses, savedClassNames });
 
 function extractDesignProperties(node: FrameNode) {
   return {
@@ -64,48 +65,47 @@ figma.ui.onmessage = async (msg) => {
       const frame = nodes[0] as FrameNode;
       const className = msg.className || frame.name;
       savedClasses[className] = extractDesignProperties(frame);
+      if (!savedClassNames.includes(className)) {
+        savedClassNames.push(className);
+      }
       figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
-      figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
+      figma.root.setPluginData('savedClassNames', JSON.stringify(savedClassNames));
+      figma.ui.postMessage({ type: 'display-saved-classes', savedClasses, savedClassNames });
     } else {
       figma.notify('Please select a single frame to save the class.');
     }
   } else if (msg.type === 'delete-class') {
     delete savedClasses[msg.className];
+    const index = savedClassNames.indexOf(msg.className);
+    if (index > -1) {
+      savedClassNames.splice(index, 1);
+    }
     figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
-    figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
-  } else if (msg.type === 'rename-class') {
-    const { className } = msg;
-    const newClassName = msg.newClassName;
-    if (className !== newClassName) {
-      if (savedClasses[newClassName]) {
-        figma.notify(`A class with the name "${newClassName}" already exists.`);
-      } else {
-        savedClasses[newClassName] = savedClasses[className];
-        delete savedClasses[className];
-        figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
-        figma.ui.postMessage({ type: 'display-saved-classes', savedClasses });
-        figma.notify(`Class "${className}" renamed to "${newClassName}".`);
-      }
-    }
+    figma.root.setPluginData('savedClassNames', JSON.stringify(savedClassNames));
+    figma.ui.postMessage({ type: 'display-saved-classes', savedClasses, savedClassNames });
   } else if (msg.type === 'apply-class') {
-    const className = msg.className;
     const nodes = figma.currentPage.selection;
-
-    if (nodes.length === 0) {
-      figma.notify('Please select one or more frames to apply the class.');
+    if (nodes.length === 1 && nodes[0].type === 'FRAME') {
+      const frame = nodes[0] as FrameNode;
+      applyDesignProperties(frame, savedClasses[msg.className]);
     } else {
-      const classProperties = savedClasses[className];
-      if (!classProperties) {
-        figma.notify(`Class "${className}" not found.`);
-      } else {
-        nodes.forEach((node) => {
-          if (node.type === 'FRAME') {
-            applyDesignProperties(node as FrameNode, classProperties);
-            node.name = className; // Rename the frame to the class name
-          }
-        });
-        figma.notify(`Class "${className}" applied to ${nodes.length} frame(s).`);
-      }
+      figma.notify('Please select a single frame to apply the class.');
     }
+  } else if (msg.type === 'rename-class') {
+    const oldClassName = msg.className;
+    const newClassName = msg.newClassName;
+    savedClasses[newClassName] = savedClasses[oldClassName];
+    delete savedClasses[oldClassName];
+    const index = savedClassNames.indexOf(oldClassName);
+    if (index > -1) {
+      savedClassNames[index] = newClassName;
+    }
+    figma.root.setPluginData('savedClasses', JSON.stringify(savedClasses));
+    figma.root.setPluginData('savedClassNames', JSON.stringify(savedClassNames));
+    figma.ui.postMessage({ type: 'display-saved-classes', savedClasses, savedClassNames });
+  } else if (msg.type === 'empty-class-name') {
+    figma.notify('Class name cannot be empty.');
   }
 };
+
+     

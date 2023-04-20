@@ -10,10 +10,6 @@
     padding: 2rem;
   }
 
-  .input__label {
-    padding: 0 0.5rem;
-  }
-
   .input__field {
     border: 1px solid var(--black1);
     flex-grow: 1;
@@ -24,7 +20,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
   }
 
@@ -35,19 +31,20 @@
     flex-grow: 1;
   }
 
-  .input-button-group {
-    display: flex;
-    align-items: stretch;
-  }
-
-  .input-label {
-    padding: 0px 12px;
-  }
-
-  .class-actions {
+  .class__actions {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
+    align-items: center;
+  }
+
+  .button__group {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  #classList>div {
+    margin-bottom: 0.5rem;
   }
 </style>
 
@@ -88,25 +85,33 @@
   function startEditingClassName(oldName) {
     const classDiv = document.getElementById(`classDiv-${oldName}`);
     classDiv.querySelector('.class-name').style.display = 'none';
-    classDiv.querySelector('.class-name-input').style.display = 'inline';
-    classDiv.querySelector('.class-name-input').focus();
+    classDiv.querySelector('.input__field').style.display = 'inline';
+    classDiv.querySelector('.input__field').focus();
     classDiv.querySelector('.rename-btn').style.display = 'none';
     classDiv.querySelector('.save-btn').style.display = 'inline';
     classDiv.querySelector('.cancel-btn').style.display = 'inline';
+
+    // Hide Apply and Delete buttons
+    classDiv.querySelector('.button--primary').style.display = 'none';
+    classDiv.querySelector('.button--secondary-destructive').style.display = 'none';
   }
 
   function cancelEditingClassName(oldName) {
     const classDiv = document.getElementById(`classDiv-${oldName}`);
     classDiv.querySelector('.class-name').style.display = 'inline';
-    classDiv.querySelector('.class-name-input').style.display = 'none';
+    classDiv.querySelector('.input__field').style.display = 'none';
     classDiv.querySelector('.rename-btn').style.display = 'inline';
     classDiv.querySelector('.save-btn').style.display = 'none';
     classDiv.querySelector('.cancel-btn').style.display = 'none';
+
+    // Show Apply and Delete buttons
+    classDiv.querySelector('.button--primary').style.display = 'inline';
+    classDiv.querySelector('.button--secondary-destructive').style.display = 'inline';
   }
 
   function saveEditedClassName(oldName) {
     const classDiv = document.getElementById(`classDiv-${oldName}`);
-    const newName = classDiv.querySelector('.class-name-input').value.trim();
+    const newName = classDiv.querySelector('.input__field').value.trim();
     if (newName === '') {
       window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
     } else {
@@ -118,30 +123,38 @@
     startEditingClassName(oldName);
   }
 
+  function handleInputChange(oldName, input) {
+    const classDiv = document.getElementById(`classDiv-${oldName}`);
+    const saveButton = classDiv.querySelector('.save-btn');
+
+    // Enable the Save button only when the input value is different from the original class name
+    saveButton.disabled = input.value.trim() === oldName;
+  }
+
   onmessage = (event) => {
-    const { type, savedClasses } = event.data.pluginMessage;
+    const { type, savedClasses, savedClassNames } = event.data.pluginMessage;
     const classList = document.getElementById('classList');
     classList.innerHTML = '';
 
     if (type === 'display-saved-classes') {
-      for (const className in savedClasses) {
+      savedClassNames.forEach((className) => {
         const classDiv = document.createElement('div');
         classDiv.id = `classDiv-${className}`;
         classDiv.innerHTML = `
-                  <div class="class-actions">
+                  <div class="class__actions">
                       <span class="class-name">${className}</span>
-                      <input class="class-name-input" type="text" value="${className}" style="display:none;" />
-                            <div>
+                      <input class="input__field" type="text" value="${className}" style="display:none;" oninput="handleInputChange('${className}', this)" />
+                            <div class="button__group">
                                 <button class="button button--primary" onclick="applyClass('${className}')">Apply</button>
                                 <button class="button button--secondary rename-btn" onclick="renameClass('${className}')">Rename</button>
-                                <button class="button button--secondary" onclick="deleteClass('${className}')">Delete</button>
-                                <button class="button button--secondary save-btn" onclick="saveEditedClassName('${className}')" style="display:none;">Save</button>
+                                <button class="button button--secondary-destructive delete-btn" onclick="deleteClass('${className}')">Delete</button>
+                                <button class="button button--secondary save-btn" onclick="saveEditedClassName('${className}')" style="display:none;" disabled>Save</button>
                                 <button class="button button--secondary cancel-btn" onclick="cancelEditingClassName('${className}')" style="display:none;">Cancel</button>
                             </div>
-                        </div>
-                    `;
+                  </div>
+                  `;
         classList.appendChild(classDiv);
-      }
+      });
     }
   };
 </script>
