@@ -1,12 +1,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap"
-  rel="stylesheet">
-
 <style>
   body {
-    font-family: 'DM Sans', sans-serif;
     padding: 2rem;
   }
 
@@ -50,7 +46,17 @@
 
 
 <div id="app">
-  <h1>Class Action</h1>
+  <h2 class="type type--xlarge type--bold">Class Action</h2>
+  <p class="type type--small">This plugin allows you to manage and apply classes to Figma elements. Create, rename, and
+    delete classes, then apply your saved classes to selected elements with ease.</p>
+  <div class="onboarding-tip">
+    <div class="icon icon--styles"></div>
+    <div class="onboarding-tip__msg">Onboarding tip goes here.</div>
+  </div>
+  <hr>
+  <div id="selectFrameMessage" style="display: none;">
+    <p class="type type--small">Please select a single frame to save or apply classes.</p>
+  </div>
   <div class="input__container">
     <label class="input__label" for="className">Class Name</label>
     <div class="input__group">
@@ -60,7 +66,7 @@
   </div>
 
   <hr>
-  <h2>Saved Classes</h2>
+  <h3 class="type type--large type--bold">Saved Classes</h3>
   <div id="classList"></div>
 </div>
 
@@ -132,9 +138,23 @@
   }
 
   onmessage = (event) => {
-    const { type, savedClasses, savedClassNames } = event.data.pluginMessage;
+    const { type, savedClasses, savedClassNames, validSelection } = event.data.pluginMessage;
     const classList = document.getElementById('classList');
     classList.innerHTML = '';
+
+    // Handle the initial state of the input field and the selection message
+    const classNameInput = document.getElementById('className');
+    const selectFrameMessage = document.getElementById('selectFrameMessage');
+    const saveClassButton = document.querySelector('.button--primary');
+    if (validSelection) {
+      classNameInput.style.display = 'inline';
+      selectFrameMessage.style.display = 'none';
+      saveClassButton.disabled = false;
+    } else {
+      classNameInput.style.display = 'none';
+      selectFrameMessage.style.display = 'inline';
+      saveClassButton.disabled = true;
+    }
 
     if (type === 'display-saved-classes') {
       savedClassNames.forEach((className) => {
