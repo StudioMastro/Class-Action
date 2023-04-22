@@ -94,6 +94,14 @@ figma.ui.onmessage = async (msg) => {
   } else if (msg.type === 'rename-class') {
     const oldClassName = msg.className;
     const newClassName = msg.newClassName;
+    if (newClassName === '') {
+      figma.notify('Class name cannot be empty.');
+      return;
+    }
+    if (savedClassNames.includes(newClassName)) {
+      figma.notify(`The class name "${newClassName}" already exists.`);
+      return;
+    }
     savedClasses[newClassName] = savedClasses[oldClassName];
     delete savedClasses[oldClassName];
     const index = savedClassNames.indexOf(oldClassName);
@@ -107,5 +115,4 @@ figma.ui.onmessage = async (msg) => {
     figma.notify('Class name cannot be empty.');
   }
 };
-
      
