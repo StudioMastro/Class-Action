@@ -1,11 +1,10 @@
 {
   "compilerOptions": {
+    "moduleResolution": "node",
+    "types": ["@figma/plugin-typings"],
     "target": "es6",
     "lib": ["es6", "es2016", "esnext.asynciterable"],
     "strict": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@figma"
-    ]
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"]
   }
 }

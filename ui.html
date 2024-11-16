@@ -1,155 +1,183 @@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Action</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-<style>
-  body {
-    padding: 2rem;
-  }
+    h1 {
+      font-size: 24px;
+      margin: 0;
+    }
 
-  .input__field {
-    border: 1px solid var(--black1);
-    flex-grow: 1;
-    margin-right: 8px;
-  }
+    h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
 
-  .input__container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
+    input[type="text"] {
+      padding: 8px;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
 
-  .input__group {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    flex-grow: 1;
-  }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
 
-  .class__actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
-  }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
 
-  .button__group {
-    display: flex;
-    gap: 0.25rem;
-  }
+    .divider {
+      border-top: 1px solid #ddd;
+      margin: 20px 0;
+    }
 
-  #classList>div {
-    margin-bottom: 0.5rem;
-  }
-</style>
+    .class-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
 
+    .class-item span {
+      flex-grow: 1;
+      margin-right: 10px;
+    }
 
-<div id="app">
+    .class-item input[type="text"] {
+      flex-grow: 1;
+      margin-right: 10px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Intestazione -->
   <h1>Class Action</h1>
-  <div class="input__container">
-    <label class="input__label" for="className">Class Name</label>
-    <div class="input__group">
-      <input class="input__field" type="text" id="className" name="className">
-      <button class="button button--primary" onclick="saveClass()">Save Class</button>
+
+  <!-- Sezione per salvare una classe -->
+  <section>
+    <h2>Salva una classe</h2>
+    <label for="class-name">Nome classe</label>
+    <input type="text" id="class-name" placeholder="Inserisci il nome della classe" />
+    <button id="save-class" disabled>Salva Classe</button>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Sezione per le classi salvate -->
+  <section>
+    <h2>Classi salvate</h2>
+    <div id="saved-classes">
+      <!-- Le classi salvate saranno inserite dinamicamente qui -->
     </div>
-  </div>
+  </section>
 
-  <hr>
-  <h2>Saved Classes</h2>
-  <div id="classList"></div>
-</div>
+  <script>
+    const classNameInput = document.getElementById('class-name');
+    const saveClassButton = document.getElementById('save-class');
+    const savedClassesContainer = document.getElementById('saved-classes');
 
-<script>
-  function saveClass() {
-    const className = document.getElementById('className').value.trim();
-    if (className === '') {
-      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
-    } else {
-      window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
-    }
-  }
+    // Gestisci l'input per abilitare/disabilitare il pulsante "Salva Classe"
+    classNameInput.addEventListener('input', () => {
+      saveClassButton.disabled = !classNameInput.value.trim();
+    });
 
-  function deleteClass(className) {
-    window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
-  }
+    // Aggiungi una nuova classe
+    saveClassButton.addEventListener('click', () => {
+      const className = classNameInput.value.trim();
+      if (className) {
+        parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
+        classNameInput.value = '';
+        saveClassButton.disabled = true;
+      }
+    });
 
-  function applyClass(className) {
-    window.parent.postMessage({ pluginMessage: { type: 'apply-class', className } }, '*');
-  }
+    // Ricevi messaggi dal thread principale
+    window.onmessage = (event) => {
+      const { type, savedClasses, savedClassNames, validSelection } = event.data.pluginMessage;
 
-  function startEditingClassName(oldName) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    classDiv.querySelector('.class-name').style.display = 'none';
-    classDiv.querySelector('.input__field').style.display = 'inline';
-    classDiv.querySelector('.input__field').focus();
-    classDiv.querySelector('.rename-btn').style.display = 'none';
-    classDiv.querySelector('.save-btn').style.display = 'inline';
-    classDiv.querySelector('.cancel-btn').style.display = 'inline';
+      if (type === 'display-saved-classes') {
+        updateSavedClasses(savedClasses, savedClassNames);
+        saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
+      }
+    };
 
-    // Hide Apply and Delete buttons
-    classDiv.querySelector('.button--primary').style.display = 'none';
-    classDiv.querySelector('.button--secondary-destructive').style.display = 'none';
-  }
+    // Aggiorna la lista delle classi salvate
+    function updateSavedClasses(savedClasses, savedClassNames) {
+      savedClassesContainer.innerHTML = '';
 
-  function cancelEditingClassName(oldName) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    classDiv.querySelector('.class-name').style.display = 'inline';
-    classDiv.querySelector('.input__field').style.display = 'none';
-    classDiv.querySelector('.rename-btn').style.display = 'inline';
-    classDiv.querySelector('.save-btn').style.display = 'none';
-    classDiv.querySelector('.cancel-btn').style.display = 'none';
-
-    // Show Apply and Delete buttons
-    classDiv.querySelector('.button--primary').style.display = 'inline';
-    classDiv.querySelector('.button--secondary-destructive').style.display = 'inline';
-  }
-
-  function saveEditedClassName(oldName) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    const newName = classDiv.querySelector('.input__field').value.trim();
-    if (newName === '') {
-      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
-    } else {
-      window.parent.postMessage({ pluginMessage: { type: 'rename-class', className: oldName, newClassName: newName } }, '*');
-    }
-  }
-
-  function renameClass(oldName) {
-    startEditingClassName(oldName);
-  }
-
-  function handleInputChange(oldName, input) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    const saveButton = classDiv.querySelector('.save-btn');
-
-    // Enable the Save button only when the input value is different from the original class name
-    saveButton.disabled = input.value.trim() === oldName;
-  }
-
-  onmessage = (event) => {
-    const { type, savedClasses, savedClassNames } = event.data.pluginMessage;
-    const classList = document.getElementById('classList');
-    classList.innerHTML = '';
-
-    if (type === 'display-saved-classes') {
       savedClassNames.forEach((className) => {
-        const classDiv = document.createElement('div');
-        classDiv.id = `classDiv-${className}`;
-        classDiv.innerHTML = `
-                  <div class="class__actions">
-                      <span class="class-name">${className}</span>
-                      <input class="input__field" type="text" value="${className}" style="display:none;" oninput="handleInputChange('${className}', this)" />
-                            <div class="button__group">
-                                <button class="button button--primary" onclick="applyClass('${className}')">Apply</button>
-                                <button class="button button--secondary rename-btn" onclick="renameClass('${className}')">Rename</button>
-                                <button class="button button--secondary-destructive delete-btn" onclick="deleteClass('${className}')">Delete</button>
-                                <button class="button button--secondary save-btn" onclick="saveEditedClassName('${className}')" style="display:none;" disabled>Save</button>
-                                <button class="button button--secondary cancel-btn" onclick="cancelEditingClassName('${className}')" style="display:none;">Cancel</button>
-                            </div>
-                  </div>
-                  `;
-        classList.appendChild(classDiv);
+        const classItem = document.createElement('div');
+        classItem.className = 'class-item';
+
+        const classNameSpan = document.createElement('span');
+        classNameSpan.textContent = className;
+
+        // Bottone Rinomina
+        const renameButton = document.createElement('button');
+        renameButton.textContent = 'Rinomina';
+        renameButton.addEventListener('click', () => renameClass(className));
+
+        // Bottone Elimina
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Elimina';
+        deleteButton.addEventListener('click', () => deleteClass(className));
+
+        // Bottone Applica
+        const applyButton = document.createElement('button');
+        applyButton.textContent = 'Applica';
+        applyButton.addEventListener('click', () => applyClass(className));
+
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'buttons';
+        buttonsContainer.append(renameButton, applyButton, deleteButton);
+
+        classItem.append(classNameSpan, buttonsContainer);
+        savedClassesContainer.appendChild(classItem);
       });
     }
-  };
-</script>
+
+    // Funzioni per le azioni
+    function deleteClass(className) {
+      parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
+    }
+
+    function applyClass(className) {
+      parent.postMessage({ pluginMessage: { type: 'apply-class', className } }, '*');
+    }
+
+    function renameClass(oldClassName) {
+      const newClassName = prompt(`Inserisci il nuovo nome per la classe "${oldClassName}"`);
+      if (newClassName && newClassName !== oldClassName) {
+        parent.postMessage({
+          pluginMessage: { type: 'rename-class', className: oldClassName, newClassName },
+        }, '*');
+      }
+    }
+  </script>
+</body>
+</html>
