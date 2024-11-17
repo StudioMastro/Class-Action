@@ -61,7 +61,7 @@ function applyDesignProperties(node: FrameNode, properties: any) {
 }
 
 // Gestione dei messaggi dall'UI
-figma.ui.onmessage = async (msg) => {
+figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
   if (msg.type === "save-class") {
     if (!isValidSelection()) {
       figma.notify("Please select a single frame to save a class.");

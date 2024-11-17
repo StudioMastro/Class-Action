@@ -1,5 +1,8 @@
+"use strict";
 // errorHandling.ts
-export function logError(error, context = {}) {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.logError = logError;
+function logError(error, context = {}) {
     const errorLog = {
         message: error instanceof Error ? error.message : String(error),
         context
