@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/figma-plugin-ds@1.0.1/dist/figma-plugin-ds.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/figma-plugin-ds@1.0.1/dist/figma-plugin-ds.min.css"
+    />
     <title>Class Action</title>
     <style>
       body {
@@ -18,43 +21,66 @@
       }
 
       h1 {
-        font-size: 2opx;
+        font-size: 20px;
         font-weight: bold;
-        margin: 8px;
+        margin-bottom: 12px;
       }
 
       h2 {
         font-size: 16px;
         font-weight: bold;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+      }
+
+      .input-container {
+        display: flex; /* Usa flexbox per allineare gli elementi */
+        align-items: center; /* Allinea verticalmente gli elementi */
+        gap: 8px; /* Spazio tra l'input e il bottone */
+      }
+
+      .input-container input[type="text"] {
+        flex-grow: 1; /* L'input occupa tutto lo spazio disponibile */
       }
 
       input[type="text"] {
+        border-radius: var(--border-radius-large);
         padding: 8px;
-        font-size: 14px;
+        font-size: var(--font-size-xsmall);
         width: 100%;
         box-sizing: border-box;
-        margin-bottom: 10px;
       }
 
       button {
-        background-color: #007aff;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 14px;
+        /* background-color: #007aff; */
+        /* color: white; */
+        /* border: none; */
+        /* border-radius: 4px; */
+        /* padding: 8px 12px; */
+        /* font-size: 14px; */
         cursor: pointer;
-        transition: background-color 0.3s ease;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
       }
 
-      button:hover {
-        background-color: #005bb5;
+      .button--primary:hover {
+        background-color: #1e88e5; /* colore schiarito da var(--blue) */
+      }
+
+      .button--primary-destructive:hover {
+        background-color: #c62828; /* rosso scuro */
+      }
+
+      .button--secondary:hover,
+      .button--secondary-destructive:hover {
+        border-color: rgba(0, 0, 0, 0.25); /* Schiarire leggermente il bordo */
       }
 
       button:disabled {
-        background-color: #ccc;
+        background-color: #ccc !important;
         cursor: not-allowed;
+      }
+
+      button:disabled.button--primary:hover {
+        background-color: inherit;
       }
 
       .divider {
@@ -63,7 +89,7 @@
       }
 
       .label {
-        margin-bottom: 4px;
+        padding: 0px !important;
       }
 
       .class-item {
@@ -106,12 +132,16 @@
     <section>
       <h2>Salva una classe</h2>
       <label for="class-name" class="label">Nome classe</label>
+      <div class="input-container">
       <input
         type="text"
         id="class-name"
         placeholder="Inserisci il nome della classe"
       />
-      <button id="save-class" class="button button--primary" disabled>Salva Classe</button>
+      <button id="save-class" class="button button--primary" disabled>
+        Salva classe
+      </button>
+      </div>
     </section>
 
     <div class="divider"></div>
@@ -164,8 +194,12 @@
         style="width: 100%; padding: 8px; margin-bottom: 10px"
       />
       <div style="display: flex; justify-content: flex-end; gap: 10px">
-        <button id="rename-cancel" class="button button--secondary">Annulla</button>
-        <button id="rename-confirm" class="button button--primary">Conferma</button>
+        <button id="rename-cancel" class="button button--secondary">
+          Annulla
+        </button>
+        <button id="rename-confirm" class="button button--primary">
+          Conferma
+        </button>
       </div>
     </div>
 
