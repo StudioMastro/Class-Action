@@ -3,127 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/figma-plugin-ds@1.0.1/dist/figma-plugin-ds.min.css"
-    />
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/figma-plugin-ds@1.0.1/dist/figma-plugin-ds.min.css"/> -->
+    <link rel="stylesheet" href="http://localhost:8080/styles.css" />
+    <script src="http://localhost:8080/ui.bundle.js"></script>
+    <script src="./dist/ui.bundle.js"></script>
     <title>Class Action</title>
-    <style>
-      body {
-        font-family: Inter, sans-serif;
-        font-size: 14px;
-        color: #333;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      h1 {
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 12px;
-      }
-
-      h2 {
-        font-size: 16px;
-        font-weight: bold;
-        margin-bottom: 8px;
-      }
-
-      .input-container {
-        display: flex; /* Usa flexbox per allineare gli elementi */
-        align-items: center; /* Allinea verticalmente gli elementi */
-        gap: 8px; /* Spazio tra l'input e il bottone */
-      }
-
-      .input-container input[type="text"] {
-        flex-grow: 1; /* L'input occupa tutto lo spazio disponibile */
-      }
-
-      input[type="text"] {
-        border-radius: 6px;
-        border-color: var(--black);
-        padding: 8px;
-        font-size: var(--font-size-xsmall);
-        width: 100%;
-        box-sizing: border-box;
-      }
-
-      button {
-        /* background-color: #007aff; */
-        /* color: white; */
-        /* border: none; */
-        /* border-radius: 4px; */
-        /* padding: 8px 12px; */
-        /* font-size: 14px; */
-        cursor: pointer;
-        transition: background-color 0.3s ease, border-color 0.3s ease;
-      }
-
-      .button--primary:hover {
-        background-color: #1e88e5; /* colore schiarito da var(--blue) */
-      }
-
-      .button--primary-destructive:hover {
-        background-color: #c62828; /* rosso scuro */
-      }
-
-      .button--secondary:hover,
-      .button--secondary-destructive:hover {
-        border-color: rgba(0, 0, 0, 0.25); /* Schiarire leggermente il bordo */
-      }
-
-      button:disabled {
-        background-color: #ccc !important;
-        cursor: not-allowed;
-      }
-
-      button:disabled.button--primary:hover {
-        background-color: inherit;
-      }
-
-      .divider {
-        border-top: 1px solid #ddd;
-        margin: 20px 0;
-      }
-
-      .label {
-        padding: 0px !important;
-        color: var(--black3-opaque);
-      }
-
-      .class-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 10px;
-      }
-
-      .class-item span {
-        flex-grow: 1;
-        margin-right: 10px;
-      }
-
-      .class-item input[type="text"] {
-        flex-grow: 1;
-        margin-right: 10px;
-      }
-
-      .buttons {
-        display: flex;
-        gap: 8px;
-      }
-
-      #overlay {
-        background: rgba(0, 0, 0, 0.7); /* Maggiore opacità */
-        transition: opacity 0.3s ease; /* Animazione smooth */
-      }
-    </style>
   </head>
 
   <body>
@@ -135,14 +19,14 @@
       <h2>Salva una classe</h2>
       <label for="class-name" class="label">Nome classe</label>
       <div class="input-container">
-      <input
-        type="text"
-        id="class-name"
-        placeholder="Inserisci il nome della classe"
-      />
-      <button id="save-class" class="button button--primary" disabled>
-        Salva classe
-      </button>
+        <input
+          type="text"
+          id="class-name"
+          placeholder="Inserisci il nome della classe"
+        />
+        <button id="save-class" class="button button--primary" disabled>
+          Salva classe
+        </button>
       </div>
     </section>
 
@@ -204,153 +88,5 @@
         </button>
       </div>
     </div>
-
-    <script>
-      const classNameInput = document.getElementById("class-name");
-      const saveClassButton = document.getElementById("save-class");
-      const savedClassesContainer = document.getElementById("saved-classes");
-
-      // Gestisci l'input per abilitare/disabilitare il pulsante "Salva Classe"
-      classNameInput.addEventListener("input", () => {
-        saveClassButton.disabled = !classNameInput.value.trim();
-      });
-
-      // Aggiungi una nuova classe
-      saveClassButton.addEventListener("click", () => {
-        const className = classNameInput.value.trim();
-        if (className) {
-          parent.postMessage(
-            { pluginMessage: { type: "save-class", className } },
-            "*"
-          );
-          classNameInput.value = "";
-          saveClassButton.disabled = true;
-        }
-      });
-
-      // Ricevi messaggi dal thread principale
-      window.onmessage = (event) => {
-        const { type, savedClasses, savedClassNames, validSelection } =
-          event.data.pluginMessage;
-
-        if (type === "display-saved-classes") {
-          updateSavedClasses(savedClasses, savedClassNames);
-          saveClassButton.disabled =
-            !validSelection || !classNameInput.value.trim();
-        }
-      };
-
-      // Aggiorna la lista delle classi salvate
-      function updateSavedClasses(savedClasses, savedClassNames) {
-        savedClassesContainer.innerHTML = "";
-
-        savedClassNames.forEach((className) => {
-          const classItem = document.createElement("div");
-          classItem.className = "class-item";
-
-          const classNameSpan = document.createElement("span");
-          classNameSpan.textContent = className;
-
-          // Bottone Rinomina
-          const renameButton = document.createElement("button");
-          renameButton.textContent = "Rinomina";
-          renameButton.className = "button button--secondary"; // Stile secondario
-          renameButton.addEventListener("click", () => renameClass(className));
-
-          // Bottone Elimina
-          const deleteButton = document.createElement("button");
-          deleteButton.textContent = "Elimina";
-          deleteButton.className = "button button--primary-destructive"; // Stile per azioni critiche
-          deleteButton.addEventListener("click", () => deleteClass(className));
-
-          // Bottone Applica
-          const applyButton = document.createElement("button");
-          applyButton.textContent = "Applica";
-          applyButton.className = "button button--primary"; // Stile primario
-          applyButton.addEventListener("click", () => applyClass(className));
-
-          const buttonsContainer = document.createElement("div");
-          buttonsContainer.className = "buttons";
-          buttonsContainer.append(renameButton, applyButton, deleteButton);
-
-          classItem.append(classNameSpan, buttonsContainer);
-          savedClassesContainer.appendChild(classItem);
-        });
-      }
-
-      // Funzioni per le azioni
-      function deleteClass(className) {
-        parent.postMessage(
-          { pluginMessage: { type: "delete-class", className } },
-          "*"
-        );
-      }
-
-      function applyClass(className) {
-        parent.postMessage(
-          { pluginMessage: { type: "apply-class", className } },
-          "*"
-        );
-      }
-
-      function renameClass(oldClassName) {
-        // Riferimenti agli elementi
-        const renameModal = document.getElementById("rename-modal");
-        const renameInput = document.getElementById("rename-input");
-        const renameCancel = document.getElementById("rename-cancel");
-        const renameConfirm = document.getElementById("rename-confirm");
-        const overlay = document.getElementById("overlay");
-
-        // Funzione per aprire la modale
-        const openModal = () => {
-          renameModal.style.display = "block";
-          overlay.style.display = "block";
-          document.body.style.overflow = "hidden"; // Disabilita lo scroll
-          renameInput.value = oldClassName; // Precompila l'input con il nome attuale
-          renameInput.focus(); // Focalizza l'input per consentire subito la modifica
-          renameInput.select(); // Seleziona tutto il testo per facilitarne l'editing
-        };
-
-        // Funzione per chiudere la modale
-        const closeModal = () => {
-          renameModal.style.display = "none";
-          overlay.style.display = "none";
-          document.body.style.overflow = "auto"; // Riabilita lo scroll
-        };
-
-        // Mostra la modale
-        openModal();
-
-        // Gestisci il click su "Annulla"
-        renameCancel.addEventListener("click", closeModal);
-
-        // Gestisci il click sull'overlay per chiudere
-        overlay.addEventListener("click", closeModal);
-
-        // Gestisci il click su "Conferma"
-        renameConfirm.addEventListener("click", () => {
-          const newClassName = renameInput.value.trim();
-
-          if (!newClassName || newClassName === oldClassName) {
-            alert("Nome non valido o uguale al precedente!");
-            return;
-          }
-
-          console.log(`Rinominare "${oldClassName}" in "${newClassName}"`);
-          parent.postMessage(
-            {
-              pluginMessage: {
-                type: "rename-class",
-                oldClassName,
-                newClassName,
-              },
-            },
-            "*"
-          );
-
-          closeModal(); // Chiudi la modale
-        });
-      }
-    </script>
   </body>
 </html>

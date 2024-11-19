@@ -1,0 +1,126 @@
+/*!******************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./src/styles.css ***!
+  \******************************************************************/
+body {
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+h1 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+h2 {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.input-container {
+    display: flex;
+    /* Usa flexbox per allineare gli elementi */
+    align-items: center;
+    /* Allinea verticalmente gli elementi */
+    gap: 8px;
+    /* Spazio tra l'input e il bottone */
+}
+
+.input-container input[type="text"] {
+    flex-grow: 1;
+    /* L'input occupa tutto lo spazio disponibile */
+}
+
+input[type="text"] {
+    border-radius: 6px;
+    border-color: var(--black);
+    padding: 8px;
+    font-size: var(--font-size-xsmall);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+button {
+    /* background-color: #007aff; */
+    /* color: white; */
+    /* border: none; */
+    /* border-radius: 4px; */
+    /* padding: 8px 12px; */
+    /* font-size: 14px; */
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.button--primary:hover {
+    background-color: #1e88e5;
+    /* colore schiarito da var(--blue) */
+}
+
+.button--primary-destructive:hover {
+    background-color: #c62828;
+    /* rosso scuro */
+}
+
+.button--secondary:hover,
+.button--secondary-destructive:hover {
+    border-color: rgba(0, 0, 0, 0.25);
+    /* Schiarire leggermente il bordo */
+}
+
+button:disabled {
+    background-color: #ccc !important;
+    cursor: not-allowed;
+}
+
+button:disabled.button--primary:hover {
+    background-color: inherit;
+}
+
+.divider {
+    border-top: 1px solid #ddd;
+    margin: 20px 0;
+}
+
+.label {
+    padding: 0px !important;
+    color: var(--black3-opaque);
+}
+
+.class-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.class-item span {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.class-item input[type="text"] {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.buttons {
+    display: flex;
+    gap: 8px;
+}
+
+#overlay {
+    background: rgba(0, 0, 0, 0.7);
+    /* Maggiore opacità */
+    transition: opacity 0.3s ease;
+    /* Animazione smooth */
+}

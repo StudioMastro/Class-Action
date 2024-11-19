@@ -2,9 +2,9 @@
 *.log
 *.log.*
 node_modules
-
 out/
-dist/
+/dist/*
+!/dist/ui.bundle.js
+!/dist/styles.css
 code.js
-
 .DS_Store

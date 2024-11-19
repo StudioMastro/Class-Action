@@ -4,7 +4,7 @@
   "description": "Action with class, class with action",
   "main": "code.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && webpack",
     "watch": "npm run build -- --watch",
     "clean": "tsc --build --clean"
   },
@@ -12,7 +12,13 @@
   "license": "",
   "devDependencies": {
     "@figma/plugin-typings": "^1.102.0",
-    "typescript": "^5.0.0"
+    "css-loader": "^7.1.2",
+    "mini-css-extract-plugin": "^2.9.2",
+    "style-loader": "^4.0.0",
+    "typescript": "^5.0.0",
+    "webpack": "^5.96.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.1.0"
   },
   "dependencies": {
     "figma-plugin-ds": "^1.0.1"
