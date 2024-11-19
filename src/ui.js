@@ -1,3 +1,4 @@
+console.log("JS Caricato correttamente!");
 import './styles.css';
 
 const classNameInput = document.getElementById("class-name");
