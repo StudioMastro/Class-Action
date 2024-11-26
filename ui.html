@@ -184,6 +184,32 @@
     </div>
   </div>
 
+  <!-- Dopo la modale di rinomina, aggiungi questa nuova modale -->
+  <div id="delete-modal" style="
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 20;
+      ">
+    <h3>Elimina Classe</h3>
+    <p>Sei proprio sicuro di voler eliminare questa classe? Non c'è modo di tornare indietro... 🙈</p>
+    <div style="display: flex; justify-content: flex-end; gap: 10px">
+      <button id="delete-cancel" class="button button--secondary">
+        Annulla
+      </button>
+      <button id="delete-confirm" class="button button--primary-destructive">
+        Sì, elimina!
+      </button>
+    </div>
+  </div>
+
   <script>
     console.log("JS Caricato correttamente!");
 
@@ -261,10 +287,52 @@
 
     // Funzioni per le azioni
     function deleteClass(className) {
-      parent.postMessage(
-        { pluginMessage: { type: "delete-class", className } },
-        "*"
-      );
+      // Riferimenti agli elementi
+      const deleteModal = document.getElementById("delete-modal");
+      const deleteCancel = document.getElementById("delete-cancel");
+      const deleteConfirm = document.getElementById("delete-confirm");
+      const overlay = document.getElementById("overlay");
+
+      // Funzione per aprire la modale
+      const openModal = () => {
+        deleteModal.style.display = "block";
+        overlay.style.display = "block";
+        document.body.style.overflow = "hidden"; // Disabilita lo scroll
+      };
+
+      // Rimuovi gli event listener esistenti
+      const cleanupListeners = () => {
+        deleteCancel.removeEventListener("click", closeModal);
+        overlay.removeEventListener("click", closeModal);
+        deleteConfirm.removeEventListener("click", handleConfirm);
+      };
+
+      // Funzione per gestire la conferma
+      const handleConfirm = () => {
+        console.log(`Elimina classe "${className}"`);
+        parent.postMessage(
+          { pluginMessage: { type: "delete-class", className } },
+          "*"
+        );
+        closeModal();
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Modifica la funzione closeModal per pulire i listener
+      const closeModal = () => {
+        deleteModal.style.display = "none";
+        overlay.style.display = "none";
+        document.body.style.overflow = "auto";
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Aggiungi i nuovi event listener
+      deleteCancel.addEventListener("click", closeModal);
+      overlay.addEventListener("click", closeModal);
+      deleteConfirm.addEventListener("click", handleConfirm);
+
+      // Mostra la modale
+      openModal();
     }
 
     function applyClass(className) {
