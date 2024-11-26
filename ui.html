@@ -292,24 +292,15 @@
         renameInput.select(); // Seleziona tutto il testo per facilitarne l'editing
       };
 
-      // Funzione per chiudere la modale
-      const closeModal = () => {
-        renameModal.style.display = "none";
-        overlay.style.display = "none";
-        document.body.style.overflow = "auto"; // Riabilita lo scroll
+      // Rimuovi gli event listener esistenti
+      const cleanupListeners = () => {
+        renameCancel.removeEventListener("click", closeModal);
+        overlay.removeEventListener("click", closeModal);
+        renameConfirm.removeEventListener("click", handleConfirm);
       };
 
-      // Mostra la modale
-      openModal();
-
-      // Gestisci il click su "Annulla"
-      renameCancel.addEventListener("click", closeModal);
-
-      // Gestisci il click sull'overlay per chiudere
-      overlay.addEventListener("click", closeModal);
-
-      // Gestisci il click su "Conferma"
-      renameConfirm.addEventListener("click", () => {
+      // Funzione per gestire la conferma
+      const handleConfirm = () => {
         const newClassName = renameInput.value.trim();
 
         if (!newClassName || newClassName === oldClassName) {
@@ -329,8 +320,25 @@
           "*"
         );
 
-        closeModal(); // Chiudi la modale
-      });
+        closeModal();
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Modifica la funzione closeModal per pulire i listener
+      const closeModal = () => {
+        renameModal.style.display = "none";
+        overlay.style.display = "none";
+        document.body.style.overflow = "auto";
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Aggiungi i nuovi event listener
+      renameCancel.addEventListener("click", closeModal);
+      overlay.addEventListener("click", closeModal);
+      renameConfirm.addEventListener("click", handleConfirm);
+
+      // Mostra la modale
+      openModal();
     }
   </script>
 
