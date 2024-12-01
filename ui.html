@@ -92,30 +92,278 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ddd;
     border-radius: 4px;
     margin-bottom: 10px;
+    position: relative;
   }
 
-  .class-item span {
+  .class-name {
     flex-grow: 1;
-    margin-right: 10px;
+    margin-right: 12px;
   }
 
-  .class-item input[type="text"] {
-    flex-grow: 1;
-    margin-right: 10px;
-  }
-
-  .buttons {
+  .class-actions {
     display: flex;
     gap: 8px;
+    align-items: center;
+  }
+
+  .icon-button {
+    padding: 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+  }
+
+  .icon-button svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .icon-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .icon-button:active {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    min-width: 180px;
+    z-index: 1000;
+  }
+
+  .dropdown-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 16px;
+    text-align: left;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--figma-color-text);
+    border-radius: 4px;
+  }
+
+  .dropdown-menu button:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+  }
+
+  .dropdown-divider {
+    margin: 4px 0;
+    border-top: 1px solid var(--figma-color-border);
+  }
+
+  .menu-item-icon {
+    display: flex;
+    align-items: center;
+    width: 16px;
+    height: 16px;
+    color: var(--figma-color-text);
+  }
+
+  .menu-item--disabled {
+    color: var(--figma-color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  .menu-item--disabled .menu-item-icon {
+    color: var(--figma-color-text-disabled);
+  }
+
+  .menu-item--destructive {
+    color: var(--figma-color-text-danger);
+  }
+
+  .menu-item--destructive .menu-item-icon {
+    color: var(--figma-color-text-danger);
+  }
+
+  /* Stili per la modale Info */
+  .info-modal-content {
+    max-width: 500px;
+  }
+
+  .code-block-container {
+    position: relative;
+    background: #f5f5f5;
+    border-radius: 4px;
+    padding: 16px;
+  }
+
+  .code-block-container .icon-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+
+  .code-block {
+    font-family: monospace;
+    white-space: pre-wrap;
+    margin-right: 32px;
   }
 
   #overlay {
-    background: rgba(0, 0, 0, 0.7);
-    transition: opacity 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+  }
+
+  #info-modal {
+    z-index: 20;
+    background: white;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+    width: 90%;
+    max-width: 800px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .modal-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .modal-header {
+    margin-bottom: 24px;
+  }
+
+  .modal-header h3 {
+    font-size: 18px;
+    margin: 0 0 8px 0;
+  }
+
+  .modal-header p {
+    color: var(--figma-color-text-secondary);
+    margin: 0;
+  }
+
+  .properties-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-bottom: 80px;
+  }
+
+  .properties-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .properties-column h4 {
+    font-size: 14px;
+    margin: 0;
+    color: var(--figma-color-text-secondary);
+  }
+
+  .code-block-container {
+    background: #f5f5f5;
+    border: 1px solid var(--figma-color-border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .code-block {
+    font-family: 'SF Mono', 'Roboto Mono', monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--figma-color-border);
+  }
+
+  .dropdown-menu button:disabled,
+  .menu-item--disabled {
+    cursor: not-allowed;
+    background-color: white !important;
+    color: var(--black3-opaque) !important;
+  }
+
+  .dropdown-menu button:disabled .menu-item-icon,
+  .menu-item--disabled .menu-item-icon {
+    color: var(--figma-color-text-disabled);
+  }
+
+  /* Rimuoviamo eventuali stili di hover per gli elementi disabilitati */
+  .dropdown-menu button:disabled:hover,
+  .menu-item--disabled:hover {
+    background: transparent; /* o white se preferisci */
+  }
+
+  .modal-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 16px 24px;
+    border-top: 1px solid var(--figma-color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  .property-diff {
+    background-color: rgba(255, 249, 197, 0.3);
+    border-radius: 3px;
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
+
+  /* Aggiungi questo stile CSS */
+  body.modal-open {
+    overflow: hidden;
   }
 </style>
 
@@ -210,12 +458,102 @@
     </div>
   </div>
 
+  <!-- Aggiungi questi SVG nascosti in cima al body per poterli riutilizzare -->
+  <svg style="display: none;">
+    <!-- Menu a tre punti (kebab menu) -->
+    <symbol id="icon-more" viewBox="0 0 24 24">
+      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+    </symbol>
+    <!-- Icona copia -->
+    <symbol id="icon-copy" viewBox="0 0 24 24">
+      <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+    </symbol>
+  </svg>
+
+  <!-- Aggiorna la struttura della modale Info -->
+  <div id="info-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Dettagli Classe</h3>
+        <p>Ecco le informazioni per questa classe</p>
+      </div>
+      
+      <div class="code-block-container">
+        <button class="icon-button" id="copy-button">
+          <svg><use href="#icon-copy"/></svg>
+        </button>
+        <pre id="class-info" class="code-block"></pre>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="info-close" class="button button--secondary">Chiudi</button>
+    </div>
+  </div>
+
+  <div id="update-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Aggiorna Classe</h3>
+        <p>Stai per aggiornare la classe "<span id="update-class-name"></span>"</p>
+      </div>
+      
+      <div class="properties-comparison">
+        <div class="properties-column">
+          <h4>Proprietà Attuali</h4>
+          <div class="code-block-container">
+            <pre id="current-properties" class="code-block"></pre>
+          </div>
+        </div>
+        
+        <div class="properties-column">
+          <h4>Nuove Proprietà</h4>
+          <div class="code-block-container">
+            <pre id="new-properties" class="code-block"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="update-cancel" class="button button--secondary">Annulla</button>
+      <button id="update-confirm" class="button button--primary">Aggiorna</button>
+    </div>
+  </div>
+
   <script>
     console.log("JS Caricato correttamente!");
 
     const classNameInput = document.getElementById("class-name");
     const saveClassButton = document.getElementById("save-class");
     const savedClassesContainer = document.getElementById("saved-classes");
+
+    // Aggiungi queste variabili globali all'inizio del tuo script
+    let savedClasses = {};
+    let savedClassNames = [];
+
+    // Variabile globale per lo stato della selezione
+    let validSelection = false;
+
+    // Gestione dei messaggi
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      console.log("Received message:", msg); // Debug
+
+      if (msg.type === "selection-changed") {
+        validSelection = msg.validSelection;
+        console.log("Selection state updated:", validSelection); // Debug
+      }
+
+      if (msg.type === "display-saved-classes") {
+        validSelection = msg.validSelection;
+        console.log("Display classes, valid selection:", validSelection); // Debug
+        savedClasses = msg.savedClasses;  // Aggiorna la variabile globale
+        savedClassNames = msg.savedClassNames; // Aggiorna la variabile globale
+        updateSavedClasses(savedClasses, savedClassNames);
+        saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
+      }
+    };
 
     // Gestisci l'input per abilitare/disabilitare il pulsante "Salva Classe"
     classNameInput.addEventListener("input", () => {
@@ -235,18 +573,6 @@
       }
     });
 
-    // Ricevi messaggi dal thread principale
-    window.onmessage = (event) => {
-      const { type, savedClasses, savedClassNames, validSelection } =
-        event.data.pluginMessage;
-
-      if (type === "display-saved-classes") {
-        updateSavedClasses(savedClasses, savedClassNames);
-        saveClassButton.disabled =
-          !validSelection || !classNameInput.value.trim();
-      }
-    };
-
     // Aggiorna la lista delle classi salvate
     function updateSavedClasses(savedClasses, savedClassNames) {
       savedClassesContainer.innerHTML = "";
@@ -256,31 +582,26 @@
         classItem.className = "class-item";
 
         const classNameSpan = document.createElement("span");
+        classNameSpan.className = "class-name";
         classNameSpan.textContent = className;
 
-        // Bottone Rinomina
-        const renameButton = document.createElement("button");
-        renameButton.textContent = "Rinomina";
-        renameButton.className = "button button--secondary"; // Stile secondario
-        renameButton.addEventListener("click", () => renameClass(className));
-
-        // Bottone Elimina
-        const deleteButton = document.createElement("button");
-        deleteButton.textContent = "Elimina";
-        deleteButton.className = "button button--primary-destructive"; // Stile per azioni critiche
-        deleteButton.addEventListener("click", () => deleteClass(className));
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "class-actions";
 
         // Bottone Applica
         const applyButton = document.createElement("button");
         applyButton.textContent = "Applica";
-        applyButton.className = "button button--primary"; // Stile primario
+        applyButton.className = "button button--primary";
         applyButton.addEventListener("click", () => applyClass(className));
 
-        const buttonsContainer = document.createElement("div");
-        buttonsContainer.className = "buttons";
-        buttonsContainer.append(renameButton, applyButton, deleteButton);
+        // Bottone Menu
+        const menuButton = document.createElement("button");
+        menuButton.className = "icon-button";
+        menuButton.innerHTML = `<svg><use href="#icon-more"/></svg>`;
+        menuButton.addEventListener("click", (e) => showDropdownMenu(e, className));
 
-        classItem.append(classNameSpan, buttonsContainer);
+        actionsDiv.append(applyButton, menuButton);
+        classItem.append(classNameSpan, actionsDiv);
         savedClassesContainer.appendChild(classItem);
       });
     }
@@ -407,6 +728,341 @@
 
       // Mostra la modale
       openModal();
+    }
+
+    function showDropdownMenu(event, className) {
+      // Rimuovi menu esistenti e overlay aperti
+      const existingMenu = document.querySelector(".dropdown-menu");
+      const existingModals = document.querySelectorAll(".modal");
+      if (existingMenu) existingMenu.remove();
+      existingModals.forEach(modal => modal.style.display = "none");
+
+      const menu = document.createElement("div");
+      menu.className = "dropdown-menu";
+      
+      console.log("Showing menu, valid selection:", validSelection); // Debug
+      
+      const menuItems = [
+        { 
+          text: "Info", 
+          action: () => {
+            menu.remove();
+            showClassInfo(className);
+          },
+          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zm-.5 4h1v1h-1V4zm0 2h1v6h-1V6z"/>
+          </svg>`
+        },
+        { 
+          text: "Rinomina", 
+          action: () => {
+            menu.remove();
+            renameClass(className);
+          },
+          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M13.5 3l-1.5-1.5L3 10.5V12h1.5L13.5 3zM14 1.5L12.5 0l-1 1L13 2.5l1-1z"/>
+          </svg>`
+        },
+        { 
+          text: "Aggiorna", 
+          action: () => {
+            menu.remove();
+            showUpdateConfirmation(className);
+          },
+          disabled: !validSelection,
+          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 3a5 5 0 0 0-5 5h2l-3 3-3-3h2a7 7 0 1 1 2.18 5.12l1.42-1.42A5 5 0 1 0 8 3z"/>
+          </svg>`
+        },
+        { type: "divider" },
+        { 
+          text: "Elimina", 
+          action: () => {
+            menu.remove();
+            deleteClass(className);
+          },
+          class: "menu-item--destructive",
+          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1z"/>
+          </svg>`
+        }
+      ];
+
+      menuItems.forEach(item => {
+        if (item.type === "divider") {
+          const divider = document.createElement("hr");
+          divider.className = "dropdown-divider";
+          menu.appendChild(divider);
+        } else {
+          const button = document.createElement("button");
+          button.innerHTML = `
+            <span class="menu-item-icon">${item.icon}</span>
+            <span class="menu-item-text">${item.text}</span>
+          `;
+          
+          if (item.disabled) {
+            button.disabled = true;
+            button.classList.add("menu-item--disabled");
+          }
+          
+          if (item.class) {
+            button.classList.add(item.class);
+          }
+          
+          button.onclick = item.action;
+          menu.appendChild(button);
+        }
+      });
+
+      // Posizionamento del menu
+      const button = event.target;
+      const buttonRect = button.getBoundingClientRect();
+      
+      document.body.appendChild(menu);
+      menu.style.position = 'absolute';
+      menu.style.top = `${buttonRect.bottom + 2}px`;
+      menu.style.right = `${window.innerWidth - buttonRect.right}px`;
+      menu.style.zIndex = '100';
+
+      // Chiudi il menu quando si clicca fuori
+      setTimeout(() => {
+        document.addEventListener("click", function closeMenu(e) {
+          if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener("click", closeMenu);
+          }
+        });
+      }, 0);
+    }
+
+    function formatClassProperties(properties) {
+      if (!properties) return 'No properties available';
+
+      const formatters = {
+        fills: (fills) => {
+          if (!fills || !fills.length) return null;
+          const fill = fills[0];
+          if (fill.type === "SOLID") {
+            return `background: ${formatColor(fill)}`;
+          }
+          return null;
+        },
+        strokes: (strokes) => {
+          if (!strokes || !strokes.length) return null;
+          const stroke = strokes[0];
+          if (stroke.type === "SOLID") {
+            return `border-color: ${formatColor(stroke)}`;
+          }
+          return null;
+        },
+        strokeWeight: (weight) => {
+          if (!weight || weight === 0) return null;
+          return `border-width: ${weight}px`;
+        },
+        layoutMode: (mode) => {
+          if (mode === "NONE") return null;
+          return `display: flex\nflex-direction: ${mode.toLowerCase() === "HORIZONTAL" ? "row" : "column"}`;
+        },
+        primaryAxisAlignItems: (align) => {
+          if (!align || align === "NONE") return null;
+          const alignMap = {
+            MIN: "flex-start",
+            CENTER: "center",
+            MAX: "flex-end",
+            SPACE_BETWEEN: "space-between"
+          };
+          return `justify-content: ${alignMap[align] || align.toLowerCase()}`;
+        },
+        counterAxisAlignItems: (align) => {
+          if (!align || align === "NONE") return null;
+          const alignMap = {
+            MIN: "flex-start",
+            CENTER: "center",
+            MAX: "flex-end"
+          };
+          return `align-items: ${alignMap[align] || align.toLowerCase()}`;
+        },
+        cornerRadius: (radius) => {
+          if (!radius) return null;
+          return `border-radius: ${radius}px`;
+        },
+        opacity: (opacity) => {
+          if (opacity === 1) return null;
+          return `opacity: ${opacity}`;
+        }
+      };
+
+      const formattedProps = Object.entries(properties)
+        .map(([key, value]) => {
+          const formatter = formatters[key];
+          if (!formatter) return null;
+          return formatter(value);
+        })
+        .filter(Boolean);
+
+      return formattedProps.join(';\n');
+    }
+
+    function formatColor(fill) {
+      if (!fill || !fill.type || !fill.color) return 'none';
+      
+      if (fill.type === "SOLID") {
+        const { r, g, b } = fill.color;
+        const toHex = n => Math.round(n * 255).toString(16).padStart(2, '0');
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      }
+      
+      return 'none';
+    }
+
+    function showClassInfo(className) {
+      document.body.classList.add('modal-open');
+      
+      const closeModal = () => {
+        document.body.classList.remove('modal-open');
+        infoModal.style.display = "none";
+        overlay.style.display = "none";
+      };
+      
+      console.log('showClassInfo called for:', className); // Debug
+
+      const properties = savedClasses[className];
+      const infoModal = document.getElementById("info-modal");
+      const classInfo = document.getElementById("class-info");
+      const closeButton = document.getElementById("info-close");
+      const copyButton = document.getElementById("copy-button");
+      const overlay = document.getElementById("overlay");
+
+      if (!infoModal || !classInfo || !closeButton || !copyButton || !overlay) {
+        console.error('Some elements not found:', { 
+          infoModal: !!infoModal, 
+          classInfo: !!classInfo, 
+          closeButton: !!closeButton, 
+          copyButton: !!copyButton, 
+          overlay: !!overlay 
+        });
+        return;
+      }
+
+      // Formatta le proprietà in modo leggibile
+      const formattedInfo = formatClassProperties(properties);
+      console.log('Formatted info:', formattedInfo); // Debug
+
+      classInfo.textContent = formattedInfo;
+
+      // Mostra la modale e l'overlay
+      infoModal.style.display = "block";
+      overlay.style.display = "block";
+
+      // Gestisci la chiusura
+      closeButton.onclick = closeModal;
+      overlay.onclick = closeModal;
+
+      // Gestisci la copia
+      copyButton.onclick = () => {
+        const textToCopy = classInfo.textContent || '';
+        
+        // Invia un messaggio al codice principale di Figma per copiare il testo
+        parent.postMessage(
+          { 
+            pluginMessage: { 
+              type: "copy-to-clipboard", 
+              text: textToCopy 
+            } 
+          }, 
+          "*"
+        );
+        
+        // Rimuovi il focus dal bottone
+        copyButton.blur();
+      };
+    }
+
+    function showUpdateConfirmation(className) {
+      document.body.classList.add('modal-open');
+      
+      const closeModal = () => {
+        document.body.classList.remove('modal-open');
+        updateModal.style.display = "none";
+        overlay.style.display = "none";
+      };
+      
+      console.log('Showing update confirmation for:', className); // Debug
+
+      const updateModal = document.getElementById("update-modal");
+      const classNameSpan = document.getElementById("update-class-name");
+      const currentPropertiesEl = document.getElementById("current-properties");
+      const newPropertiesEl = document.getElementById("new-properties");
+      const cancelButton = document.getElementById("update-cancel");
+      const confirmButton = document.getElementById("update-confirm");
+      const overlay = document.getElementById("overlay");
+
+      // Verifica che tutti gli elementi esistano
+      if (!updateModal || !classNameSpan || !currentPropertiesEl || !newPropertiesEl || !cancelButton || !confirmButton || !overlay) {
+        console.error('Elementi mancanti nella modale di aggiornamento');
+        return;
+      }
+
+      // Formatta le proprietà attuali
+      const currentProperties = savedClasses[className];
+      const currentFormatted = formatClassProperties(currentProperties);
+      currentPropertiesEl.textContent = currentFormatted;
+      classNameSpan.textContent = className;
+      
+      // Funzione per gestire i messaggi
+      const handleMessage = (event) => {
+        const msg = event.data.pluginMessage;
+        console.log('Received message:', msg); // Debug
+
+        if (msg.type === "selection-error") {
+          figma.notify(msg.message);
+          closeModal();
+          return;
+        }
+
+        if (msg.type === "selection-properties") {
+          const newProperties = msg.properties;
+          const newFormatted = formatClassProperties(newProperties);
+          newPropertiesEl.textContent = newFormatted;
+
+          // Mostra la modale solo dopo aver ricevuto le proprietà
+          updateModal.style.display = "block";
+          overlay.style.display = "block";
+        }
+      };
+
+      // Rimuovi eventuali listener precedenti
+      window.removeEventListener('message', handleMessage);
+      // Aggiungi il nuovo listener
+      window.addEventListener('message', handleMessage);
+
+      // Gestisci i click sui pulsanti
+      confirmButton.onclick = () => {
+        // Mostra dialogo di conferma
+        if (confirm(`Sei sicuro di voler aggiornare la classe "${className}"? Questa azione non può essere annullata.`)) {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "update-class",
+                className,
+              },
+            },
+            "*"
+          );
+          closeModal();
+        }
+      };
+
+      cancelButton.onclick = closeModal;
+      overlay.onclick = closeModal;
+
+      // Richiedi le proprietà della selezione corrente
+      console.log('Requesting selection properties'); // Debug
+      parent.postMessage(
+        { pluginMessage: { type: "get-selection-properties" } },
+        "*"
+      );
     }
   </script>
 

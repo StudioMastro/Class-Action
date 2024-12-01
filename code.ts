@@ -10,11 +10,13 @@ const savedClassNames: string[] = JSON.parse(
 
 // Invia all'UI le classi salvate
 function updateUI() {
+  const validSelection = isValidSelection();
+  console.log("Updating UI, valid selection:", validSelection); // Debug
   figma.ui.postMessage({
     type: "display-saved-classes",
     savedClasses,
     savedClassNames,
-    validSelection: isValidSelection(),
+    validSelection
   });
 }
 
@@ -26,7 +28,7 @@ function isValidSelection(): boolean {
 
 // Funzione per estrarre le proprietà di un frame
 function extractDesignProperties(node: FrameNode) {
-  return {
+  const properties: any = {
     fills: node.fills || null,
     strokes: node.strokes || null,
     strokeWeight: node.strokeWeight || null,
@@ -34,30 +36,64 @@ function extractDesignProperties(node: FrameNode) {
     blendMode: node.blendMode || "NORMAL",
     cornerRadius: node.cornerRadius || 0,
     layoutMode: node.layoutMode || "NONE",
-    primaryAxisSizingMode: node.primaryAxisSizingMode || "AUTO",
-    counterAxisSizingMode: node.counterAxisSizingMode || "AUTO",
-    primaryAxisAlignItems: node.primaryAxisAlignItems || "MIN",
-    counterAxisAlignItems: node.counterAxisAlignItems || "MIN",
   };
+
+  // Se il frame ha l'autolayout, salva tutte le proprietà relative
+  if (node.layoutMode !== "NONE") {
+    properties.primaryAxisSizingMode = node.primaryAxisSizingMode;
+    properties.counterAxisSizingMode = node.counterAxisSizingMode;
+    properties.primaryAxisAlignItems = node.primaryAxisAlignItems;
+    properties.counterAxisAlignItems = node.counterAxisAlignItems;
+    properties.paddingTop = node.paddingTop;
+    properties.paddingRight = node.paddingRight;
+    properties.paddingBottom = node.paddingBottom;
+    properties.paddingLeft = node.paddingLeft;
+    properties.itemSpacing = node.itemSpacing;
+    properties.layoutGrow = node.layoutGrow;
+    properties.layoutAlign = node.layoutAlign;
+  }
+
+  console.log('Extracted properties:', properties); // Debug
+  return properties;
 }
 
 // Funzione per applicare proprietà salvate a un frame
 function applyDesignProperties(node: FrameNode, properties: any) {
+  console.log('Applying properties:', properties); // Debug
+
+  // Proprietà base
   if (properties.fills) node.fills = properties.fills;
   if (properties.strokes) node.strokes = properties.strokes;
   if (properties.strokeWeight) node.strokeWeight = properties.strokeWeight;
   if (properties.opacity) node.opacity = properties.opacity;
   if (properties.blendMode) node.blendMode = properties.blendMode;
   if (properties.cornerRadius) node.cornerRadius = properties.cornerRadius;
-  if (properties.layoutMode) node.layoutMode = properties.layoutMode;
-  if (properties.primaryAxisSizingMode)
-    node.primaryAxisSizingMode = properties.primaryAxisSizingMode;
-  if (properties.counterAxisSizingMode)
-    node.counterAxisSizingMode = properties.counterAxisSizingMode;
-  if (properties.primaryAxisAlignItems)
-    node.primaryAxisAlignItems = properties.primaryAxisAlignItems;
-  if (properties.counterAxisAlignItems)
-    node.counterAxisAlignItems = properties.counterAxisAlignItems;
+  
+  // Imposta prima il layoutMode
+  if (properties.layoutMode) {
+    node.layoutMode = properties.layoutMode;
+    
+    // Se c'è l'autolayout, applica tutte le proprietà relative
+    if (properties.layoutMode !== "NONE") {
+      node.primaryAxisSizingMode = properties.primaryAxisSizingMode || "AUTO";
+      node.counterAxisSizingMode = properties.counterAxisSizingMode || "AUTO";
+      node.primaryAxisAlignItems = properties.primaryAxisAlignItems || "MIN";
+      node.counterAxisAlignItems = properties.counterAxisAlignItems || "MIN";
+      
+      // Applica padding e gap solo se sono definiti
+      if (typeof properties.paddingTop === 'number') node.paddingTop = properties.paddingTop;
+      if (typeof properties.paddingRight === 'number') node.paddingRight = properties.paddingRight;
+      if (typeof properties.paddingBottom === 'number') node.paddingBottom = properties.paddingBottom;
+      if (typeof properties.paddingLeft === 'number') node.paddingLeft = properties.paddingLeft;
+      if (typeof properties.itemSpacing === 'number') node.itemSpacing = properties.itemSpacing;
+      
+      if (properties.layoutGrow) node.layoutGrow = properties.layoutGrow;
+      if (properties.layoutAlign) node.layoutAlign = properties.layoutAlign;
+    }
+  }
+
+  // Salva il nome della classe come metadato
+  node.setPluginData('className', properties.className);
 }
 
 // Gestione dei messaggi dall'UI
@@ -109,7 +145,7 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
     updateUI();
   } else if (msg.type === "apply-class") {
     if (!isValidSelection()) {
-      figma.notify("Please select a single frame to apply a class.");
+      figma.notify("Seleziona un frame per applicare la classe.");
       return;
     }
 
@@ -117,12 +153,22 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
     const className = msg.className;
 
     if (!savedClasses[className]) {
-      figma.notify(`Class "${className}" not found.`);
+      figma.notify(`Classe "${className}" non trovata.`);
       return;
     }
 
-    applyDesignProperties(frame, savedClasses[className]);
-    figma.notify(`Class "${className}" applied successfully!`);
+    // Applica le proprietà
+    const properties = {
+      ...savedClasses[className],
+      className: className
+    };
+
+    applyDesignProperties(frame, properties);
+    
+    // Sostituisci SEMPRE il nome del frame con il nome della classe
+    frame.name = className;
+    
+    figma.notify(`Classe "${className}" applicata con successo!`);
   } else if (msg.type === "rename-class") {
     const { oldClassName, newClassName } = msg;
 
@@ -147,11 +193,56 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
     );
     figma.notify(`Class "${oldClassName}" renamed to "${newClassName}".`);
     updateUI();
+  } else if (msg.type === "copy-to-clipboard") {
+    // Since we can't access clipboard directly in Figma plugin,
+    // we'll send a message to the UI to handle the copy operation
+    figma.ui.postMessage({
+      type: 'copy-to-clipboard',
+      text: msg.text
+    });
+    figma.notify("Proprietà copiate negli appunti!");
+  } else if (msg.type === "get-selection-properties") {
+    if (!isValidSelection()) {
+      figma.ui.postMessage({
+        type: "selection-error",
+        message: "Seleziona un frame per aggiornare la classe"
+      });
+      return;
+    }
+    const frame = figma.currentPage.selection[0] as FrameNode;
+    const properties = extractDesignProperties(frame);
+    figma.ui.postMessage({
+      type: "selection-properties",
+      properties
+    });
+  } else if (msg.type === "update-class") {
+    if (!isValidSelection()) {
+      figma.notify("Seleziona un frame per aggiornare la classe");
+      return;
+    }
+
+    const frame = figma.currentPage.selection[0] as FrameNode;
+    const properties = extractDesignProperties(frame);
+    
+    savedClasses[msg.className] = properties;
+    figma.root.setPluginData("savedClasses", JSON.stringify(savedClasses));
+    
+    figma.notify(`Classe "${msg.className}" aggiornata con successo!`);
+    updateUI();
+  } else if (msg.type === "check-selection") {
+    return isValidSelection();
   }
 };
 
 // Aggiorna l'UI alla selezione del frame
-figma.on("selectionchange", updateUI);
+figma.on("selectionchange", () => {
+  const validSelection = isValidSelection();
+  console.log("Selection changed, valid:", validSelection); // Debug
+  figma.ui.postMessage({
+    type: "selection-changed",
+    validSelection
+  });
+});
 
 // Inizializza l'UI
 updateUI();
