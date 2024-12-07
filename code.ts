@@ -96,6 +96,41 @@ function applyDesignProperties(node: FrameNode, properties: any) {
   node.setPluginData('className', properties.className);
 }
 
+// Funzione per applicare le classi a tutti i frame
+function applyClassesToAllFrames() {
+  console.log("Inizio applyClassesToAllFrames"); // Debug
+  
+  // Ricarica le classi salvate dal plugin data
+  const savedClassesData = figma.root.getPluginData("savedClasses");
+  const savedClasses = JSON.parse(savedClassesData || "{}");
+  console.log("Classi caricate:", savedClasses); // Debug
+  
+  // Ottieni tutti i frame nella pagina corrente
+  const frames = figma.currentPage.findAll(node => node.type === "FRAME");
+  console.log("Frame trovati:", frames.length); // Debug
+
+  let appliedCount = 0;
+
+  frames.forEach(frame => {
+    const frameName = frame.name;
+    console.log("Controllo frame:", frameName); // Debug
+    // Controlla se esiste una classe con lo stesso nome del frame
+    if (savedClasses[frameName]) {
+      console.log("Trovata corrispondenza per:", frameName); // Debug
+      // Applica le proprietà della classe al frame
+      const properties = {
+        ...savedClasses[frameName],
+        className: frameName
+      };
+      applyDesignProperties(frame as FrameNode, properties);
+      appliedCount++;
+    }
+  });
+
+  console.log("Classi applicate:", appliedCount); // Debug
+  figma.notify(`Classi applicate a ${appliedCount} frame!`);
+}
+
 // Gestione dei messaggi dall'UI
 figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
   if (msg.type === "save-class") {
@@ -231,6 +266,8 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
     updateUI();
   } else if (msg.type === "check-selection") {
     return isValidSelection();
+  } else if (msg.type === "apply-classes-to-all") {
+    applyClassesToAllFrames();
   }
 };
 
