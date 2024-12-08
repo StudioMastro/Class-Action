@@ -15,9 +15,12 @@
     color: #333;
     margin: 0;
     padding: 16px;
+    padding-bottom: calc(16px + 60px);
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
+    min-height: calc(100vh - 32px);
   }
 
   h1 {
@@ -143,6 +146,33 @@
     padding: 4px;
     min-width: 180px;
     z-index: 1000;
+    opacity: 0;
+    transform-origin: top right;
+    transform: scale(0.95) translateY(-10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .dropdown-menu.show {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  .dropdown-menu.position-above {
+    transform-origin: bottom right;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  .dropdown-menu.position-above.show {
+    transform: scale(1) translateY(0);
+  }
+
+  .dropdown-menu.closing {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+
+  .dropdown-menu.position-above.closing {
+    transform: scale(0.95) translateY(10px);
   }
 
   .dropdown-menu button {
@@ -224,27 +254,29 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 10;
+    z-index: 1000;
   }
 
   #info-modal {
-    z-index: 20;
+    z-index: 1001;
     background: white;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 
   .modal {
+    z-index: 1001;
+    background: white;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    z-index: 20;
     width: 90%;
     max-width: 800px;
     height: 90vh;
@@ -369,6 +401,60 @@
     justify-content: flex-end;
     margin-bottom: 16px;
   }
+
+  .fixed-bottom-button {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    display: none;
+    z-index: 90;
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  .fixed-bottom-button.visible {
+    display: block;
+    animation: slideUpButton 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes slideUpButton {
+    0% {
+      transform: translateY(100%);
+      opacity: 0;
+      box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  .fixed-bottom-button button {
+    width: 100%;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    opacity: 0;
+    animation: fadeInButton 0.2s ease forwards;
+    animation-delay: 0.15s;
+  }
+
+  @keyframes fadeInButton {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 </style>
 
 <body>
@@ -391,15 +477,17 @@
   <!-- Sezione per le classi salvate -->
   <section>
     <h2>Classi salvate</h2>
-    <div class="section-header">
-      <button id="apply-all-classes" class="button button--primary">
-        Applica classi a tutti i frame
-      </button>
-    </div>
     <div id="saved-classes">
       <!-- Le classi salvate saranno inserite dinamicamente qui -->
     </div>
   </section>
+
+  <!-- Bottone fisso in basso -->
+  <div id="apply-all-container" class="fixed-bottom-button">
+    <button id="apply-all-classes" class="button button--primary">
+      Applica classi a tutti i frame
+    </button>
+  </div>
 
   <!-- Overlay opaco dietro la modale -->
   <div id="overlay" style="
@@ -410,7 +498,6 @@
         width: 100%;
         height: 100%;
         background: rgba(0, 0, 0, 0.5);
-        z-index: 10;
       "></div>
 
   <!-- Modale per rinominare una classe -->
@@ -425,7 +512,7 @@
         border-radius: 8px;
         padding: 20px;
         box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        z-index: 20;
+        z-index: 1100;
       ">
     <h3>Rinomina Classe</h3>
     <p>Inserisci il nuovo nome per la classe:</p>
@@ -452,7 +539,7 @@
         border-radius: 8px;
         padding: 20px;
         box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        z-index: 20;
+        z-index: 1100;
       ">
     <h3>Elimina Classe</h3>
     <p>Sei proprio sicuro di voler eliminare questa classe? Non c'è modo di tornare indietro... 🙈</p>
@@ -584,6 +671,14 @@
     // Aggiorna la lista delle classi salvate
     function updateSavedClasses(savedClasses, savedClassNames) {
       savedClassesContainer.innerHTML = "";
+      const applyAllContainer = document.getElementById("apply-all-container");
+
+      // Mostra/nascondi il bottone "Applica a tutti" in base alla presenza di classi
+      if (savedClassNames.length > 0) {
+        applyAllContainer.classList.add("visible");
+      } else {
+        applyAllContainer.classList.remove("visible");
+      }
 
       savedClassNames.forEach((className) => {
         const classItem = document.createElement("div");
@@ -616,6 +711,8 @@
 
     // Funzioni per le azioni
     function deleteClass(className) {
+      document.body.classList.add('modal-open');
+      
       // Riferimenti agli elementi
       const deleteModal = document.getElementById("delete-modal");
       const deleteCancel = document.getElementById("delete-cancel");
@@ -672,6 +769,8 @@
     }
 
     function renameClass(oldClassName) {
+      document.body.classList.add('modal-open');
+      
       // Riferimenti agli elementi
       const renameModal = document.getElementById("rename-modal");
       const renameInput = document.getElementById("rename-input");
@@ -742,11 +841,21 @@
       // Rimuovi menu esistenti e overlay aperti
       const existingMenu = document.querySelector(".dropdown-menu");
       const existingModals = document.querySelectorAll(".modal");
-      if (existingMenu) existingMenu.remove();
+      
+      // Se esiste già un menu e l'evento viene dallo stesso bottone, chiudilo e esci
+      if (existingMenu && event.target.closest('.icon-button').contains(existingMenu.triggerButton)) {
+        closeDropdownMenu(existingMenu);
+        return;
+      }
+      
+      if (existingMenu) closeDropdownMenu(existingMenu);
       existingModals.forEach(modal => modal.style.display = "none");
+      document.body.classList.remove('modal-open'); // Rimuovi la classe quando chiudi le modali
 
       const menu = document.createElement("div");
       menu.className = "dropdown-menu";
+      // Salva il riferimento al bottone che ha triggerato questo menu
+      menu.triggerButton = event.target.closest('.icon-button');
       
       console.log("Showing menu, valid selection:", validSelection); // Debug
       
@@ -824,24 +933,69 @@
       });
 
       // Posizionamento del menu
-      const button = event.target;
+      const button = event.target.closest('.icon-button');
       const buttonRect = button.getBoundingClientRect();
       
       document.body.appendChild(menu);
-      menu.style.position = 'absolute';
-      menu.style.top = `${buttonRect.bottom + 2}px`;
-      menu.style.right = `${window.innerWidth - buttonRect.right}px`;
+      
+      // Calcola le dimensioni del menu dopo averlo aggiunto al DOM
+      const menuRect = menu.getBoundingClientRect();
+      
+      // Calcola lo spazio disponibile sopra e sotto il bottone
+      const spaceAbove = buttonRect.top;
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      
+      // Determina se il menu deve essere posizionato sopra o sotto
+      const shouldPositionAbove = spaceBelow < menuRect.height && spaceAbove > spaceBelow;
+      
+      menu.style.position = 'fixed';
+      
+      if (shouldPositionAbove) {
+        menu.style.bottom = `${window.innerHeight - buttonRect.top + 2}px`;
+        menu.classList.add('position-above');
+      } else {
+        menu.style.top = `${buttonRect.bottom + 2}px`;
+      }
+      
+      // Calcola la posizione orizzontale
+      const rightPosition = window.innerWidth - buttonRect.right;
+      const menuOverflowsLeft = rightPosition + menuRect.width > window.innerWidth;
+      
+      if (menuOverflowsLeft) {
+        menu.style.left = '16px';
+      } else {
+        menu.style.right = `${rightPosition}px`;
+      }
+      
       menu.style.zIndex = '100';
+
+      // Trigger reflow per attivare l'animazione
+      menu.offsetHeight;
+      
+      // Aggiungi la classe show per avviare l'animazione
+      requestAnimationFrame(() => {
+        menu.classList.add('show');
+      });
 
       // Chiudi il menu quando si clicca fuori
       setTimeout(() => {
         document.addEventListener("click", function closeMenu(e) {
           if (!menu.contains(e.target)) {
-            menu.remove();
+            closeDropdownMenu(menu);
             document.removeEventListener("click", closeMenu);
           }
         });
       }, 0);
+    }
+
+    function closeDropdownMenu(menu) {
+      menu.classList.add('closing');
+      menu.classList.remove('show');
+      
+      // Rimuovi il menu dopo che l'animazione è completata
+      menu.addEventListener('transitionend', () => {
+        menu.remove();
+      }, { once: true });
     }
 
     function formatClassProperties(properties) {
