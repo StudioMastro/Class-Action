@@ -8,6 +8,11 @@ const savedClassNames: string[] = JSON.parse(
   figma.root.getPluginData("savedClassNames") || "[]"
 );
 
+// Aggiungi struttura per le categorie
+const savedCategories: { [key: string]: string[] } = JSON.parse(
+  figma.root.getPluginData("savedCategories") || "{}"
+);
+
 // Invia all'UI le classi salvate
 function updateUI() {
   const validSelection = isValidSelection();
@@ -131,8 +136,131 @@ function applyClassesToAllFrames() {
   figma.notify(`Classi applicate a ${appliedCount} frame!`);
 }
 
+// Funzione per gestire le categorie
+function addClassToCategory(className: string, categoryName: string) {
+  if (!savedCategories[categoryName]) {
+    savedCategories[categoryName] = [];
+  }
+  savedCategories[categoryName].push(className);
+  figma.root.setPluginData("savedCategories", JSON.stringify(savedCategories));
+}
+
+// Funzione per esportare le classi
+function exportClasses() {
+  console.log("Inizio exportClasses"); // Debug
+  console.log("Classi da esportare:", savedClasses); // Debug
+  console.log("Nomi classi da esportare:", savedClassNames); // Debug
+  
+  const exportData = {
+    classes: savedClasses,
+    classNames: savedClassNames,
+    version: "1.0",
+    exportDate: new Date().toISOString(),
+    pluginVersion: "1.0.0"
+  };
+  
+  console.log("Export data creato:", exportData); // Debug
+  const jsonString = JSON.stringify(exportData, null, 2);
+  console.log("JSON generato:", jsonString); // Debug
+  return jsonString;
+}
+
+// Funzione per importare le classi
+function importClasses(jsonData: string) {
+  try {
+    const importedData = JSON.parse(jsonData);
+    
+    // Validazione della struttura
+    if (!importedData.classes || !importedData.classNames) {
+      throw new Error("Invalid file format");
+    }
+
+    // Controlla versioni compatibili
+    if (importedData.version !== "1.0") {
+      figma.notify("Warning: importing from a different version");
+    }
+
+    // Gestione dei conflitti
+    const conflicts = savedClassNames.filter(name => 
+      importedData.classNames.includes(name)
+    );
+
+    if (conflicts.length > 0) {
+      // Notifica l'utente dei conflitti
+      figma.notify(`Found ${conflicts.length} conflicting classes. They will be skipped.`);
+      
+      // Rimuovi le classi in conflitto
+      conflicts.forEach(name => {
+        const idx = importedData.classNames.indexOf(name);
+        importedData.classNames.splice(idx, 1);
+        delete importedData.classes[name];
+      });
+    }
+
+    // Merge dei dati
+    Object.assign(savedClasses, importedData.classes);
+    savedClassNames.push(...importedData.classNames);
+    
+    // Salva tutto
+    figma.root.setPluginData("savedClasses", JSON.stringify(savedClasses));
+    figma.root.setPluginData("savedClassNames", JSON.stringify(savedClassNames));
+    
+    updateUI();
+    figma.notify(`Successfully imported ${importedData.classNames.length} classes!`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      figma.notify(`Error importing classes: ${error.message}`);
+    } else {
+      figma.notify('Error importing classes: Unknown error occurred');
+    }
+  }
+}
+
 // Gestione dei messaggi dall'UI
 figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
+  console.log("Ricevuto messaggio dal UI:", msg.type); // Debug
+  console.log("Messaggio completo:", msg); // Debug
+
+  // Gestisci prima l'export
+  if (msg.type === "export-classes") {
+    console.log("Gestione export iniziata"); // Debug
+    
+    // Verifica che ci siano classi da esportare
+    if (Object.keys(savedClasses).length === 0) {
+      figma.notify("Non ci sono classi da esportare");
+      return;
+    }
+    
+    try {
+      // Crea direttamente l'oggetto da esportare
+      const exportData = {
+        classes: savedClasses,
+        classNames: savedClassNames,
+        version: "1.0",
+        exportDate: new Date().toISOString(),
+        pluginVersion: "1.0.0"
+      };
+
+      console.log("Dati preparati per l'export:", exportData); // Debug
+      const jsonString = JSON.stringify(exportData, null, 2);
+
+      // Invia i dati all'UI
+      figma.ui.postMessage({
+        type: "download-json",
+        filename: `figma-classes-${new Date().toISOString().split('T')[0]}.json`,
+        content: jsonString
+      });
+      
+      console.log("Messaggio di download inviato all'UI"); // Debug
+      figma.notify("Export completato con successo!");
+    } catch (error) {
+      console.error("Errore durante l'export:", error);
+      figma.notify("Errore durante l'esportazione delle classi");
+    }
+    return;
+  }
+
+  // Gestisci gli altri messaggi
   if (msg.type === "save-class") {
     if (!isValidSelection()) {
       figma.notify("Please select a single frame to save a class.");
@@ -268,6 +396,8 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
     return isValidSelection();
   } else if (msg.type === "apply-classes-to-all") {
     applyClassesToAllFrames();
+  } else if (msg.type === "import-classes") {
+    importClasses(msg.jsonData);
   }
 };
 
@@ -283,3 +413,130 @@ figma.on("selectionchange", () => {
 
 // Inizializza l'UI
 updateUI();
+
+interface ClassVersion {
+  properties: any;
+  timestamp: number;
+  author?: string;
+}
+
+const classVersions: { [className: string]: ClassVersion[] } = JSON.parse(
+  figma.root.getPluginData("classVersions") || "{}"
+);
+
+function saveClassVersion(className: string, properties: any) {
+  if (!classVersions[className]) {
+    classVersions[className] = [];
+  }
+  classVersions[className].push({
+    properties,
+    timestamp: Date.now(),
+    author: figma.currentUser?.name
+  });
+  figma.root.setPluginData("classVersions", JSON.stringify(classVersions));
+}
+
+function searchClasses(query: string, filters: { 
+  hasAutoLayout?: boolean,
+  hasCornerRadius?: boolean,
+  category?: string 
+}) {
+  return savedClassNames.filter(className => {
+    const properties = savedClasses[className];
+    
+    // Ricerca per nome
+    if (!className.toLowerCase().includes(query.toLowerCase())) {
+      return false;
+    }
+    
+    // Applica filtri
+    if (filters.hasAutoLayout && properties.layoutMode === "NONE") {
+      return false;
+    }
+    if (filters.hasCornerRadius && !properties.cornerRadius) {
+      return false;
+    }
+    if (filters.category && !savedCategories[filters.category].includes(className)) {
+      return false;
+    }
+    
+    return true;
+  });
+}
+
+interface StyleTemplate {
+  name: string;
+  properties: any;
+  description?: string;
+}
+
+const styleTemplates: StyleTemplate[] = [
+  {
+    name: "Card Base",
+    description: "Template base per card con ombra e bordi arrotondati",
+    properties: {
+      cornerRadius: 8,
+      layoutMode: "VERTICAL",
+      padding: 16,
+      effects: [/* shadow effect */]
+    }
+  },
+  // Altri template...
+];
+
+function applyTemplate(templateName: string, frame: FrameNode) {
+  const template = styleTemplates.find(t => t.name === templateName);
+  if (template) {
+    applyDesignProperties(frame, template.properties);
+  }
+}
+
+interface ClassDefinition {
+  properties: any;
+  extends?: string[];  // Classi da cui eredita
+  overrides?: string[];  // Proprietà che sovrascrivono le classi parent
+}
+
+function applyClassWithInheritance(frame: FrameNode, className: string) {
+  const classdef = savedClasses[className] as ClassDefinition;
+  
+  // Applica prima le proprietà delle classi parent
+  if (classdef.extends) {
+    for (const parentClass of classdef.extends) {
+      applyClassWithInheritance(frame, parentClass);
+    }
+  }
+  
+  // Poi applica le proprietà specifiche di questa classe
+  applyDesignProperties(frame, classdef.properties);
+}
+
+interface ClassUsageStats {
+  appliedCount: number;
+  lastUsed: number;
+  usedBy: string[];  // User IDs
+  usedInPages: string[];  // Page names
+}
+
+const classStats: { [className: string]: ClassUsageStats } = JSON.parse(
+  figma.root.getPluginData("classStats") || "{}"
+);
+
+function updateClassStats(className: string) {
+  if (!classStats[className]) {
+    classStats[className] = {
+      appliedCount: 0,
+      lastUsed: 0,
+      usedBy: [],
+      usedInPages: []
+    };
+  }
+  
+  const stats = classStats[className];
+  stats.appliedCount++;
+  stats.lastUsed = Date.now();
+  stats.usedBy = [...new Set([...stats.usedBy, figma.currentUser?.id].filter((id): id is string => id !== null && id !== undefined))];
+  stats.usedInPages = [...new Set([...stats.usedInPages, figma.currentPage.name])];
+  
+  figma.root.setPluginData("classStats", JSON.stringify(classStats));
+}
