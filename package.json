@@ -1,7 +1,7 @@
 {
   "name": "class-action",
-  "version": "1.0.0",
-  "description": "Action with class, class with action",
+  "version": "0.1.0",
+  "description": "A Figma plugin to save and reuse frame styles as classes",
   "main": "code.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",

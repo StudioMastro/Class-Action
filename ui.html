@@ -35,10 +35,35 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .input-container .icon {
+      position: absolute;
+      color: var(--black3);
+      pointer-events: none;
+    }
+
+    .input-container .icon--close {
+      right: 8px;
+      pointer-events: auto;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .input-container .icon--close.visible {
+      opacity: 1;
     }
 
     .input-container input[type="text"] {
       flex-grow: 1;
+    }
+
+    .input-container.with-icon input[type="text"] {
+      padding-left: 32px;
+      padding-right: 32px;
     }
 
     button {
@@ -197,21 +222,31 @@
       color: var(--figma-color-text);
     }
 
-    .menu-item--disabled {
-      color: var(--figma-color-text-disabled);
+    .menu-item--disabled,
+    .menu-item--disabled .menu-item-icon,
+    .menu-item--disabled .icon {
+      color: var(--black3);
       cursor: not-allowed;
     }
 
     .menu-item--disabled .menu-item-icon {
-      color: var(--figma-color-text-disabled);
+      color: var(--black3);
+    }
+
+    .menu-item--disabled .menu-item-icon .icon {
+      opacity: 0.3;
     }
 
     .dropdown-menu button.menu-item--destructive {
       color: var(--red);
     }
 
-    .dropdown-menu button.menu-item--destructive .menu-item-icon {
-      color: var(--red);
+    .dropdown-menu button.menu-item--destructive:hover {
+      background-color: rgba(242, 72, 34, 0.06);
+    }
+
+    .dropdown-menu button.menu-item--destructive .menu-item-icon .icon {
+      filter: invert(43%) sepia(56%) saturate(5632%) hue-rotate(349deg) brightness(97%) contrast(95%);
     }
 
     /* Stili per la modale Info */
@@ -453,10 +488,8 @@
       margin-left: auto;
     }
 
-    .button .icon {
-      display: inline-flex;
-      margin-right: 8px;
-      align-items: center;
+    .button--icon-only .icon {
+      margin-right: 0;
     }
 
     #import-input {
@@ -475,10 +508,8 @@
       margin-left: auto;
     }
 
-    .button .icon {
-      display: inline-flex;
-      margin-right: 8px;
-      align-items: center;
+    .button--icon-only .icon {
+      margin-right: 0;
     }
 
     .input__field {
@@ -491,6 +522,18 @@
 
     .input__field:not(:placeholder-shown) {
       border: 1px solid var(--black1);
+    }
+
+    .button--icon-only .icon {
+      margin-right: 0;
+    }
+
+    .no-results {
+      text-align: center;
+      color: var(--black3);
+      padding: 24px;
+      border: 1px dashed var(--black1);
+      border-radius: var(--border-radius-large);
     }
   </style>
 </head>
@@ -528,6 +571,11 @@
   <!-- Sezione per le classi salvate -->
   <section>
     <h2>Classi salvate</h2>
+    <div class="input-container with-icon">
+      <input class="input__field" type="text" id="search-classes" placeholder="Cerca classi..." />
+      <span class="icon icon--search"></span>
+      <span class="icon icon--close" id="clear-search"></span>
+    </div>
     <div id="saved-classes">
       <!-- Le classi salvate saranno inserite dinamicamente qui -->
     </div>
@@ -741,10 +789,46 @@
       }
     });
 
-    // Aggiorna la lista delle classi salvate
-    function updateSavedClasses(savedClasses, savedClassNames) {
-      console.log("Aggiornamento UI con classi:", savedClasses); // Debug
-      console.log("Nomi classi:", savedClassNames); // Debug
+    // Aggiungi la funzione di ricerca
+    const searchInput = document.getElementById("search-classes");
+    const clearSearchButton = document.getElementById("clear-search");
+    let filteredClassNames = [...savedClassNames];
+
+    // Funzione per gestire la visibilità del pulsante di cancellazione
+    function updateClearButtonVisibility() {
+      const hasValue = searchInput.value.length > 0;
+      clearSearchButton.classList.toggle('visible', hasValue);
+    }
+
+    // Event listener per l'input di ricerca
+    searchInput.addEventListener("input", (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      updateClearButtonVisibility();
+      
+      filteredClassNames = savedClassNames.filter(className => {
+        const properties = savedClasses[className];
+        const formattedProps = formatClassProperties(properties).toLowerCase();
+        
+        return className.toLowerCase().includes(searchTerm) || 
+               formattedProps.includes(searchTerm);
+      });
+      
+      updateSavedClasses(savedClasses, filteredClassNames);
+    });
+
+    // Event listener per il pulsante di cancellazione
+    clearSearchButton.addEventListener("click", () => {
+      searchInput.value = "";
+      searchInput.focus();
+      updateClearButtonVisibility();
+      filteredClassNames = [...savedClassNames];
+      updateSavedClasses(savedClasses, filteredClassNames);
+    });
+
+    // Modifica la funzione updateSavedClasses per usare le classi filtrate
+    function updateSavedClasses(savedClasses, classNames) {
+      console.log("Aggiornamento UI con classi:", savedClasses);
+      console.log("Nomi classi:", classNames);
       
       savedClassesContainer.innerHTML = "";
       const applyAllContainer = document.getElementById("apply-all-container");
@@ -755,7 +839,15 @@
         applyAllContainer.classList.remove("visible");
       }
 
-      savedClassNames.forEach((className) => {
+      if (classNames.length === 0) {
+        const noResults = document.createElement("div");
+        noResults.className = "no-results";
+        noResults.textContent = searchInput.value ? "Nessun risultato trovato" : "Nessuna classe salvata";
+        savedClassesContainer.appendChild(noResults);
+        return;
+      }
+
+      classNames.forEach((className) => {
         const classItem = document.createElement("div");
         classItem.className = "class-item";
 
@@ -775,7 +867,7 @@
         // Bottone Menu
         const menuButton = document.createElement("button");
         menuButton.className = "button button--small icon-button button--icon-only";
-        menuButton.innerHTML = `<svg><use href="#icon-more"/></svg>`;
+        menuButton.innerHTML = '<span class="icon icon--ellipses"></span>';
         menuButton.addEventListener("click", (e) => showDropdownMenu(e, className));
 
         actionsDiv.append(applyButton, menuButton);
@@ -941,9 +1033,7 @@
             menu.remove();
             showClassInfo(className);
           },
-          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zm-.5 4h1v1h-1V4zm0 2h1v6h-1V6z"/>
-          </svg>`
+          icon: '<span class="icon icon--library"></span>'
         },
         { 
           text: "Rinomina", 
@@ -951,9 +1041,7 @@
             menu.remove();
             renameClass(className);
           },
-          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M13.5 3l-1.5-1.5L3 10.5V12h1.5L13.5 3zM14 1.5L12.5 0l-1 1L13 2.5l1-1z"/>
-          </svg>`
+          icon: '<span class="icon icon--adjust"></span>'
         },
         { 
           text: "Aggiorna", 
@@ -962,9 +1050,7 @@
             showUpdateConfirmation(className);
           },
           disabled: !validSelection,
-          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 3a5 5 0 0 0-5 5h2l-3 3-3-3h2a7 7 0 1 1 2.18 5.12l1.42-1.42A5 5 0 1 0 8 3z"/>
-          </svg>`
+          icon: '<span class="icon icon--swap"></span>'
         },
         { type: "divider" },
         { 
@@ -974,10 +1060,7 @@
             deleteClass(className);
           },
           class: "menu-item--destructive",
-          icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1z"/>
-          </svg>`
+          icon: '<span class="icon icon--trash"></span>'
         }
       ];
 
