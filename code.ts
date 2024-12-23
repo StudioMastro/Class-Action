@@ -1,12 +1,25 @@
 figma.showUI(__html__, { width: 500, height: 500 });
 
 // Variabili per salvare le classi
-const savedClasses: { [key: string]: any } = JSON.parse(
-  figma.root.getPluginData("savedClasses") || "{}"
-);
-const savedClassNames: string[] = JSON.parse(
-  figma.root.getPluginData("savedClassNames") || "[]"
-);
+const savedClasses: { [key: string]: any } = {};
+const savedClassNames: string[] = [];
+
+// Carica i dati salvati all'avvio
+try {
+  const savedClassesData = figma.root.getPluginData("savedClasses");
+  const savedClassNamesData = figma.root.getPluginData("savedClassNames");
+  
+  if (savedClassesData && savedClassNamesData) {
+    Object.assign(savedClasses, JSON.parse(savedClassesData));
+    savedClassNames.push(...JSON.parse(savedClassNamesData));
+    console.log("Dati iniziali caricati:", { savedClasses, savedClassNames }); // Debug
+  }
+} catch (error) {
+  console.error("Errore nel caricamento dei dati iniziali:", error);
+}
+
+// Aggiorna subito l'UI con i dati caricati
+updateUI();
 
 // Aggiungi struttura per le categorie
 const savedCategories: { [key: string]: string[] } = JSON.parse(
@@ -16,13 +29,21 @@ const savedCategories: { [key: string]: string[] } = JSON.parse(
 // Invia all'UI le classi salvate
 function updateUI() {
   const validSelection = isValidSelection();
-  console.log("Updating UI, valid selection:", validSelection); // Debug
-  figma.ui.postMessage({
-    type: "display-saved-classes",
-    savedClasses,
-    savedClassNames,
-    validSelection
-  });
+  console.log("Updating UI"); // Debug
+  console.log("Saved Classes:", savedClasses); // Debug
+  console.log("Saved Class Names:", savedClassNames); // Debug
+  console.log("Valid Selection:", validSelection); // Debug
+
+  try {
+    figma.ui.postMessage({
+      type: "display-saved-classes",
+      savedClasses,
+      savedClassNames,
+      validSelection
+    });
+  } catch (error) {
+    console.error("Errore nell'aggiornamento UI:", error);
+  }
 }
 
 // Funzione per verificare una selezione valida
@@ -223,16 +244,14 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
 
   // Gestisci prima l'export
   if (msg.type === "export-classes") {
-    console.log("Gestione export iniziata"); // Debug
+    console.log("Gestione export iniziata");
     
-    // Verifica che ci siano classi da esportare
     if (Object.keys(savedClasses).length === 0) {
       figma.notify("Non ci sono classi da esportare");
       return;
     }
     
     try {
-      // Crea direttamente l'oggetto da esportare
       const exportData = {
         classes: savedClasses,
         classNames: savedClassNames,
@@ -241,27 +260,27 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
         pluginVersion: "1.0.0"
       };
 
-      console.log("Dati preparati per l'export:", exportData); // Debug
       const jsonString = JSON.stringify(exportData, null, 2);
-
-      // Invia i dati all'UI
+      
       figma.ui.postMessage({
         type: "download-json",
         filename: `figma-classes-${new Date().toISOString().split('T')[0]}.json`,
         content: jsonString
       });
       
-      console.log("Messaggio di download inviato all'UI"); // Debug
-      figma.notify("Export completato con successo!");
     } catch (error) {
       console.error("Errore durante l'export:", error);
       figma.notify("Errore durante l'esportazione delle classi");
     }
     return;
+  } else if (msg.type === "export-complete") {
+    figma.notify("Export completato con successo!");
+  } else if (msg.type === "export-error") {
+    figma.notify(`Errore durante l'export: ${msg.error}`);
   }
 
   // Gestisci gli altri messaggi
-  if (msg.type === "save-class") {
+  else if (msg.type === "save-class") {
     if (!isValidSelection()) {
       figma.notify("Please select a single frame to save a class.");
       return;
@@ -280,15 +299,23 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: any }) => {
       return;
     }
 
+    // Salva la nuova classe
     savedClasses[className] = extractDesignProperties(frame);
     savedClassNames.push(className);
-    figma.root.setPluginData("savedClasses", JSON.stringify(savedClasses));
-    figma.root.setPluginData(
-      "savedClassNames",
-      JSON.stringify(savedClassNames)
-    );
-    figma.notify(`Class "${className}" saved successfully!`);
-    updateUI();
+
+    // Salva i dati nel plugin data
+    try {
+      figma.root.setPluginData("savedClasses", JSON.stringify(savedClasses));
+      figma.root.setPluginData("savedClassNames", JSON.stringify(savedClassNames));
+      console.log("Classi salvate:", savedClasses); // Debug
+      console.log("Nomi classi salvati:", savedClassNames); // Debug
+      
+      figma.notify(`Class "${className}" saved successfully!`);
+      updateUI(); // Aggiorna l'UI dopo il salvataggio
+    } catch (error) {
+      console.error("Errore nel salvataggio:", error);
+      figma.notify("Errore nel salvataggio della classe");
+    }
   } else if (msg.type === "delete-class") {
     const className = msg.className;
 
@@ -410,9 +437,6 @@ figma.on("selectionchange", () => {
     validSelection
   });
 });
-
-// Inizializza l'UI
-updateUI();
 
 interface ClassVersion {
   properties: any;

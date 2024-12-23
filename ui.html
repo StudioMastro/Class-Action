@@ -41,15 +41,6 @@
       flex-grow: 1;
     }
 
-    input[type="text"] {
-      border-radius: var(--border-radius-large);
-      border-color: var(--black);
-      padding: 8px;
-      font-size: var(--font-size-xsmall);
-      width: 100%;
-      box-sizing: border-box;
-    }
-
     button {
       cursor: pointer;
       transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -69,7 +60,7 @@
     }
 
     button:disabled {
-      background-color: #ccc !important;
+      background-color: var(--black3) !important;
       cursor: not-allowed;
     }
 
@@ -92,7 +83,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 12px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--grey);
       border-radius: var(--border-radius-large);
       margin-bottom: 8px;
       position: relative;
@@ -110,21 +101,18 @@
     }
 
     .icon-button {
+      border-radius: var(--border-radius-large);
       padding: 8px;
       border: none;
       background: none;
-      cursor: pointer;
-      border-radius: var(--border-radius-large);
-      display: flex;
-      align-items: center;
-      justify-content: center;
       outline: none;
+      box-sizing: border-box;
     }
 
     .icon-button svg {
       width: 20px;
       height: 20px;
-      fill: currentColor;
+      flex-shrink: 0;
     }
 
     .icon-button:hover {
@@ -135,6 +123,11 @@
       background-color: rgba(0, 0, 0, 0.1);
     }
 
+    .icon-button:focus {
+      border: 2px solid var(--blue);
+      padding: 6px;
+    }
+
     .dropdown-menu {
       position: absolute;
       background: white;
@@ -142,7 +135,7 @@
       border-radius: var(--border-radius-large);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       padding: 4px;
-      min-width: 180px;
+      min-width: 125px;
       z-index: 1000;
       opacity: 0;
       transform-origin: top right;
@@ -178,7 +171,7 @@
       align-items: center;
       gap: 8px;
       width: 100%;
-      padding: 8px 16px;
+      padding: 8px;
       text-align: left;
       border: none;
       background: none;
@@ -213,12 +206,12 @@
       color: var(--figma-color-text-disabled);
     }
 
-    .menu-item--destructive {
-      color: var(--figma-color-text-danger);
+    .dropdown-menu button.menu-item--destructive {
+      color: var(--red);
     }
 
-    .menu-item--destructive .menu-item-icon {
-      color: var(--figma-color-text-danger);
+    .dropdown-menu button.menu-item--destructive .menu-item-icon {
+      color: var(--red);
     }
 
     /* Stili per la modale Info */
@@ -487,6 +480,18 @@
       margin-right: 8px;
       align-items: center;
     }
+
+    .input__field {
+      border-radius: var(--border-radius-large);
+      padding: 9px;
+      border: none;
+      background: none;
+      outline: none;
+    }
+
+    .input__field:not(:placeholder-shown) {
+      border: 1px solid var(--black1);
+    }
   </style>
 </head>
 
@@ -498,19 +503,9 @@
   <section class="section-header">
     <div class="import-export-buttons">
       <button id="export-button" class="button button--secondary">
-        <span class="icon">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M11 10V8h1v2h2v1h-2v2h-1v-2H9v-1h2zM1 4.5C1 3.12 2.12 2 3.5 2h4.75L11 4.75V7H9.5V5.5h-5C3.67 5.5 3 4.83 3 4s.67-1.5 1.5-1.5h4V1h-5C2.12 1 1 2.12 1 3.5v9C1 13.88 2.12 15 3.5 15h5v-1.5h-5c-.83 0-1.5-.67-1.5-1.5v-7z"/>
-          </svg>
-        </span>
         Export Classes
       </button>
       <label for="import-input" class="button button--secondary">
-        <span class="icon">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M9 1v1.5h4c.83 0 1.5.67 1.5 1.5v7c0 .83-.67 1.5-1.5 1.5h-5V11H6.5v1.5h-3C2.67 12.5 2 11.83 2 11V4c0-.83.67-1.5 1.5-1.5h4V1H9zm-2 6V5H5v2H3l3 3 3-3H7z"/>
-          </svg>
-        </span>
         Import Classes
         <input type="file" id="import-input" accept=".json">
       </label>
@@ -521,7 +516,7 @@
   <section>
     <h2>Salva una classe</h2>
     <div class="input-container">
-      <input type="text" id="class-name" placeholder="Inserisci il nome della classe" />
+      <input class="input__field custom-input" type="text" id="class-name" placeholder="Inserisci il nome della classe" />
       <button id="save-class" class="button button--primary" disabled>
         Salva classe
       </button>
@@ -683,48 +678,52 @@
     let savedClassNames = [];
     let validSelection = false;
 
+    // Aggiungi questo event listener per l'input
+    classNameInput.addEventListener("input", () => {
+      saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
+    });
+
     // Gestione dei messaggi
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
-      console.log("Ricevuto messaggio nell'UI:", msg); // Debug
+      console.log("UI ricevuto messaggio:", msg); // Debug
 
       if (msg.type === "selection-changed") {
         validSelection = msg.validSelection;
         console.log("Selection state updated:", validSelection);
+        saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
       }
 
-      if (msg.type === "display-saved-classes") {
+      else if (msg.type === "display-saved-classes") {
+        console.log("Ricevuto display-saved-classes:", msg); // Debug
         validSelection = msg.validSelection;
-        savedClasses = msg.savedClasses;
-        savedClassNames = msg.savedClassNames;
+        savedClasses = msg.savedClasses || {};
+        savedClassNames = msg.savedClassNames || [];
         updateSavedClasses(savedClasses, savedClassNames);
         saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
       }
 
-      if (msg.type === 'download-json') {
-        console.log("Ricevuto download-json:", msg.content); // Debug
-        console.log("Tipo di msg.content:", typeof msg.content); // Debug
-        
-        if (!msg.content) {
-          console.error("Contenuto mancante nel messaggio download-json");
-          return;
-        }
-
+      else if (msg.type === 'download-json') {
         try {
           const blob = new Blob([msg.content], { type: 'application/json' });
           const url = URL.createObjectURL(blob);
           
           const a = document.createElement('a');
           a.href = url;
-          a.download = msg.filename || 'figma-classes.json';
-          document.body.appendChild(a);
+          a.download = msg.filename;
           a.click();
           
-          document.body.removeChild(a);
+          // Pulizia della risorsa
           URL.revokeObjectURL(url);
-          console.log("Download completato con successo"); // Debug
+          
         } catch (error) {
           console.error("Errore durante il download:", error);
+          parent.postMessage({ 
+            pluginMessage: { 
+              type: 'export-error',
+              error: error.message 
+            } 
+          }, '*');
         }
       }
     };
@@ -744,10 +743,12 @@
 
     // Aggiorna la lista delle classi salvate
     function updateSavedClasses(savedClasses, savedClassNames) {
+      console.log("Aggiornamento UI con classi:", savedClasses); // Debug
+      console.log("Nomi classi:", savedClassNames); // Debug
+      
       savedClassesContainer.innerHTML = "";
       const applyAllContainer = document.getElementById("apply-all-container");
 
-      // Mostra/nascondi il bottone "Applica a tutti" in base alla presenza di classi
       if (savedClassNames.length > 0) {
         applyAllContainer.classList.add("visible");
       } else {
@@ -773,7 +774,7 @@
 
         // Bottone Menu
         const menuButton = document.createElement("button");
-        menuButton.className = "icon-button";
+        menuButton.className = "button button--small icon-button button--icon-only";
         menuButton.innerHTML = `<svg><use href="#icon-more"/></svg>`;
         menuButton.addEventListener("click", (e) => showDropdownMenu(e, className));
 
