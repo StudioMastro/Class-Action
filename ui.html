@@ -1,180 +1,1438 @@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<style>
-  body {
-    padding: 2rem;
-  }
+<!DOCTYPE html>
+<html lang="en">
 
-  .input__field {
-    border: 1px solid var(--black1);
-    flex-grow: 1;
-    margin-right: 8px;
-  }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/figma-plugin-ds@1.0.1/dist/figma-plugin-ds.min.css" />
+  <title>Class Action</title>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      font-size: 14px;
+      color: #333;
+      margin: 0;
+      padding: 16px;
+      padding-bottom: calc(16px + 60px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      min-height: calc(100vh - 32px);
+    }
 
-  .input__container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
 
-  .input__group {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    flex-grow: 1;
-  }
+    h2 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
 
-  .class__actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
-  }
+    .input-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      position: relative;
+    }
 
-  .button__group {
-    display: flex;
-    gap: 0.25rem;
-  }
+    .input-container .icon {
+      position: absolute;
+      color: var(--black3);
+      pointer-events: none;
+    }
 
-  #classList>div {
-    margin-bottom: 0.5rem;
-  }
-</style>
+    .input-container .icon--close {
+      right: 8px;
+      pointer-events: auto;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
 
+    .input-container .icon--close.visible {
+      opacity: 1;
+    }
 
-<div id="app">
-  <h2 class="type type--xlarge type--bold">Class Action</h2>
-  <p class="type type--small">This plugin allows you to manage and apply classes to Figma elements. Create, rename, and
-    delete classes, then apply your saved classes to selected elements with ease.</p>
-  <div class="onboarding-tip">
-    <div class="icon icon--styles"></div>
-    <div class="onboarding-tip__msg">Onboarding tip goes here.</div>
+    .input-container input[type="text"] {
+      flex-grow: 1;
+    }
+
+    .input-container.with-icon input[type="text"] {
+      padding-left: 32px;
+      padding-right: 32px;
+    }
+
+    button {
+      cursor: pointer;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .button--primary:hover {
+      background-color: #1e88e5;
+    }
+
+    .button--primary-destructive:hover {
+      background-color: #c62828;
+    }
+
+    .button--secondary:hover,
+    .button--secondary-destructive:hover {
+      border-color: rgba(0, 0, 0, 0.25);
+    }
+
+    button:disabled {
+      background-color: var(--black3) !important;
+      cursor: not-allowed;
+    }
+
+    button:disabled.button--primary:hover {
+      background-color: inherit;
+    }
+
+    .divider {
+      border-top: 1px solid #ddd;
+      margin: 12px 0;
+    }
+
+    .label {
+      padding: 0px !important;
+      color: var(--black3-opaque);
+    }
+
+    .class-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid var(--grey);
+      border-radius: var(--border-radius-large);
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .class-name {
+      flex-grow: 1;
+      margin-right: 12px;
+    }
+
+    .class-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .icon-button {
+      border-radius: var(--border-radius-large);
+      padding: 8px;
+      border: none;
+      background: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .icon-button svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .icon-button:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .icon-button:active {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .icon-button:focus {
+      border: 2px solid var(--blue);
+      padding: 6px;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: var(--border-radius-large);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      padding: 4px;
+      min-width: 125px;
+      z-index: 1000;
+      opacity: 0;
+      transform-origin: top right;
+      transform: scale(0.95) translateY(-10px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .dropdown-menu.show {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    .dropdown-menu.position-above {
+      transform-origin: bottom right;
+      transform: scale(0.95) translateY(10px);
+    }
+
+    .dropdown-menu.position-above.show {
+      transform: scale(1) translateY(0);
+    }
+
+    .dropdown-menu.closing {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+
+    .dropdown-menu.position-above.closing {
+      transform: scale(0.95) translateY(10px);
+    }
+
+    .dropdown-menu button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px;
+      text-align: left;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--figma-color-text);
+      border-radius: var(--border-radius-large);
+    }
+
+    .dropdown-menu button:hover {
+      background-color: rgba(0, 0, 0, 0.06);
+    }
+
+    .dropdown-divider {
+      margin: 4px 0;
+      border-top: 1px solid var(--figma-color-border);
+    }
+
+    .menu-item-icon {
+      display: flex;
+      align-items: center;
+      width: 16px;
+      height: 16px;
+      color: var(--figma-color-text);
+    }
+
+    .menu-item--disabled,
+    .menu-item--disabled .menu-item-icon,
+    .menu-item--disabled .icon {
+      color: var(--black3);
+      cursor: not-allowed;
+    }
+
+    .menu-item--disabled .menu-item-icon {
+      color: var(--black3);
+    }
+
+    .menu-item--disabled .menu-item-icon .icon {
+      opacity: 0.3;
+    }
+
+    .dropdown-menu button.menu-item--destructive {
+      color: var(--red);
+    }
+
+    .dropdown-menu button.menu-item--destructive:hover {
+      background-color: rgba(242, 72, 34, 0.06);
+    }
+
+    .dropdown-menu button.menu-item--destructive .menu-item-icon .icon {
+      filter: invert(43%) sepia(56%) saturate(5632%) hue-rotate(349deg) brightness(97%) contrast(95%);
+    }
+
+    /* Stili per la modale Info */
+    .info-modal-content {
+      max-width: 500px;
+    }
+
+    .code-block-container {
+      position: relative;
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 16px;
+    }
+
+    .code-block-container .icon-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+    }
+
+    .code-block {
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-right: 32px;
+    }
+
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    #info-modal {
+      z-index: 1001;
+      background: white;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal {
+      z-index: 1001;
+      background: white;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      width: 90%;
+      max-width: 800px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .modal-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .modal-header {
+      margin-bottom: 24px;
+    }
+
+    .modal-header h3 {
+      font-size: 18px;
+      margin: 0 0 8px 0;
+    }
+
+    .modal-header p {
+      color: var(--figma-color-text-secondary);
+      margin: 0;
+    }
+
+    .properties-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding-bottom: 80px;
+    }
+
+    .properties-column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .properties-column h4 {
+      font-size: 14px;
+      margin: 0;
+      color: var(--figma-color-text-secondary);
+    }
+
+    .code-block-container {
+      background: #f5f5f5;
+      border: 1px solid var(--figma-color-border);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .code-block {
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+      font-size: 12px;
+      line-height: 1.2;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 12px;
+      padding-top: 16px;
+      border-top: 1px solid var(--figma-color-border);
+    }
+
+    .dropdown-menu button:disabled,
+    .menu-item--disabled {
+      cursor: not-allowed;
+      background-color: white !important;
+      color: var(--black3-opaque) !important;
+    }
+
+    .dropdown-menu button:disabled .menu-item-icon,
+    .menu-item--disabled .menu-item-icon {
+      color: var(--figma-color-text-disabled);
+    }
+
+    /* Rimuoviamo eventuali stili di hover per gli elementi disabilitati */
+    .dropdown-menu button:disabled:hover,
+    .menu-item--disabled:hover {
+      background: transparent; /* o white se preferisci */
+    }
+
+    .modal-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 16px 24px;
+      border-top: 1px solid var(--figma-color-border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+
+    .property-diff {
+      background-color: rgba(255, 249, 197, 0.3);
+      border-radius: 3px;
+      margin: 0 -4px;
+      padding: 0 4px;
+    }
+
+    /* Aggiungi questo stile CSS */
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    .section-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .fixed-bottom-button {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      display: none;
+      z-index: 90;
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    .fixed-bottom-button.visible {
+      display: block;
+      animation: slideUpButton 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes slideUpButton {
+      0% {
+        transform: translateY(100%);
+        opacity: 0;
+        box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    .fixed-bottom-button button {
+      width: 100%;
+      justify-content: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      opacity: 0;
+      animation: fadeInButton 0.2s ease forwards;
+      animation-delay: 0.15s;
+    }
+
+    @keyframes fadeInButton {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .import-export-buttons {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .button--icon-only .icon {
+      margin-right: 0;
+    }
+
+    #import-input {
+      display: none;
+    }
+
+    .section-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .import-export-buttons {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .button--icon-only .icon {
+      margin-right: 0;
+    }
+
+    .input__field {
+      border-radius: var(--border-radius-large);
+      padding: 9px;
+      border: none;
+      background: none;
+      outline: none;
+    }
+
+    .input__field:not(:placeholder-shown) {
+      border: 1px solid var(--black1);
+    }
+
+    .button--icon-only .icon {
+      margin-right: 0;
+    }
+
+    .no-results {
+      text-align: center;
+      color: var(--black3);
+      padding: 24px;
+      border: 1px dashed var(--black1);
+      border-radius: var(--border-radius-large);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Intestazione -->
+  <h1>Class Action</h1>
+
+  <!-- Sezione header con i pulsanti import/export -->
+  <section class="section-header">
+    <div class="import-export-buttons">
+      <button id="export-button" class="button button--secondary">
+        Export Classes
+      </button>
+      <label for="import-input" class="button button--secondary">
+        Import Classes
+        <input type="file" id="import-input" accept=".json">
+      </label>
+    </div>
+  </section>
+
+  <!-- Sezione per salvare una classe -->
+  <section>
+    <h2>Salva una classe</h2>
+    <div class="input-container">
+      <input class="input__field custom-input" type="text" id="class-name" placeholder="Inserisci il nome della classe" />
+      <button id="save-class" class="button button--primary" disabled>
+        Salva classe
+      </button>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Sezione per le classi salvate -->
+  <section>
+    <h2>Classi salvate</h2>
+    <div class="input-container with-icon">
+      <input class="input__field" type="text" id="search-classes" placeholder="Cerca classi..." />
+      <span class="icon icon--search"></span>
+      <span class="icon icon--close" id="clear-search"></span>
+    </div>
+    <div id="saved-classes">
+      <!-- Le classi salvate saranno inserite dinamicamente qui -->
+    </div>
+  </section>
+
+  <!-- Bottone fisso in basso -->
+  <div id="apply-all-container" class="fixed-bottom-button">
+    <button id="apply-all-classes" class="button button--primary">
+      Applica classi a tutti i frame
+    </button>
   </div>
-  <hr>
-  <div id="selectFrameMessage" style="display: none;">
-    <p class="type type--small">Please select a single frame to save or apply classes.</p>
-  </div>
-  <div class="input__container">
-    <label class="input__label" for="className">Class Name</label>
-    <div class="input__group">
-      <input class="input__field" type="text" id="className" name="className">
-      <button class="button button--primary" onclick="saveClass()">Save Class</button>
+
+  <!-- Overlay opaco dietro la modale -->
+  <div id="overlay" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+      "></div>
+
+  <!-- Modale per rinominare una classe -->
+  <div id="rename-modal" style="
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1100;
+      ">
+    <h3>Rinomina Classe</h3>
+    <p>Inserisci il nuovo nome per la classe:</p>
+    <input type="text" id="rename-input" style="width: 100%; padding: 8px; margin-bottom: 10px" />
+    <div style="display: flex; justify-content: flex-end; gap: 10px">
+      <button id="rename-cancel" class="button button--secondary">
+        Annulla
+      </button>
+      <button id="rename-confirm" class="button button--primary">
+        Conferma
+      </button>
     </div>
   </div>
 
-  <hr>
-  <h3 class="type type--large type--bold">Saved Classes</h3>
-  <div id="classList"></div>
-</div>
+  <!-- Dopo la modale di rinomina, aggiungi questa nuova modale -->
+  <div id="delete-modal" style="
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1100;
+      ">
+    <h3>Elimina Classe</h3>
+    <p>Sei proprio sicuro di voler eliminare questa classe? Non c'è modo di tornare indietro... 🙈</p>
+    <div style="display: flex; justify-content: flex-end; gap: 10px">
+      <button id="delete-cancel" class="button button--secondary">
+        Annulla
+      </button>
+      <button id="delete-confirm" class="button button--primary-destructive">
+        Sì, elimina!
+      </button>
+    </div>
+  </div>
 
-<script>
-  function saveClass() {
-    const className = document.getElementById('className').value.trim();
-    if (className === '') {
-      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
-    } else {
-      window.parent.postMessage({ pluginMessage: { type: 'save-class', className } }, '*');
+  <!-- Aggiungi questi SVG nascosti in cima al body per poterli riutilizzare -->
+  <svg style="display: none;">
+    <!-- Menu a tre punti (kebab menu) -->
+    <symbol id="icon-more" viewBox="0 0 24 24">
+      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+    </symbol>
+    <!-- Icona copia -->
+    <symbol id="icon-copy" viewBox="0 0 24 24">
+      <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+    </symbol>
+  </svg>
+
+  <!-- Aggiorna la struttura della modale Info -->
+  <div id="info-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Dettagli Classe</h3>
+        <p>Ecco le informazioni per questa classe</p>
+      </div>
+      
+      <div class="code-block-container">
+        <button class="icon-button" id="copy-button">
+          <svg><use href="#icon-copy"/></svg>
+        </button>
+        <pre id="class-info" class="code-block"></pre>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="info-close" class="button button--secondary">Chiudi</button>
+    </div>
+  </div>
+
+  <div id="update-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Aggiorna Classe</h3>
+        <p>Stai per aggiornare la classe "<span id="update-class-name"></span>"</p>
+      </div>
+      
+      <div class="properties-comparison">
+        <div class="properties-column">
+          <h4>Proprietà Attuali</h4>
+          <div class="code-block-container">
+            <pre id="current-properties" class="code-block"></pre>
+          </div>
+        </div>
+        
+        <div class="properties-column">
+          <h4>Nuove Proprietà</h4>
+          <div class="code-block-container">
+            <pre id="new-properties" class="code-block"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="update-cancel" class="button button--secondary">Annulla</button>
+      <button id="update-confirm" class="button button--primary">Aggiorna</button>
+    </div>
+  </div>
+
+  <script>
+    console.log("JS Caricato correttamente!");
+
+    const classNameInput = document.getElementById("class-name");
+    const saveClassButton = document.getElementById("save-class");
+    const savedClassesContainer = document.getElementById("saved-classes");
+
+    let savedClasses = {};
+    let savedClassNames = [];
+    let validSelection = false;
+
+    // Aggiungi questo event listener per l'input
+    classNameInput.addEventListener("input", () => {
+      saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
+    });
+
+    // Gestione dei messaggi
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      console.log("UI ricevuto messaggio:", msg); // Debug
+
+      if (msg.type === "selection-changed") {
+        validSelection = msg.validSelection;
+        console.log("Selection state updated:", validSelection);
+        saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
+      }
+
+      else if (msg.type === "display-saved-classes") {
+        console.log("Ricevuto display-saved-classes:", msg); // Debug
+        validSelection = msg.validSelection;
+        savedClasses = msg.savedClasses || {};
+        savedClassNames = msg.savedClassNames || [];
+        updateSavedClasses(savedClasses, savedClassNames);
+        saveClassButton.disabled = !validSelection || !classNameInput.value.trim();
+      }
+
+      else if (msg.type === 'download-json') {
+        try {
+          const blob = new Blob([msg.content], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = msg.filename;
+          a.click();
+          
+          // Pulizia della risorsa
+          URL.revokeObjectURL(url);
+          
+        } catch (error) {
+          console.error("Errore durante il download:", error);
+          parent.postMessage({ 
+            pluginMessage: { 
+              type: 'export-error',
+              error: error.message 
+            } 
+          }, '*');
+        }
+      }
+    };
+
+    // Aggiungi l'event listener per il pulsante "Salva Classe"
+    saveClassButton.addEventListener("click", () => {
+      const className = classNameInput.value.trim();
+      if (className) {
+        parent.postMessage(
+          { pluginMessage: { type: "save-class", className } },
+          "*"
+        );
+        classNameInput.value = "";
+        saveClassButton.disabled = true;
+      }
+    });
+
+    // Aggiungi la funzione di ricerca
+    const searchInput = document.getElementById("search-classes");
+    const clearSearchButton = document.getElementById("clear-search");
+    let filteredClassNames = [...savedClassNames];
+
+    // Funzione per gestire la visibilità del pulsante di cancellazione
+    function updateClearButtonVisibility() {
+      const hasValue = searchInput.value.length > 0;
+      clearSearchButton.classList.toggle('visible', hasValue);
     }
-  }
 
-  function deleteClass(className) {
-    window.parent.postMessage({ pluginMessage: { type: 'delete-class', className } }, '*');
-  }
+    // Event listener per l'input di ricerca
+    searchInput.addEventListener("input", (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      updateClearButtonVisibility();
+      
+      filteredClassNames = savedClassNames.filter(className => {
+        const properties = savedClasses[className];
+        const formattedProps = formatClassProperties(properties).toLowerCase();
+        
+        return className.toLowerCase().includes(searchTerm) || 
+               formattedProps.includes(searchTerm);
+      });
+      
+      updateSavedClasses(savedClasses, filteredClassNames);
+    });
 
-  function applyClass(className) {
-    window.parent.postMessage({ pluginMessage: { type: 'apply-class', className } }, '*');
-  }
+    // Event listener per il pulsante di cancellazione
+    clearSearchButton.addEventListener("click", () => {
+      searchInput.value = "";
+      searchInput.focus();
+      updateClearButtonVisibility();
+      filteredClassNames = [...savedClassNames];
+      updateSavedClasses(savedClasses, filteredClassNames);
+    });
 
-  function startEditingClassName(oldName) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    classDiv.querySelector('.class-name').style.display = 'none';
-    classDiv.querySelector('.input__field').style.display = 'inline';
-    classDiv.querySelector('.input__field').focus();
-    classDiv.querySelector('.rename-btn').style.display = 'none';
-    classDiv.querySelector('.save-btn').style.display = 'inline';
-    classDiv.querySelector('.cancel-btn').style.display = 'inline';
+    // Modifica la funzione updateSavedClasses per usare le classi filtrate
+    function updateSavedClasses(savedClasses, classNames) {
+      console.log("Aggiornamento UI con classi:", savedClasses);
+      console.log("Nomi classi:", classNames);
+      
+      savedClassesContainer.innerHTML = "";
+      const applyAllContainer = document.getElementById("apply-all-container");
 
-    // Hide Apply and Delete buttons
-    classDiv.querySelector('.button--primary').style.display = 'none';
-    classDiv.querySelector('.button--secondary-destructive').style.display = 'none';
-  }
+      if (savedClassNames.length > 0) {
+        applyAllContainer.classList.add("visible");
+      } else {
+        applyAllContainer.classList.remove("visible");
+      }
 
-  function cancelEditingClassName(oldName) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    classDiv.querySelector('.class-name').style.display = 'inline';
-    classDiv.querySelector('.input__field').style.display = 'none';
-    classDiv.querySelector('.rename-btn').style.display = 'inline';
-    classDiv.querySelector('.save-btn').style.display = 'none';
-    classDiv.querySelector('.cancel-btn').style.display = 'none';
+      if (classNames.length === 0) {
+        const noResults = document.createElement("div");
+        noResults.className = "no-results";
+        noResults.textContent = searchInput.value ? "Nessun risultato trovato" : "Nessuna classe salvata";
+        savedClassesContainer.appendChild(noResults);
+        return;
+      }
 
-    // Show Apply and Delete buttons
-    classDiv.querySelector('.button--primary').style.display = 'inline';
-    classDiv.querySelector('.button--secondary-destructive').style.display = 'inline';
-  }
+      classNames.forEach((className) => {
+        const classItem = document.createElement("div");
+        classItem.className = "class-item";
 
-  function saveEditedClassName(oldName) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    const newName = classDiv.querySelector('.input__field').value.trim();
-    if (newName === '') {
-      window.parent.postMessage({ pluginMessage: { type: 'empty-class-name' } }, '*');
-    } else {
-      window.parent.postMessage({ pluginMessage: { type: 'rename-class', className: oldName, newClassName: newName } }, '*');
-    }
-  }
+        const classNameSpan = document.createElement("span");
+        classNameSpan.className = "class-name";
+        classNameSpan.textContent = className;
 
-  function renameClass(oldName) {
-    startEditingClassName(oldName);
-  }
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "class-actions";
 
-  function handleInputChange(oldName, input) {
-    const classDiv = document.getElementById(`classDiv-${oldName}`);
-    const saveButton = classDiv.querySelector('.save-btn');
+        // Bottone Applica
+        const applyButton = document.createElement("button");
+        applyButton.textContent = "Applica";
+        applyButton.className = "button button--primary";
+        applyButton.addEventListener("click", () => applyClass(className));
 
-    // Enable the Save button only when the input value is different from the original class name
-    saveButton.disabled = input.value.trim() === oldName;
-  }
+        // Bottone Menu
+        const menuButton = document.createElement("button");
+        menuButton.className = "button button--small icon-button button--icon-only";
+        menuButton.innerHTML = '<span class="icon icon--ellipses"></span>';
+        menuButton.addEventListener("click", (e) => showDropdownMenu(e, className));
 
-  onmessage = (event) => {
-    const { type, savedClasses, savedClassNames, validSelection } = event.data.pluginMessage;
-    const classList = document.getElementById('classList');
-    classList.innerHTML = '';
-
-    // Handle the initial state of the input field and the selection message
-    const classNameInput = document.getElementById('className');
-    const selectFrameMessage = document.getElementById('selectFrameMessage');
-    const saveClassButton = document.querySelector('.button--primary');
-    if (validSelection) {
-      classNameInput.style.display = 'inline';
-      selectFrameMessage.style.display = 'none';
-      saveClassButton.disabled = false;
-    } else {
-      classNameInput.style.display = 'none';
-      selectFrameMessage.style.display = 'inline';
-      saveClassButton.disabled = true;
-    }
-
-    if (type === 'display-saved-classes') {
-      savedClassNames.forEach((className) => {
-        const classDiv = document.createElement('div');
-        classDiv.id = `classDiv-${className}`;
-        classDiv.innerHTML = `
-                  <div class="class__actions">
-                      <span class="class-name">${className}</span>
-                      <input class="input__field" type="text" value="${className}" style="display:none;" oninput="handleInputChange('${className}', this)" />
-                            <div class="button__group">
-                                <button class="button button--primary" onclick="applyClass('${className}')">Apply</button>
-                                <button class="button button--secondary rename-btn" onclick="renameClass('${className}')">Rename</button>
-                                <button class="button button--secondary-destructive delete-btn" onclick="deleteClass('${className}')">Delete</button>
-                                <button class="button button--secondary save-btn" onclick="saveEditedClassName('${className}')" style="display:none;" disabled>Save</button>
-                                <button class="button button--secondary cancel-btn" onclick="cancelEditingClassName('${className}')" style="display:none;">Cancel</button>
-                            </div>
-                  </div>
-                  `;
-        classList.appendChild(classDiv);
+        actionsDiv.append(applyButton, menuButton);
+        classItem.append(classNameSpan, actionsDiv);
+        savedClassesContainer.appendChild(classItem);
       });
     }
-  };
-</script>
+
+    // Funzioni per le azioni
+    function deleteClass(className) {
+      document.body.classList.add('modal-open');
+      
+      // Riferimenti agli elementi
+      const deleteModal = document.getElementById("delete-modal");
+      const deleteCancel = document.getElementById("delete-cancel");
+      const deleteConfirm = document.getElementById("delete-confirm");
+      const overlay = document.getElementById("overlay");
+
+      // Funzione per aprire la modale
+      const openModal = () => {
+        deleteModal.style.display = "block";
+        overlay.style.display = "block";
+        document.body.style.overflow = "hidden"; // Disabilita lo scroll
+      };
+
+      // Rimuovi gli event listener esistenti
+      const cleanupListeners = () => {
+        deleteCancel.removeEventListener("click", closeModal);
+        overlay.removeEventListener("click", closeModal);
+        deleteConfirm.removeEventListener("click", handleConfirm);
+      };
+
+      // Funzione per gestire la conferma
+      const handleConfirm = () => {
+        console.log(`Elimina classe "${className}"`);
+        parent.postMessage(
+          { pluginMessage: { type: "delete-class", className } },
+          "*"
+        );
+        closeModal();
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Modifica la funzione closeModal per pulire i listener
+      const closeModal = () => {
+        deleteModal.style.display = "none";
+        overlay.style.display = "none";
+        document.body.style.overflow = "auto";
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Aggiungi i nuovi event listener
+      deleteCancel.addEventListener("click", closeModal);
+      overlay.addEventListener("click", closeModal);
+      deleteConfirm.addEventListener("click", handleConfirm);
+
+      // Mostra la modale
+      openModal();
+    }
+
+    function applyClass(className) {
+      parent.postMessage(
+        { pluginMessage: { type: "apply-class", className } },
+        "*"
+      );
+    }
+
+    function renameClass(oldClassName) {
+      document.body.classList.add('modal-open');
+      
+      // Riferimenti agli elementi
+      const renameModal = document.getElementById("rename-modal");
+      const renameInput = document.getElementById("rename-input");
+      const renameCancel = document.getElementById("rename-cancel");
+      const renameConfirm = document.getElementById("rename-confirm");
+      const overlay = document.getElementById("overlay");
+
+      // Funzione per aprire la modale
+      const openModal = () => {
+        renameModal.style.display = "block";
+        overlay.style.display = "block";
+        document.body.style.overflow = "hidden"; // Disabilita lo scroll
+        renameInput.value = oldClassName; // Precompila l'input con il nome attuale
+        renameInput.focus(); // Focalizza l'input per consentire subito la modifica
+        renameInput.select(); // Seleziona tutto il testo per facilitarne l'editing
+      };
+
+      // Rimuovi gli event listener esistenti
+      const cleanupListeners = () => {
+        renameCancel.removeEventListener("click", closeModal);
+        overlay.removeEventListener("click", closeModal);
+        renameConfirm.removeEventListener("click", handleConfirm);
+      };
+
+      // Funzione per gestire la conferma
+      const handleConfirm = () => {
+        const newClassName = renameInput.value.trim();
+
+        if (!newClassName || newClassName === oldClassName) {
+          alert("Nome non valido o uguale al precedente!");
+          return;
+        }
+
+        console.log(`Rinominare "${oldClassName}" in "${newClassName}"`);
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "rename-class",
+              oldClassName,
+              newClassName,
+            },
+          },
+          "*"
+        );
+
+        closeModal();
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Modifica la funzione closeModal per pulire i listener
+      const closeModal = () => {
+        renameModal.style.display = "none";
+        overlay.style.display = "none";
+        document.body.style.overflow = "auto";
+        cleanupListeners(); // Rimuovi i listener dopo la chiusura
+      };
+
+      // Aggiungi i nuovi event listener
+      renameCancel.addEventListener("click", closeModal);
+      overlay.addEventListener("click", closeModal);
+      renameConfirm.addEventListener("click", handleConfirm);
+
+      // Mostra la modale
+      openModal();
+    }
+
+    function showDropdownMenu(event, className) {
+      // Rimuovi menu esistenti e overlay aperti
+      const existingMenu = document.querySelector(".dropdown-menu");
+      const existingModals = document.querySelectorAll(".modal");
+      
+      // Se esiste già un menu e l'evento viene dallo stesso bottone, chiudilo e esci
+      if (existingMenu && event.target.closest('.icon-button').contains(existingMenu.triggerButton)) {
+        closeDropdownMenu(existingMenu);
+        return;
+      }
+      
+      if (existingMenu) closeDropdownMenu(existingMenu);
+      existingModals.forEach(modal => modal.style.display = "none");
+      document.body.classList.remove('modal-open'); // Rimuovi la classe quando chiudi le modali
+
+      const menu = document.createElement("div");
+      menu.className = "dropdown-menu";
+      // Salva il riferimento al bottone che ha triggerato questo menu
+      menu.triggerButton = event.target.closest('.icon-button');
+      
+      console.log("Showing menu, valid selection:", validSelection); // Debug
+      
+      const menuItems = [
+        { 
+          text: "Info", 
+          action: () => {
+            menu.remove();
+            showClassInfo(className);
+          },
+          icon: '<span class="icon icon--library"></span>'
+        },
+        { 
+          text: "Rinomina", 
+          action: () => {
+            menu.remove();
+            renameClass(className);
+          },
+          icon: '<span class="icon icon--adjust"></span>'
+        },
+        { 
+          text: "Aggiorna", 
+          action: () => {
+            menu.remove();
+            showUpdateConfirmation(className);
+          },
+          disabled: !validSelection,
+          icon: '<span class="icon icon--swap"></span>'
+        },
+        { type: "divider" },
+        { 
+          text: "Elimina", 
+          action: () => {
+            menu.remove();
+            deleteClass(className);
+          },
+          class: "menu-item--destructive",
+          icon: '<span class="icon icon--trash"></span>'
+        }
+      ];
+
+      menuItems.forEach(item => {
+        if (item.type === "divider") {
+          const divider = document.createElement("hr");
+          divider.className = "dropdown-divider";
+          menu.appendChild(divider);
+        } else {
+          const button = document.createElement("button");
+          button.innerHTML = `
+            <span class="menu-item-icon">${item.icon}</span>
+            <span class="menu-item-text">${item.text}</span>
+          `;
+          
+          if (item.disabled) {
+            button.disabled = true;
+            button.classList.add("menu-item--disabled");
+          }
+          
+          if (item.class) {
+            button.classList.add(item.class);
+          }
+          
+          button.onclick = item.action;
+          menu.appendChild(button);
+        }
+      });
+
+      // Posizionamento del menu
+      const button = event.target.closest('.icon-button');
+      const buttonRect = button.getBoundingClientRect();
+      
+      document.body.appendChild(menu);
+      
+      // Calcola le dimensioni del menu dopo averlo aggiunto al DOM
+      const menuRect = menu.getBoundingClientRect();
+      
+      // Calcola lo spazio disponibile sopra e sotto il bottone
+      const spaceAbove = buttonRect.top;
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      
+      // Determina se il menu deve essere posizionato sopra o sotto
+      const shouldPositionAbove = spaceBelow < menuRect.height && spaceAbove > spaceBelow;
+      
+      menu.style.position = 'fixed';
+      
+      if (shouldPositionAbove) {
+        menu.style.bottom = `${window.innerHeight - buttonRect.top + 2}px`;
+        menu.classList.add('position-above');
+      } else {
+        menu.style.top = `${buttonRect.bottom + 2}px`;
+      }
+      
+      // Calcola la posizione orizzontale
+      const rightPosition = window.innerWidth - buttonRect.right;
+      const menuOverflowsLeft = rightPosition + menuRect.width > window.innerWidth;
+      
+      if (menuOverflowsLeft) {
+        menu.style.left = '16px';
+      } else {
+        menu.style.right = `${rightPosition}px`;
+      }
+      
+      menu.style.zIndex = '100';
+
+      // Trigger reflow per attivare l'animazione
+      menu.offsetHeight;
+      
+      // Aggiungi la classe show per avviare l'animazione
+      requestAnimationFrame(() => {
+        menu.classList.add('show');
+      });
+
+      // Chiudi il menu quando si clicca fuori
+      setTimeout(() => {
+        document.addEventListener("click", function closeMenu(e) {
+          if (!menu.contains(e.target)) {
+            closeDropdownMenu(menu);
+            document.removeEventListener("click", closeMenu);
+          }
+        });
+      }, 0);
+    }
+
+    function closeDropdownMenu(menu) {
+      menu.classList.add('closing');
+      menu.classList.remove('show');
+      
+      // Rimuovi il menu dopo che l'animazione è completata
+      menu.addEventListener('transitionend', () => {
+        menu.remove();
+      }, { once: true });
+    }
+
+    function formatClassProperties(properties) {
+      if (!properties) return 'No properties available';
+
+      const formatters = {
+        fills: (fills) => {
+          if (!fills || !fills.length) return null;
+          const fill = fills[0];
+          if (fill.type === "SOLID") {
+            return `background: ${formatColor(fill)}`;
+          }
+          return null;
+        },
+        strokes: (strokes) => {
+          if (!strokes || !strokes.length) return null;
+          const stroke = strokes[0];
+          if (stroke.type === "SOLID") {
+            return `border-color: ${formatColor(stroke)}`;
+          }
+          return null;
+        },
+        strokeWeight: (weight) => {
+          if (!weight || weight === 0) return null;
+          return `border-width: ${weight}px`;
+        },
+        layoutMode: (mode) => {
+          if (mode === "NONE") return null;
+          return `display: flex\nflex-direction: ${mode.toLowerCase() === "HORIZONTAL" ? "row" : "column"}`;
+        },
+        primaryAxisAlignItems: (align) => {
+          if (!align || align === "NONE") return null;
+          const alignMap = {
+            MIN: "flex-start",
+            CENTER: "center",
+            MAX: "flex-end",
+            SPACE_BETWEEN: "space-between"
+          };
+          return `justify-content: ${alignMap[align] || align.toLowerCase()}`;
+        },
+        counterAxisAlignItems: (align) => {
+          if (!align || align === "NONE") return null;
+          const alignMap = {
+            MIN: "flex-start",
+            CENTER: "center",
+            MAX: "flex-end"
+          };
+          return `align-items: ${alignMap[align] || align.toLowerCase()}`;
+        },
+        cornerRadius: (radius) => {
+          if (!radius) return null;
+          return `border-radius: ${radius}px`;
+        },
+        opacity: (opacity) => {
+          if (opacity === 1) return null;
+          return `opacity: ${opacity}`;
+        }
+      };
+
+      const formattedProps = Object.entries(properties)
+        .map(([key, value]) => {
+          const formatter = formatters[key];
+          if (!formatter) return null;
+          return formatter(value);
+        })
+        .filter(Boolean);
+
+      return formattedProps.join(';\n');
+    }
+
+    function formatColor(fill) {
+      if (!fill || !fill.type || !fill.color) return 'none';
+      
+      if (fill.type === "SOLID") {
+        const { r, g, b } = fill.color;
+        const toHex = n => Math.round(n * 255).toString(16).padStart(2, '0');
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      }
+      
+      return 'none';
+    }
+
+    function showClassInfo(className) {
+      document.body.classList.add('modal-open');
+      
+      const closeModal = () => {
+        document.body.classList.remove('modal-open');
+        infoModal.style.display = "none";
+        overlay.style.display = "none";
+      };
+      
+      console.log('showClassInfo called for:', className); // Debug
+
+      const properties = savedClasses[className];
+      const infoModal = document.getElementById("info-modal");
+      const classInfo = document.getElementById("class-info");
+      const closeButton = document.getElementById("info-close");
+      const copyButton = document.getElementById("copy-button");
+      const overlay = document.getElementById("overlay");
+
+      if (!infoModal || !classInfo || !closeButton || !copyButton || !overlay) {
+        console.error('Some elements not found:', { 
+          infoModal: !!infoModal, 
+          classInfo: !!classInfo, 
+          closeButton: !!closeButton, 
+          copyButton: !!copyButton, 
+          overlay: !!overlay 
+        });
+        return;
+      }
+
+      // Formatta le proprietà in modo leggibile
+      const formattedInfo = formatClassProperties(properties);
+      console.log('Formatted info:', formattedInfo); // Debug
+
+      classInfo.textContent = formattedInfo;
+
+      // Mostra la modale e l'overlay
+      infoModal.style.display = "block";
+      overlay.style.display = "block";
+
+      // Gestisci la chiusura
+      closeButton.onclick = closeModal;
+      overlay.onclick = closeModal;
+
+      // Gestisci la copia
+      copyButton.onclick = () => {
+        const textToCopy = classInfo.textContent || '';
+        
+        // Invia un messaggio al codice principale di Figma per copiare il testo
+        parent.postMessage(
+          { 
+            pluginMessage: { 
+              type: "copy-to-clipboard", 
+              text: textToCopy 
+            } 
+          }, 
+          "*"
+        );
+        
+        // Rimuovi il focus dal bottone
+        copyButton.blur();
+      };
+    }
+
+    function showUpdateConfirmation(className) {
+      document.body.classList.add('modal-open');
+      
+      const closeModal = () => {
+        document.body.classList.remove('modal-open');
+        updateModal.style.display = "none";
+        overlay.style.display = "none";
+      };
+      
+      console.log('Showing update confirmation for:', className); // Debug
+
+      const updateModal = document.getElementById("update-modal");
+      const classNameSpan = document.getElementById("update-class-name");
+      const currentPropertiesEl = document.getElementById("current-properties");
+      const newPropertiesEl = document.getElementById("new-properties");
+      const cancelButton = document.getElementById("update-cancel");
+      const confirmButton = document.getElementById("update-confirm");
+      const overlay = document.getElementById("overlay");
+
+      // Verifica che tutti gli elementi esistano
+      if (!updateModal || !classNameSpan || !currentPropertiesEl || !newPropertiesEl || !cancelButton || !confirmButton || !overlay) {
+        console.error('Elementi mancanti nella modale di aggiornamento');
+        return;
+      }
+
+      // Formatta le proprietà attuali
+      const currentProperties = savedClasses[className];
+      const currentFormatted = formatClassProperties(currentProperties);
+      currentPropertiesEl.textContent = currentFormatted;
+      classNameSpan.textContent = className;
+      
+      // Funzione per gestire i messaggi
+      const handleMessage = (event) => {
+        const msg = event.data.pluginMessage;
+        console.log('Received message:', msg); // Debug
+
+        if (msg.type === "selection-error") {
+          figma.notify(msg.message);
+          closeModal();
+          return;
+        }
+
+        if (msg.type === "selection-properties") {
+          const newProperties = msg.properties;
+          const newFormatted = formatClassProperties(newProperties);
+          newPropertiesEl.textContent = newFormatted;
+
+          // Mostra la modale solo dopo aver ricevuto le proprietà
+          updateModal.style.display = "block";
+          overlay.style.display = "block";
+        }
+      };
+
+      // Rimuovi eventuali listener precedenti
+      window.removeEventListener('message', handleMessage);
+      // Aggiungi il nuovo listener
+      window.addEventListener('message', handleMessage);
+
+      // Gestisci i click sui pulsanti
+      confirmButton.onclick = () => {
+        // Mostra dialogo di conferma
+        if (confirm(`Sei sicuro di voler aggiornare la classe "${className}"? Questa azione non può essere annullata.`)) {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "update-class",
+                className,
+              },
+            },
+            "*"
+          );
+          closeModal();
+        }
+      };
+
+      cancelButton.onclick = closeModal;
+      overlay.onclick = closeModal;
+
+      // Richiedi le proprietà della selezione corrente
+      console.log('Requesting selection properties'); // Debug
+      parent.postMessage(
+        { pluginMessage: { type: "get-selection-properties" } },
+        "*"
+      );
+    }
+
+    // Aggiungi l'event listener per il pulsante "Applica a tutti"
+    document.getElementById("apply-all-classes").addEventListener("click", () => {
+      parent.postMessage(
+        { pluginMessage: { type: "apply-classes-to-all" } },
+        "*"
+      );
+    });
+
+    // Gestione Export
+    document.getElementById('export-button').addEventListener('click', () => {
+      console.log("Click sul pulsante export"); // Debug
+      
+      if (!savedClassNames || savedClassNames.length === 0) {
+        console.log("Nessuna classe da esportare");
+        return;
+      }
+
+      try {
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'export-classes' 
+          } 
+        }, '*');
+        console.log("Richiesta di export inviata al plugin"); // Debug
+      } catch (error) {
+        console.error("Errore nell'invio del messaggio:", error);
+      }
+    });
+
+    // Gestione Import
+    document.getElementById('import-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const jsonData = event.target.result;
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'import-classes',
+            jsonData 
+          } 
+        }, '*');
+      };
+      reader.readAsText(file);
+    });
+  </script>
+
+</body>
+
+</html>

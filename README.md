@@ -1,40 +1,92 @@
-Below are the steps to get your plugin running. You can also find instructions at:
+# Class Action - Figma Plugin
 
-  https://www.figma.com/plugin-docs/plugin-quickstart/
+A powerful Figma plugin that allows you to save, manage, and reuse frame styles as reusable classes across your design system.
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+## Features
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+- 💾 **Save Frame Styles as Classes**: Capture and store frame properties as reusable classes
+- 🔄 **Apply Classes**: Quickly apply saved styles to other frames
+- 📤 **Export/Import**: Share your classes across different files or with team members
+- 🔄 **Batch Apply**: Apply classes to all matching frames in your current page
+- ✏️ **Class Management**: Rename, update, or delete saved classes
+- 📊 **Usage Statistics**: Track how often classes are used and by whom
+- 🔍 **Search & Filter**: Find classes by name or properties
 
-  https://nodejs.org/en/download/
+## Installation
 
-Next, install TypeScript using the command:
+1. Open Figma
+2. Go to Menu > Plugins > Development > Import plugin from manifest
+3. Select the `manifest.json` file from this repository
 
-  npm install -g typescript
+## Usage
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+### Saving a Class
+1. Select a frame in your Figma file
+2. Open the Class Action plugin
+3. Enter a name for your class
+4. Click "Save Class"
 
-  npm install --save-dev @figma/plugin-typings
+### Applying a Class
+1. Select a target frame
+2. Open the plugin
+3. Click "Apply" next to the class you want to use
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
+### Exporting Classes
+1. Open the plugin
+2. Click the "Export Classes" button
+3. Choose where to save the JSON file
 
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
+### Importing Classes
+1. Open the plugin
+2. Click "Import Classes"
+3. Select your previously exported JSON file
 
-For more information, visit https://www.typescriptlang.org/
+## Development
 
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
+### Prerequisites
+- Node.js (Latest LTS version)
+- TypeScript
+- Figma Desktop App
 
-We recommend writing TypeScript code using Visual Studio code:
+### Setup
+1. Clone this repository
+2. Install dependencies:
+```bash
+npm install
+```
 
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "npm: watch". You will have to do this again every time
-    you reopen Visual Studio Code.
+3. Build the plugin:
+```bash
+npm run build
+```
 
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+4. To watch for changes during development:
+```bash
+npm run watch
+```
+
+### Project Structure
+- `code.ts`: Main plugin logic
+- `ui.html`: Plugin UI implementation
+- `manifest.json`: Plugin configuration
+- `package.json`: Project dependencies
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the terms specified in the `package.json` file.
+
+## Version History
+
+- 1.0.0: Initial release
+  - Basic class saving and applying functionality
+  - Import/Export feature
+  - Class management tools
+
+## Acknowledgments
+
+- Built with [Figma Plugin DS](https://github.com/thomas-lowry/figma-plugin-ds)
+- Developed for the Figma community
