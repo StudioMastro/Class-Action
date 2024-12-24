@@ -249,77 +249,36 @@
       filter: invert(43%) sepia(56%) saturate(5632%) hue-rotate(349deg) brightness(97%) contrast(95%);
     }
 
-    /* Stili per la modale Info */
-    .info-modal-content {
-      max-width: 500px;
-    }
-
-    .code-block-container {
-      position: relative;
-      background: #f5f5f5;
-      border-radius: 4px;
-      padding: 16px;
-    }
-
-    .code-block-container .icon-button {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-    }
-
-    .code-block {
-      font-family: monospace;
-      white-space: pre-wrap;
-      margin-right: 32px;
-    }
-
-    #overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-    }
-
-    #info-modal {
-      z-index: 1001;
-      background: white;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    }
-
+    /* Stili per la modale */
     .modal {
-      z-index: 1001;
-      background: white;
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      background: white;
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
       width: 90%;
       max-width: 800px;
-      height: 90vh;
+      max-height: 90vh;
       display: flex;
       flex-direction: column;
-      padding: 0;
-      overflow: hidden;
+      z-index: 1001;
+      overflow: hidden; /* Importante per contenere lo scroll */
     }
 
     .modal-content {
       flex: 1;
       overflow-y: auto;
-      padding: 24px;
+      min-height: 0; /* Importante per il flex container */
     }
 
     .modal-header {
-      margin-bottom: 24px;
+      padding: 24px 24px 0;
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     .modal-header h3 {
@@ -329,14 +288,14 @@
 
     .modal-header p {
       color: var(--figma-color-text-secondary);
-      margin: 0;
+      margin: 0 0 24px 0;
     }
 
     .properties-comparison {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
-      padding-bottom: 80px;
+      padding: 0 24px 24px;
     }
 
     .properties-column {
@@ -356,46 +315,21 @@
       border: 1px solid var(--figma-color-border);
       border-radius: 6px;
       padding: 16px;
+      overflow-y: auto;
+      max-height: 50vh;
     }
 
     .code-block {
       font-family: 'SF Mono', 'Roboto Mono', monospace;
       font-size: 12px;
-      line-height: 1.2;
+      line-height: 1.4;
       margin: 0;
       white-space: pre-wrap;
       word-break: break-all;
     }
 
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 12px;
-      padding-top: 16px;
-      border-top: 1px solid var(--figma-color-border);
-    }
-
-    .dropdown-menu button:disabled,
-    .menu-item--disabled {
-      cursor: not-allowed;
-      background-color: white !important;
-      color: var(--black3-opaque) !important;
-    }
-
-    .dropdown-menu button:disabled .menu-item-icon,
-    .menu-item--disabled .menu-item-icon {
-      color: var(--figma-color-text-disabled);
-    }
-
-    /* Rimuoviamo eventuali stili di hover per gli elementi disabilitati */
-    .dropdown-menu button:disabled:hover,
-    .menu-item--disabled:hover {
-      background: transparent; /* o white se preferisci */
-    }
-
     .modal-footer {
-      position: absolute;
+      position: sticky;
       bottom: 0;
       left: 0;
       right: 0;
@@ -406,8 +340,7 @@
       justify-content: flex-end;
       gap: 8px;
       box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-      border-bottom-left-radius: 8px;
-      border-bottom-right-radius: 8px;
+      z-index: 1;
     }
 
     .property-diff {
@@ -1211,16 +1144,48 @@
         opacity: (opacity) => {
           if (opacity === 1) return null;
           return `opacity: ${opacity}`;
-        }
+        },
+        paddingTop: (value) => value ? `padding-top: ${value}px` : null,
+        paddingRight: (value) => value ? `padding-right: ${value}px` : null,
+        paddingBottom: (value) => value ? `padding-bottom: ${value}px` : null,
+        paddingLeft: (value) => value ? `padding-left: ${value}px` : null,
+        itemSpacing: (value) => value ? `gap: ${value}px` : null
       };
 
-      const formattedProps = Object.entries(properties)
-        .map(([key, value]) => {
-          const formatter = formatters[key];
-          if (!formatter) return null;
-          return formatter(value);
-        })
-        .filter(Boolean);
+      // Gestione dei token
+      const tokenFormatters = {
+        fillsToken: (token) => `background: var(${token.name})`,
+        strokesToken: (token) => `border-color: var(${token.name})`,
+        strokeWeightToken: (token) => `border-width: var(${token.name})`,
+        cornerRadiusToken: (token) => `border-radius: var(${token.name})`,
+        paddingTopToken: (token) => `padding-top: var(${token.name})`,
+        paddingRightToken: (token) => `padding-right: var(${token.name})`,
+        paddingBottomToken: (token) => `padding-bottom: var(${token.name})`,
+        paddingLeftToken: (token) => `padding-left: var(${token.name})`,
+        itemSpacingToken: (token) => `gap: var(${token.name})`
+      };
+
+      const formattedProps = [];
+
+      // Prima processa i token
+      Object.entries(properties).forEach(([key, value]) => {
+        if (key.endsWith('Token') && tokenFormatters[key]) {
+          const formatted = tokenFormatters[key](value);
+          if (formatted) formattedProps.push(formatted);
+        }
+      });
+
+      // Poi processa le proprietà normali, ma solo se non c'è un token corrispondente
+      Object.entries(properties).forEach(([key, value]) => {
+        if (!key.endsWith('Token') && formatters[key]) {
+          const tokenKey = `${key}Token`;
+          // Processa la proprietà solo se non esiste un token corrispondente
+          if (!properties[tokenKey]) {
+            const formatted = formatters[key](value);
+            if (formatted) formattedProps.push(formatted);
+          }
+        }
+      });
 
       return formattedProps.join(';\n');
     }

@@ -52,17 +52,89 @@ function isValidSelection(): boolean {
   return nodes.length === 1 && nodes[0].type === "FRAME";
 }
 
+interface DesignProperties {
+  [key: string]: any;
+  fills?: ReadonlyArray<Paint> | null;
+  fillStyleId?: string | null;
+  strokes?: ReadonlyArray<Paint> | null;
+  strokeStyleId?: string | null;
+  strokeWeight?: number | null;
+  opacity?: number;
+  blendMode?: BlendMode;
+  cornerRadius?: number | null;
+  layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL";
+  primaryAxisSizingMode?: "FIXED" | "AUTO";
+  counterAxisSizingMode?: "FIXED" | "AUTO";
+  primaryAxisAlignItems?: "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN";
+  counterAxisAlignItems?: "MIN" | "CENTER" | "MAX" | "BASELINE";
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  itemSpacing?: number;
+  layoutGrow?: number;
+  layoutAlign?: "MIN" | "CENTER" | "MAX" | "INHERIT" | "STRETCH";
+  className?: string;
+}
+
+// Helper functions per controllare i tipi
+function isMixed(value: any): value is typeof figma.mixed {
+  return value === figma.mixed;
+}
+
+function isValidFills(fills: ReadonlyArray<Paint> | typeof figma.mixed | null): fills is ReadonlyArray<Paint> {
+  return fills !== null && !isMixed(fills);
+}
+
+function isValidNumber(value: number | typeof figma.mixed | null): value is number {
+  return typeof value === 'number' && !isMixed(value);
+}
+
+function isValidStyleId(id: string | typeof figma.mixed | null): id is string {
+  return typeof id === 'string' && !isMixed(id);
+}
+
 // Funzione per estrarre le proprietà di un frame
-function extractDesignProperties(node: FrameNode) {
-  const properties: any = {
-    fills: node.fills || null,
-    strokes: node.strokes || null,
-    strokeWeight: node.strokeWeight || null,
+function extractDesignProperties(node: FrameNode): DesignProperties {
+  const properties: DesignProperties = {
     opacity: node.opacity || 1,
     blendMode: node.blendMode || "NORMAL",
-    cornerRadius: node.cornerRadius || 0,
     layoutMode: node.layoutMode || "NONE",
   };
+
+  // Gestisci fills e strokes
+  if (isValidFills(node.fills)) {
+    properties.fills = [...node.fills]; // Crea una copia dell'array
+  }
+  if (isValidFills(node.strokes)) {
+    properties.strokes = [...node.strokes]; // Crea una copia dell'array
+  }
+
+  // Gestisci le proprietà numeriche
+  if (isValidNumber(node.strokeWeight)) {
+    properties.strokeWeight = node.strokeWeight;
+  }
+  if (isValidNumber(node.cornerRadius)) {
+    properties.cornerRadius = node.cornerRadius;
+  }
+
+  // Gestisci gli stili
+  if (isValidStyleId(node.fillStyleId)) {
+    properties.fillStyleId = node.fillStyleId;
+  }
+  if (isValidStyleId(node.strokeStyleId)) {
+    properties.strokeStyleId = node.strokeStyleId;
+  }
+
+  // Salva i token di design se presenti
+  if (node.boundVariables) {
+    // Salva i token per le proprietà di spacing
+    Object.entries(node.boundVariables).forEach(([key, value]: [string, VariableAlias | undefined]) => {
+      if (value) {
+        properties[`${key}Token`] = value;
+      }
+    });
+  }
 
   // Se il frame ha l'autolayout, salva tutte le proprietà relative
   if (node.layoutMode !== "NONE") {
@@ -84,42 +156,52 @@ function extractDesignProperties(node: FrameNode) {
 }
 
 // Funzione per applicare proprietà salvate a un frame
-function applyDesignProperties(node: FrameNode, properties: any) {
+function applyDesignProperties(node: FrameNode, properties: DesignProperties) {
   console.log('Applying properties:', properties); // Debug
 
-  // Proprietà base
-  if (properties.fills) node.fills = properties.fills;
-  if (properties.strokes) node.strokes = properties.strokes;
-  if (properties.strokeWeight) node.strokeWeight = properties.strokeWeight;
-  if (properties.opacity) node.opacity = properties.opacity;
-  if (properties.blendMode) node.blendMode = properties.blendMode;
-  if (properties.cornerRadius) node.cornerRadius = properties.cornerRadius;
-  
-  // Imposta prima il layoutMode
-  if (properties.layoutMode) {
-    node.layoutMode = properties.layoutMode;
-    
-    // Se c'è l'autolayout, applica tutte le proprietà relative
-    if (properties.layoutMode !== "NONE") {
-      node.primaryAxisSizingMode = properties.primaryAxisSizingMode || "AUTO";
-      node.counterAxisSizingMode = properties.counterAxisSizingMode || "AUTO";
-      node.primaryAxisAlignItems = properties.primaryAxisAlignItems || "MIN";
-      node.counterAxisAlignItems = properties.counterAxisAlignItems || "MIN";
-      
-      // Applica padding e gap solo se sono definiti
-      if (typeof properties.paddingTop === 'number') node.paddingTop = properties.paddingTop;
-      if (typeof properties.paddingRight === 'number') node.paddingRight = properties.paddingRight;
-      if (typeof properties.paddingBottom === 'number') node.paddingBottom = properties.paddingBottom;
-      if (typeof properties.paddingLeft === 'number') node.paddingLeft = properties.paddingLeft;
-      if (typeof properties.itemSpacing === 'number') node.itemSpacing = properties.itemSpacing;
-      
-      if (properties.layoutGrow) node.layoutGrow = properties.layoutGrow;
-      if (properties.layoutAlign) node.layoutAlign = properties.layoutAlign;
-    }
+  // Applica gli stili prima dei valori assoluti
+  if (properties.fillStyleId) {
+    node.fillStyleId = properties.fillStyleId;
+  } else if (properties.fills) {
+    node.fills = properties.fills;
   }
 
+  if (properties.strokeStyleId) {
+    node.strokeStyleId = properties.strokeStyleId;
+  } else if (properties.strokes) {
+    node.strokes = properties.strokes;
+  }
+
+  // Applica le altre proprietà
+  Object.entries(properties).forEach(([key, value]: [string, any]) => {
+    // Salta le proprietà già gestite
+    if (key === 'fills' || key === 'fillStyleId' || key === 'strokes' || key === 'strokeStyleId') {
+      return;
+    }
+
+    // Se è un token
+    if (key.endsWith('Token')) {
+      const propertyName = key.replace('Token', '') as VariableBindableNodeField;
+      try {
+        node.setBoundVariable(propertyName, value);
+      } catch (error) {
+        console.error(`Errore nell'applicazione del token per ${propertyName}:`, error);
+      }
+    } 
+    // Se è un valore normale
+    else if (key !== 'className' && value !== null) {
+      try {
+        (node as any)[key] = value;
+      } catch (error) {
+        console.error(`Errore nell'applicazione della proprietà ${key}:`, error);
+      }
+    }
+  });
+
   // Salva il nome della classe come metadato
-  node.setPluginData('className', properties.className);
+  if (properties.className) {
+    node.setPluginData('className', properties.className);
+  }
 }
 
 // Funzione per applicare le classi a tutti i frame

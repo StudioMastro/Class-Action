@@ -1,11 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "lib": ["es2016"],
-    "module": "commonjs",
-    "strict": true,
-    "esModuleInterop": true,
-    "typeRoots": ["./node_modules/@types", "./node_modules"],
-    "types": ["@figma/plugin-typings"]
+    "target": "ES2017",
+    "lib": ["ES2017"],
+    "typeRoots": ["./node_modules/@figma", "./node_modules/@types"],
+    "moduleResolution": "node"
   }
 }
