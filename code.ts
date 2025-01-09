@@ -129,10 +129,12 @@ function extractDesignProperties(node: FrameNode): DesignProperties {
   // Salva i token di design se presenti
   if (node.boundVariables) {
     // Salva i token per le proprietà di spacing
-    Object.entries(node.boundVariables).forEach(([key, value]: [string, VariableAlias | undefined]) => {
-      if (value) {
+    Object.entries(node.boundVariables).forEach(([key, value]) => {
+      if (value && typeof value === 'object' && 'type' in value) {
+        // Handle single VariableAlias
         properties[`${key}Token`] = value;
       }
+      // Ignore other cases for now
     });
   }
 
