@@ -9,7 +9,8 @@ $excludedDirs = @(
     ".next",
     "dist",
     ".vscode",
-    "coverage"
+    "coverage",
+    ".Trash"  # Aggiungiamo .Trash alla lista delle directory da escludere
 )
 
 # Directory descriptions
@@ -34,31 +35,36 @@ function Get-FormattedDirectory {
     $indentString = "    " * $indent
     $content = ""
 
-    foreach ($item in Get-ChildItem -Path $path -Force) {
-        # Skip excluded directories
-        if ($item.PSIsContainer -and $excludedDirs -contains $item.Name) {
-            continue
-        }
+    try {
+        foreach ($item in Get-ChildItem -Path $path -Force -ErrorAction SilentlyContinue) {
+            # Skip excluded directories
+            if ($item.PSIsContainer -and ($excludedDirs -contains $item.Name -or $item.Name.StartsWith("."))) {
+                continue
+            }
 
-        if ($item.PSIsContainer) {
-            # Add directory with description if available
-            $dirName = $item.Name
-            $description = $dirDescriptions[$dirName]
-            if ($description) {
-                $content += "$indentString- **$dirName/** - $description`n"
+            if ($item.PSIsContainer) {
+                # Add directory with description if available
+                $dirName = $item.Name
+                $description = $dirDescriptions[$dirName]
+                if ($description) {
+                    $content += "$indentString- **$dirName/** - $description`n"
+                } else {
+                    $content += "$indentString- **$dirName/**`n"
+                }
+                # Recursively process subdirectories
+                $content += Get-FormattedDirectory -path $item.FullName -indent ($indent + 1)
             } else {
-                $content += "$indentString- **$dirName/**`n"
-            }
-            # Recursively process subdirectories
-            $content += Get-FormattedDirectory -path $item.FullName -indent ($indent + 1)
-        } else {
-            # Only show specific file types
-            $allowedExtensions = @(".ts", ".tsx", ".js", ".jsx", ".json", ".md", ".css", ".scss")
-            if ($allowedExtensions -contains $item.Extension) {
-                $content += "$indentString- $($item.Name)`n"
+                # Only show specific file types
+                $allowedExtensions = @(".ts", ".tsx", ".js", ".jsx", ".json", ".md", ".css", ".scss")
+                if ($allowedExtensions -contains $item.Extension) {
+                    $content += "$indentString- $($item.Name)`n"
+                }
             }
         }
+    } catch {
+        Write-Warning "Skipping inaccessible path: $path"
     }
+    
     return $content
 }
 
