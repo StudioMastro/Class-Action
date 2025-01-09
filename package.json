@@ -1,16 +1,24 @@
 {
   "name": "class-action",
   "version": "0.2.0",
-  "description": "Plugin Figma per la gestione delle classi di stile",
-  "main": "code.js",
+  "description": "A Figma plugin for managing design classes",
+  "main": "dist/code/code.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "watch": "npm run build -- --watch"
+    "watch": "tsc -p tsconfig.json --watch",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx,html,css,json}\"",
+    "test": "jest"
   },
-  "author": "Studio Mastro",
+  "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
-    "@figma/plugin-typings": "*",
-    "typescript": "*"
+    "@figma/plugin-typings": "^1.82.0",
+    "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3"
   }
 }
