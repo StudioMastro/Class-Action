@@ -8,35 +8,22 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 
 ```
 - **.github/**
-    - **workflows/**
-- **.notes/** - Project documentation and notes
-    - **scripts/**
+    - **workflows/**- **.notes/** - Project documentation and notes
     - directory_structure.md
     - meeting_notes.md
     - project_overview.md
-    - task_list.md
-- **src/** - Primary source code directory containing all core application logic and components
-    - **code/**
-        - code.ts
-    - **types/** - TypeScript type definitions
-        - global.d.ts
-        - types.ts
-    - **ui/**
-        - styles.css
-    - code.js
-    - global.d.ts
-- .eslintrc.json
-- CHANGELOG.md
-- global.d.ts
+    - **scripts/**
+    - task_list.md- CHANGELOG.md
+- README.md
+- code.js
+- code.ts
 - manifest.json
 - package-lock.json
 - package.json
-- README.md
 - tsconfig.json
-
 ```
 
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-01-07 23:11:49
+- Last updated: 2025-01-09 22:13:44
