@@ -11,6 +11,18 @@ Develop a Figma plugin that allows users to save, manage, and apply frame styles
 - **Data Storage:** Localized JSON-based storage to save and manage classes.
 - **Plugin Framework:** Leverages Figma Plugin API for seamless integration with Figma's design environment.
 
+## Documentation Guidelines
+
+- All documentation must be written in English
+- This includes:
+  - Project Overview
+  - Meeting Notes
+  - Task List
+  - Code Comments
+  - User Documentation
+  - API Documentation
+- Exception: User interface can be multilingual based on target market
+
 ## Project Structure
 
 ```
