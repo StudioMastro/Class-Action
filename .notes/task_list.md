@@ -17,6 +17,40 @@
     - Implementare ricerca avanzata
     - Creare gruppi di classi correlate
 
+-   [ ] Definire e Implementare Modello di Business (**Status:** To Do, **Notes:** Valutare e implementare strategia di monetizzazione)
+    - Analisi delle opzioni di monetizzazione:
+      - Modello subscription-based vs licenza perpetua
+      - Freemium con funzionalità premium
+      - Prezzi per team/enterprise
+    - Definire tier di funzionalità:
+      - Features gratuite vs premium
+      - Limiti per versione free (numero di classi, export, etc.)
+      - Funzionalità esclusive per abbonati
+    - Valutare opzioni di autenticazione:
+      - Sistema basato su utenti (login/signup)
+      - Sistema basato su codice licenza
+      - Integrazione con Figma Teams/Org
+    - Implementazione tecnica:
+      - Backend per gestione licenze/abbonamenti
+      - Sistema di verifica licenze
+      - Integrazione con payment gateway
+      - Storage dati utente/licenze
+    - Aspetti legali e sicurezza:
+      - Termini di servizio per subscription
+      - Privacy policy per dati utente
+      - Sicurezza delle transazioni
+      - Conformità GDPR/privacy
+
+-   [ ] Preparare il Plugin per la Pubblicazione (**Status:** To Do, **Notes:** Preparare tutti i materiali necessari per la pubblicazione su Figma Community)
+    - Creare avatar e icone del plugin nelle dimensioni richieste (128x128, 32x32)
+    - Scrivere una descrizione completa e accattivante del plugin
+    - Preparare screenshot e GIF dimostrative delle funzionalità
+    - Creare documentazione per l'utente finale
+    - Definire termini di licenza e proprietà intellettuale
+    - Preparare video tutorial di utilizzo
+    - Definire strategia di supporto e manutenzione
+    - Verificare conformità con le linee guida Figma
+
 ## Medium Priority
 
 -   [ ] Migliorare import/export delle classi (**Status:** To Do, **Notes:** Rendere più robusto il sistema di condivisione)
