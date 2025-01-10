@@ -6,10 +6,11 @@
     "moduleResolution": "node",
     "strict": true,
     "skipLibCheck": true,
-    "outDir": "dist"
+    "outDir": ".",
+    "rootDir": "./src"
   },
   "include": [
-    "code.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
