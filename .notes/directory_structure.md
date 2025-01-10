@@ -7,10 +7,22 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 ## Project Components
 
 ```
-
+- **.notes/** - Project documentation and notes
+    - directory_structure.md
+    - meeting_notes.md
+    - project_overview.md
+    - **scripts/**
+        - task_list.md
+    - CHANGELOG.md
+    - README.md
+    - code.ts
+    - manifest.json
+    - package-lock.json
+    - package.json
+    - tsconfig.json
 ```
 
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-01-10 10:03:48
+- Last updated: 2025-01-10 10:06:10
