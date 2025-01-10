@@ -1,4 +1,18 @@
+# Build e Dependencies
+/dist
 /node_modules
-/build
-/temp
+/out
+/.next
+
+# Cache e Test
+/.cache
+/coverage
+*.log
+
+# Sistema
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
