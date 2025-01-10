@@ -249,7 +249,18 @@
       filter: invert(43%) sepia(56%) saturate(5632%) hue-rotate(349deg) brightness(97%) contrast(95%);
     }
 
-    /* Stili per la modale */
+    /* Stili base per tutte le modali */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: none;
+    }
+
     .modal {
       position: fixed;
       top: 50%;
@@ -261,24 +272,25 @@
       width: 90%;
       max-width: 800px;
       max-height: 90vh;
-      display: flex;
+      display: none;
       flex-direction: column;
       z-index: 1001;
-      overflow: hidden; /* Importante per contenere lo scroll */
+      overflow: hidden;
     }
 
     .modal-content {
       flex: 1;
       overflow-y: auto;
-      min-height: 0; /* Importante per il flex container */
+      min-height: 0;
+      padding: 16px;
     }
 
     .modal-header {
-      padding: 24px 24px 0;
+      padding-bottom: 12px;
       background: white;
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 2;
     }
 
     .modal-header h3 {
@@ -288,44 +300,7 @@
 
     .modal-header p {
       color: var(--figma-color-text-secondary);
-      margin: 0 0 24px 0;
-    }
-
-    .properties-comparison {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      padding: 0 24px 24px;
-    }
-
-    .properties-column {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .properties-column h4 {
-      font-size: 14px;
-      margin: 0;
-      color: var(--figma-color-text-secondary);
-    }
-
-    .code-block-container {
-      background: #f5f5f5;
-      border: 1px solid var(--figma-color-border);
-      border-radius: 6px;
-      padding: 16px;
-      overflow-y: auto;
-      max-height: 50vh;
-    }
-
-    .code-block {
-      font-family: 'SF Mono', 'Roboto Mono', monospace;
-      font-size: 12px;
-      line-height: 1.4;
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-all;
+      margin: 0 0 8px 0;
     }
 
     .modal-footer {
@@ -334,33 +309,22 @@
       left: 0;
       right: 0;
       background: white;
-      padding: 16px 24px;
-      border-top: 1px solid var(--figma-color-border);
+      padding: 12px 16px;
+      border-top: 1px solid var(--silver);
       display: flex;
       justify-content: flex-end;
       gap: 8px;
-      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-      z-index: 1;
+      /* box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05); */
+      z-index: 2;
     }
 
-    .property-diff {
-      background-color: rgba(255, 249, 197, 0.3);
-      border-radius: 3px;
-      margin: 0 -4px;
-      padding: 0 4px;
-    }
-
-    /* Aggiungi questo stile CSS */
+    /* Classe per bloccare lo scroll del body quando una modale è aperta */
     body.modal-open {
-      overflow: hidden;
+      overflow: hidden !important;
+      padding-right: 15px; /* Compensazione per la scrollbar che scompare */
     }
 
-    .section-header {
-      margin-bottom: 24px;
-      display: flex;
-      justify-content: flex-end;
-    }
-
+    /* Stili specifici per il bottone fisso in basso */
     .fixed-bottom-button {
       position: fixed;
       bottom: 0;
@@ -372,7 +336,7 @@
       -webkit-backdrop-filter: blur(10px);
       border-top: 1px solid rgba(0, 0, 0, 0.08);
       display: none;
-      z-index: 90;
+      z-index: 90; /* Sotto le modali ma sopra il contenuto normale */
       transform: translateY(100%);
       opacity: 0;
     }
@@ -468,6 +432,51 @@
       border: 1px dashed var(--black1);
       border-radius: var(--border-radius-large);
     }
+
+    .properties-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 0 0 24px;
+    }
+
+    .properties-column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .properties-column h4 {
+      font-size: 14px;
+      margin: 0;
+      color: var(--figma-color-text-secondary);
+    }
+
+    .code-block-container {
+      background: #f5f5f5;
+      border: 1px solid var(--figma-color-border);
+      border-radius: 6px;
+      padding: 16px;
+      overflow-y: auto;
+      max-height: 50vh;
+      position: relative;
+    }
+
+    .code-block {
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .property-diff {
+      background-color: rgba(255, 249, 197, 0.3);
+      border-radius: 3px;
+      margin: 0 -4px;
+      padding: 0 4px;
+    }
   </style>
 </head>
 
@@ -521,84 +530,11 @@
     </button>
   </div>
 
-  <!-- Overlay opaco dietro la modale -->
-  <div id="overlay" style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-      "></div>
+  <!-- Overlay comune per tutte le modali -->
+  <div id="modal-overlay" class="modal-overlay"></div>
 
-  <!-- Modale per rinominare una classe -->
-  <div id="rename-modal" style="
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        z-index: 1100;
-      ">
-    <h3>Rinomina Classe</h3>
-    <p>Inserisci il nuovo nome per la classe:</p>
-    <input type="text" id="rename-input" style="width: 100%; padding: 8px; margin-bottom: 10px" />
-    <div style="display: flex; justify-content: flex-end; gap: 10px">
-      <button id="rename-cancel" class="button button--secondary">
-        Annulla
-      </button>
-      <button id="rename-confirm" class="button button--primary">
-        Conferma
-      </button>
-    </div>
-  </div>
-
-  <!-- Dopo la modale di rinomina, aggiungi questa nuova modale -->
-  <div id="delete-modal" style="
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        z-index: 1100;
-      ">
-    <h3>Elimina Classe</h3>
-    <p>Sei proprio sicuro di voler eliminare questa classe? Non c'è modo di tornare indietro... 🙈</p>
-    <div style="display: flex; justify-content: flex-end; gap: 10px">
-      <button id="delete-cancel" class="button button--secondary">
-        Annulla
-      </button>
-      <button id="delete-confirm" class="button button--primary-destructive">
-        Sì, elimina!
-      </button>
-    </div>
-  </div>
-
-  <!-- Aggiungi questi SVG nascosti in cima al body per poterli riutilizzare -->
-  <svg style="display: none;">
-    <!-- Menu a tre punti (kebab menu) -->
-    <symbol id="icon-more" viewBox="0 0 24 24">
-      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-    </symbol>
-    <!-- Icona copia -->
-    <symbol id="icon-copy" viewBox="0 0 24 24">
-      <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-    </symbol>
-  </svg>
-
-  <!-- Aggiorna la struttura della modale Info -->
-  <div id="info-modal" class="modal" style="display: none;">
+  <!-- Modale Info -->
+  <div id="info-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <h3>Dettagli Classe</h3>
@@ -618,7 +554,42 @@
     </div>
   </div>
 
-  <div id="update-modal" class="modal" style="display: none;">
+  <!-- Modale Rinomina -->
+  <div id="rename-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Rinomina Classe</h3>
+        <p>Inserisci il nuovo nome per la classe:</p>
+      </div>
+      
+      <div class="input-container">
+        <input type="text" id="rename-input" class="input__field" style="width: 100%" />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="rename-cancel" class="button button--secondary">Annulla</button>
+      <button id="rename-confirm" class="button button--primary">Conferma</button>
+    </div>
+  </div>
+
+  <!-- Modale Elimina -->
+  <div id="delete-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Elimina Classe</h3>
+        <p>Sei proprio sicuro di voler eliminare questa classe? Non c'è modo di tornare indietro... 🙈</p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="delete-cancel" class="button button--secondary">Annulla</button>
+      <button id="delete-confirm" class="button button--primary-destructive">Sì, elimina!</button>
+    </div>
+  </div>
+
+  <!-- Modale Aggiorna -->
+  <div id="update-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <h3>Aggiorna Classe</h3>
@@ -647,6 +618,18 @@
       <button id="update-confirm" class="button button--primary">Aggiorna</button>
     </div>
   </div>
+
+  <!-- Aggiungi questi SVG nascosti in cima al body per poterli riutilizzare -->
+  <svg style="display: none;">
+    <!-- Menu a tre punti (kebab menu) -->
+    <symbol id="icon-more" viewBox="0 0 24 24">
+      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+    </symbol>
+    <!-- Icona copia -->
+    <symbol id="icon-copy" viewBox="0 0 24 24">
+      <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+    </symbol>
+  </svg>
 
   <script>
     console.log("JS Caricato correttamente!");
@@ -1202,96 +1185,149 @@
       return 'none';
     }
 
-    function showClassInfo(className) {
-      document.body.classList.add('modal-open');
-      
-      const closeModal = () => {
+    // Funzioni di utilità per la gestione delle modali
+    const modalUtils = {
+      openModal: (modalId) => {
+        const modal = document.getElementById(modalId);
+        const overlay = document.getElementById('modal-overlay');
+        if (!modal || !overlay) return;
+
+        document.body.classList.add('modal-open');
+        modal.style.display = 'flex';
+        overlay.style.display = 'block';
+      },
+
+      closeModal: (modalId) => {
+        const modal = document.getElementById(modalId);
+        const overlay = document.getElementById('modal-overlay');
+        if (!modal || !overlay) return;
+
         document.body.classList.remove('modal-open');
-        infoModal.style.display = "none";
-        overlay.style.display = "none";
-      };
-      
-      console.log('showClassInfo called for:', className); // Debug
+        modal.style.display = 'none';
+        overlay.style.display = 'none';
+      },
+
+      closeAllModals: () => {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => modal.style.display = 'none');
+        document.getElementById('modal-overlay').style.display = 'none';
+        document.body.classList.remove('modal-open');
+      }
+    };
+
+    // Aggiungi listener per chiudere le modali cliccando sull'overlay
+    document.getElementById('modal-overlay').addEventListener('click', () => {
+      modalUtils.closeAllModals();
+    });
+
+    function showClassInfo(className) {
+      console.log('showClassInfo called for:', className);
 
       const properties = savedClasses[className];
-      const infoModal = document.getElementById("info-modal");
       const classInfo = document.getElementById("class-info");
-      const closeButton = document.getElementById("info-close");
       const copyButton = document.getElementById("copy-button");
-      const overlay = document.getElementById("overlay");
 
-      if (!infoModal || !classInfo || !closeButton || !copyButton || !overlay) {
-        console.error('Some elements not found:', { 
-          infoModal: !!infoModal, 
-          classInfo: !!classInfo, 
-          closeButton: !!closeButton, 
-          copyButton: !!copyButton, 
-          overlay: !!overlay 
-        });
+      if (!classInfo || !copyButton) {
+        console.error('Required elements not found');
         return;
       }
 
-      // Formatta le proprietà in modo leggibile
-      const formattedInfo = formatClassProperties(properties);
-      console.log('Formatted info:', formattedInfo); // Debug
+      // Formatta e mostra le proprietà
+      const formattedProperties = formatClassProperties(properties);
+      classInfo.textContent = formattedProperties;
 
-      classInfo.textContent = formattedInfo;
-
-      // Mostra la modale e l'overlay
-      infoModal.style.display = "block";
-      overlay.style.display = "block";
+      // Gestisci il pulsante di copia
+      copyButton.onclick = () => {
+        navigator.clipboard.writeText(formattedProperties)
+          .then(() => figma.notify('Copiato negli appunti!'))
+          .catch(err => console.error('Errore durante la copia:', err));
+      };
 
       // Gestisci la chiusura
-      closeButton.onclick = closeModal;
-      overlay.onclick = closeModal;
+      document.getElementById("info-close").onclick = () => {
+        modalUtils.closeModal('info-modal');
+      };
 
-      // Gestisci la copia
-      copyButton.onclick = () => {
-        const textToCopy = classInfo.textContent || '';
-        
-        // Invia un messaggio al codice principale di Figma per copiare il testo
+      modalUtils.openModal('info-modal');
+    }
+
+    function renameClass(oldClassName) {
+      const renameInput = document.getElementById("rename-input");
+      if (!renameInput) return;
+
+      // Precompila e seleziona l'input
+      renameInput.value = oldClassName;
+      modalUtils.openModal('rename-modal');
+      renameInput.focus();
+      renameInput.select();
+
+      // Gestisci la conferma
+      const handleConfirm = () => {
+        const newClassName = renameInput.value.trim();
+        if (newClassName && newClassName !== oldClassName) {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "rename-class",
+                oldClassName,
+                newClassName,
+              },
+            },
+            "*"
+          );
+        }
+        modalUtils.closeModal('rename-modal');
+      };
+
+      // Event listeners
+      document.getElementById("rename-cancel").onclick = () => {
+        modalUtils.closeModal('rename-modal');
+      };
+      
+      document.getElementById("rename-confirm").onclick = handleConfirm;
+
+      // Gestisci invio sulla tastiera
+      renameInput.onkeyup = (event) => {
+        if (event.key === "Enter") handleConfirm();
+        if (event.key === "Escape") modalUtils.closeModal('rename-modal');
+      };
+    }
+
+    function deleteClass(className) {
+      modalUtils.openModal('delete-modal');
+
+      document.getElementById("delete-cancel").onclick = () => {
+        modalUtils.closeModal('delete-modal');
+      };
+
+      document.getElementById("delete-confirm").onclick = () => {
         parent.postMessage(
-          { 
-            pluginMessage: { 
-              type: "copy-to-clipboard", 
-              text: textToCopy 
-            } 
-          }, 
+          {
+            pluginMessage: {
+              type: "delete-class",
+              className,
+            },
+          },
           "*"
         );
-        
-        // Rimuovi il focus dal bottone
-        copyButton.blur();
+        modalUtils.closeModal('delete-modal');
       };
     }
 
     function showUpdateConfirmation(className) {
-      document.body.classList.add('modal-open');
-      
-      const closeModal = () => {
-        document.body.classList.remove('modal-open');
-        updateModal.style.display = "none";
-        overlay.style.display = "none";
-      };
-      
-      console.log('Showing update confirmation for:', className); // Debug
+      console.log('Showing update confirmation for:', className);
 
-      const updateModal = document.getElementById("update-modal");
+      const currentProperties = savedClasses[className];
       const classNameSpan = document.getElementById("update-class-name");
       const currentPropertiesEl = document.getElementById("current-properties");
       const newPropertiesEl = document.getElementById("new-properties");
-      const cancelButton = document.getElementById("update-cancel");
-      const confirmButton = document.getElementById("update-confirm");
-      const overlay = document.getElementById("overlay");
 
-      // Verifica che tutti gli elementi esistano
-      if (!updateModal || !classNameSpan || !currentPropertiesEl || !newPropertiesEl || !cancelButton || !confirmButton || !overlay) {
-        console.error('Elementi mancanti nella modale di aggiornamento');
+      if (!classNameSpan || !currentPropertiesEl || !newPropertiesEl) {
+        console.error('Required elements not found');
         return;
       }
 
       // Formatta le proprietà attuali
-      const currentProperties = savedClasses[className];
       const currentFormatted = formatClassProperties(currentProperties);
       currentPropertiesEl.textContent = currentFormatted;
       classNameSpan.textContent = className;
@@ -1299,11 +1335,11 @@
       // Funzione per gestire i messaggi
       const handleMessage = (event) => {
         const msg = event.data.pluginMessage;
-        console.log('Received message:', msg); // Debug
+        console.log('Received message:', msg);
 
         if (msg.type === "selection-error") {
           figma.notify(msg.message);
-          closeModal();
+          modalUtils.closeModal('update-modal');
           return;
         }
 
@@ -1311,10 +1347,7 @@
           const newProperties = msg.properties;
           const newFormatted = formatClassProperties(newProperties);
           newPropertiesEl.textContent = newFormatted;
-
-          // Mostra la modale solo dopo aver ricevuto le proprietà
-          updateModal.style.display = "block";
-          overlay.style.display = "block";
+          modalUtils.openModal('update-modal');
         }
       };
 
@@ -1324,8 +1357,12 @@
       window.addEventListener('message', handleMessage);
 
       // Gestisci i click sui pulsanti
-      confirmButton.onclick = () => {
-        // Mostra dialogo di conferma
+      document.getElementById("update-cancel").onclick = () => {
+        modalUtils.closeModal('update-modal');
+        window.removeEventListener('message', handleMessage);
+      };
+
+      document.getElementById("update-confirm").onclick = () => {
         if (confirm(`Sei sicuro di voler aggiornare la classe "${className}"? Questa azione non può essere annullata.`)) {
           parent.postMessage(
             {
@@ -1336,15 +1373,13 @@
             },
             "*"
           );
-          closeModal();
+          modalUtils.closeModal('update-modal');
+          window.removeEventListener('message', handleMessage);
         }
       };
 
-      cancelButton.onclick = closeModal;
-      overlay.onclick = closeModal;
-
       // Richiedi le proprietà della selezione corrente
-      console.log('Requesting selection properties'); // Debug
+      console.log('Requesting selection properties');
       parent.postMessage(
         { pluginMessage: { type: "get-selection-properties" } },
         "*"
