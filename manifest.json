@@ -4,5 +4,7 @@
   "api": "1.0.0",
   "main": "code.js",
   "editorType": ["figma"],
-  "ui": "src/ui.html"
+  "ui": "src/ui.html",
+  "icon": "src/assets/icon-128.png",
+  "ui-icon": "src/assets/icon-32.png"
 }
