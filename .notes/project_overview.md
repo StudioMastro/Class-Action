@@ -2,7 +2,13 @@
 
 ## Goal
 
-Develop a Figma plugin that allows users to save, manage, and apply frame styles as reusable CSS-like classes to streamline design workflows.
+Class Action is a powerful Figma plugin that revolutionizes how designers manage and apply styles to their frames. By introducing a CSS-like class system, it enables designers to create, save, and reuse consistent styles across their designs with just a few clicks. Perfect for design systems, rapid prototyping, and maintaining design consistency across large projects.
+
+### Key Benefits
+- **Save Time**: Create styles once, apply them anywhere
+- **Maintain Consistency**: Ensure design coherence across your entire project
+- **Collaborate Better**: Share and import style classes with your team
+- **Work Smarter**: Manage styles like a developer with a familiar CSS-like approach
 
 ## Architecture
 
@@ -68,13 +74,29 @@ plugin-root/
 
 ## Key Features
 
-- Save and name frame styles as reusable classes.
-- Apply saved classes to selected frames for consistency.
-- Export and import classes as JSON for collaboration and portability.
-- Manage class definitions (rename, update, delete).
-- Support for batch application of classes to multiple frames.
-- Simple, intuitive UI for easy navigation and class management.
-- Real-time updates and feedback while using the plugin.
+- **Smart Style Management**:
+  - Save any frame's styles as reusable classes
+  - Apply styles with one click
+  - Update styles globally across your design
+  - Organize and search your style library
+
+- **Efficient Workflow**:
+  - Batch apply styles to multiple frames
+  - Quick search and filter functionality
+  - Real-time style preview
+  - Intuitive drag-and-drop interface
+
+- **Team Collaboration**:
+  - Export and import style libraries
+  - Share consistent styles across projects
+  - Maintain design system consistency
+  - Version control for your styles
+
+- **Developer-Friendly**:
+  - CSS-like class naming
+  - JSON-based style definitions
+  - Easy integration with design systems
+  - Familiar interface for developers
 
 ## Future Enhancements
 
