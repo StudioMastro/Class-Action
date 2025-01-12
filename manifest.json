@@ -5,6 +5,10 @@
   "main": "code.js",
   "editorType": ["figma"],
   "ui": "src/ui.html",
-  "icon": "src/assets/icon-128.png",
-  "ui-icon": "src/assets/icon-32.png"
+  "menu": [
+    {
+      "name": "Class Action",
+      "command": "open-plugin"
+    }
+  ]
 }
