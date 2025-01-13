@@ -129,3 +129,24 @@ plugin-root/
 ## Project Highlights
 
 This project aims to fill a critical gap in the Figma ecosystem by enabling reusable, centralized style management, improving productivity and design consistency for teams and individual users alike.
+
+## Figma Plugin Requirements
+
+### Technical Specifications
+- Plugin must work in both Figma and FigJam environments
+- UI must use Figma's design system components
+- All async operations must show loading states
+- Error handling must provide clear user feedback
+- No console.log statements in production code
+
+### Plugin Store Assets
+- Icons: 128x128 and 32x32 (PNG with transparent background)
+- Cover image for plugin page
+- Screenshots/GIFs demonstrating key features
+- Description within character limits
+- Relevant tags for discoverability
+
+### Testing Requirements
+- Verify functionality in both Figma desktop and web
+- Test with various file sizes and complexities
+- Validate behavior with different user permissions

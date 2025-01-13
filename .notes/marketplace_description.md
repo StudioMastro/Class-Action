@@ -51,7 +51,17 @@ Quickly find the styles you need with our intuitive search and filter system. Ke
 
 ## Support
 
-Need help? Have suggestions? Contact us at [support email/link]
+### 🌟 Get Help
+- **Documentation**: Visit our [GitHub Wiki](https://github.com/alemastro/Class-Action/wiki) for detailed guides
+- **Issues & Bugs**: Report on our [GitHub Issues](https://github.com/alemastro/Class-Action/issues)
+- **Feature Requests**: Share your ideas on our GitHub Discussions
+- **Email Support**: Contact us at classaction.figma@gmail.com
+
+### ⚡ Quick Support Tips
+- Check our documentation before reporting issues
+- Include screenshots/recordings when reporting bugs
+- Use the issue template on GitHub for bug reports
+- For urgent support, email us with "URGENT" in the subject
 
 ---
 Tags: style management, design system, CSS, frame styles, design consistency, workflow optimization 

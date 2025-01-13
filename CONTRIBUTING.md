@@ -17,8 +17,8 @@ Before contributing to Class Action, you must read and sign our Contributor Lice
    - You will not contribute code that infringes on others' intellectual property rights
 
 3. **Contribution Process**
-   - All contributions must be submitted through GitHub pull requests
-   - Each contribution must include appropriate tests and documentation
+   - All contributions must be submitted through GitHub issues first
+   - Each proposed contribution must include a detailed description of changes
    - You must follow the project's coding standards and guidelines
 
 4. **Code Review**
@@ -38,14 +38,14 @@ Before contributing to Class Action, you must read and sign our Contributor Lice
 
 ## How to Contribute
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-5. Sign the CLA (will be required before your PR can be merged)
+1. Open a new GitHub issue describing your proposed contribution
+2. Wait for approval from the project maintainers
+3. Once approved, you will be granted temporary access to make your changes
+4. Submit your changes according to the provided instructions
+5. Sign the CLA before your contribution can be merged
 
 ## Questions?
 
-If you have questions about this agreement, please contact: [contact email]
+If you have questions about this agreement, please contact: classaction.figma@gmail.com
 
 By submitting a contribution to Class Action, you agree to the terms of this CLA. 
