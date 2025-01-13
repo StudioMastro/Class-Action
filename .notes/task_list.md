@@ -46,7 +46,7 @@
     - [ ] Write compelling plugin description
     - [ ] Prepare feature screenshots and GIFs
     - [ ] Create end-user documentation
-    - [ ] Define license terms and intellectual property
+    - [x] Define license terms and intellectual property
     - [ ] Prepare usage tutorial videos
     - [ ] Define support and maintenance strategy
     - [ ] Verify compliance with Figma guidelines

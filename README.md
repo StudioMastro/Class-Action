@@ -77,7 +77,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the terms specified in the `package.json` file.
+Class Action is proprietary software, © 2024 Alessandro Mastrogiacomo. All rights reserved.
+
+This plugin is licensed, not sold, and is subject to the terms specified in the [LICENSE.md](LICENSE.md) file. Commercial and non-commercial use is permitted under the terms of the license.
+
+### Contributing
+
+We welcome contributions from the community! Please read our [Contributing Guidelines](CONTRIBUTING.md) and sign our Contributor License Agreement before submitting any contributions.
+
+For questions about licensing or contributions, please contact: [contact email]
 
 ## Version History
 
