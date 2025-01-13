@@ -8,7 +8,6 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 
 ```
 - **.notes/** - Project documentation and notes
-    - @meeting_notes.md
     - directory_structure.md
     - meeting_notes.md
     - project_overview.md
@@ -29,4 +28,4 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-01-13 21:34:33
+- Last updated: 2025-01-13 21:35:50
