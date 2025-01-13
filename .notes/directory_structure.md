@@ -8,13 +8,17 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 
 ```
 - **.notes/** - Project documentation and notes
+    - @meeting_notes.md
     - directory_structure.md
     - meeting_notes.md
     - project_overview.md
     - **scripts/**
         - task_list.md
     - CHANGELOG.md
+    - CONTRIBUTING.md
+    - LICENSE.md
     - README.md
+    - ROADMAP.md
     - code.js
     - manifest.json
     - package-lock.json
@@ -25,4 +29,4 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-01-12 21:38:30
+- Last updated: 2025-01-13 21:34:33
