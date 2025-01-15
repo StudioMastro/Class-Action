@@ -1,14 +1,1 @@
-{
-  "name": "Class Action",
-  "id": "1226184742391060805",
-  "api": "1.0.0",
-  "main": "code.js",
-  "editorType": ["figma"],
-  "ui": "src/ui.html",
-  "menu": [
-    {
-      "name": "Class Action",
-      "command": "open-plugin"
-    }
-  ]
-}
+{"api":"1.0.0","editorType":["figma"],"id":"class-action","name":"Class Action","main":"build/main.js","ui":"build/ui.js"}

@@ -1,24 +1,67 @@
 {
-  "name": "class-action",
-  "version": "0.2.0",
-  "description": "A Figma plugin for managing design classes",
-  "main": "dist/code/code.js",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "watch": "tsc -p tsconfig.json --watch",
-    "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write \"src/**/*.{ts,tsx,html,css,json}\"",
-    "test": "jest"
+  "dependencies": {
+    "@create-figma-plugin/ui": "^3.2.1",
+    "@create-figma-plugin/utilities": "^3.2.1",
+    "preact": ">=10"
   },
-  "author": "Your Name",
-  "license": "MIT",
   "devDependencies": {
-    "@figma/plugin-typings": "^1.82.0",
-    "@types/node": "^20.10.5",
+    "@create-figma-plugin/build": "^3.2.1",
+    "@create-figma-plugin/tsconfig": "^3.2.1",
+    "@figma/eslint-plugin-figma-plugins": "^0.14.0",
+    "@figma/plugin-typings": "1.100.2",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
+    "concurrently": ">=8",
     "eslint": "^8.56.0",
     "prettier": "^3.1.1",
-    "typescript": "^5.3.3"
+    "tailwindcss": ">=3",
+    "typescript": ">=4"
+  },
+  "scripts": {
+    "build": "npm run build:css && npm run build:js",
+    "build:css": "tailwindcss --input ./src/styles.css --output ./dist/styles.css",
+    "build:js": "build-figma-plugin --typecheck --minify",
+    "watch": "npm run build:css && concurrently npm:watch:css npm:watch:js",
+    "watch:css": "tailwindcss --input ./src/styles.css --output ./dist/styles.css --watch",
+    "watch:js": "build-figma-plugin --typecheck --watch",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write ."
+  },
+  "eslintConfig": {
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:@figma/figma-plugins/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "root": true,
+    "rules": {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }
+      ]
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "printWidth": 100
+  },
+  "figma-plugin": {
+    "editorType": [
+      "figma"
+    ],
+    "id": "class-action",
+    "name": "Class Action",
+    "main": "src/main.ts",
+    "ui": "src/ui.tsx"
   }
 }
