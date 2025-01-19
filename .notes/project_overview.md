@@ -12,10 +12,11 @@ Class Action is a powerful Figma plugin that revolutionizes how designers manage
 
 ## Architecture
 
-- **Core Logic:** Implemented in TypeScript for robust type-checking and maintainability.
-- **UI Layer:** Built using an HTML interface with vanilla JavaScript for lightweight and fast performance.
-- **Data Storage:** Localized JSON-based storage to save and manage classes.
-- **Plugin Framework:** Leverages Figma Plugin API for seamless integration with Figma's design environment.
+- **Core Logic:** Implemented in TypeScript with strict type-checking using Create Figma Plugin.
+- **UI Layer:** Built with Preact and @create-figma-plugin/ui components for native Figma look and feel.
+- **Data Storage:** Localized JSON-based storage using Figma's plugin data API.
+- **Plugin Framework:** Leverages Create Figma Plugin framework for standardized development and build process.
+- **Build System:** Uses esbuild through Create Figma Plugin for fast and efficient bundling.
 
 ## Documentation Guidelines
 
@@ -34,42 +35,43 @@ Class Action is a powerful Figma plugin that revolutionizes how designers manage
 ```
 plugin-root/
 ├── src/                    # Source code directory
-│   ├── code.ts            # Main plugin logic
-│   ├── ui.html            # Plugin UI
-│   ├── ui/                # UI components and assets
-│   │   ├── components/    # Reusable UI components
-│   │   ├── styles/        # CSS and style files
-│   │   └── scripts/       # UI-specific scripts
-│   └── lib/               # Shared utilities and helpers
-├── dist/                  # Build output directory (except code.js)
-├── .notes/                # Project documentation
-├── code.js               # Compiled plugin code (in root for Figma)
-├── manifest.json         # Plugin configuration
-├── package.json         # Project dependencies
-├── tsconfig.json        # TypeScript configuration
-└── README.md           # Project documentation
+│   ├── main.ts            # Main plugin logic
+│   ├── ui.tsx             # Plugin UI (Preact components)
+│   └── styles.css         # Tailwind CSS styles
+├── build/                  # Build output directory (generated)
+│   ├── code.js           # Compiled plugin code
+│   ├── ui.js            # Compiled UI code
+│   └── styles.css       # Compiled styles
+├── .notes/               # Project documentation
+├── manifest.json        # Plugin configuration (generated)
+├── package.json        # Project dependencies
+├── tsconfig.json       # TypeScript configuration
+├── tailwind.config.js # Tailwind configuration
+└── README.md          # Project documentation
 ```
 
 ### Directory Structure Guidelines
 
 1. **Source Organization (`/src`)**:
-   - Keep all source files in the `src` directory
-   - Main plugin logic in `code.ts`
-   - UI-related files in `ui/` subdirectory
-   - Shared utilities in `lib/` subdirectory
+   - All source files in the `src` directory
+   - Main plugin logic in `main.ts`
+   - UI implementation in `ui.tsx` using Preact
+   - Styles in `styles.css` using Tailwind
 
-2. **Build Output**:
-   - `code.js` must be in root directory (Figma requirement)
-   - Other compiled assets go in `dist/`
+2. **Build Output (`/build`)**:
+   - Generated directory for compiled assets
+   - Contains all build outputs (code.js, ui.js, styles.css)
+   - Automatically created by build process
+   - Not tracked in version control
 
 3. **Configuration Files**:
-   - Keep configuration files in root directory
-   - `manifest.json` for plugin settings
+   - `manifest.json` for plugin settings (generated)
    - `tsconfig.json` for TypeScript configuration
-   - `package.json` for dependencies
+   - `package.json` for dependencies and scripts
+   - `tailwind.config.js` for styling configuration
 
 4. **Documentation**:
-   - Keep documentation in `.notes/` directory
+   - Project documentation in `.notes/` directory
    - Main README.md in root for quick start guide
 
 ## Key Features
@@ -107,24 +109,25 @@ plugin-root/
 ## Best Practices
 
 1. **Code Organization**:
-   - Keep plugin logic (`code.ts`) and UI (`ui.html`) separate
-   - Use TypeScript for type safety and better maintainability
-   - Organize UI components and styles in dedicated directories
+   - Separate plugin logic (`main.ts`) and UI (`ui.tsx`)
+   - Use TypeScript with strict type checking
+   - Follow Create Figma Plugin conventions
+   - Leverage @create-figma-plugin/ui components
 
 2. **Build Process**:
-   - Compile TypeScript to JavaScript for Figma compatibility
-   - Keep `code.js` in root directory as required by Figma
-   - Use source maps for easier debugging
+   - Use Create Figma Plugin's build system
+   - No manual compilation required
+   - Source maps enabled for debugging
 
 3. **Version Control**:
    - Track source files and configurations
-   - Ignore build artifacts except `code.js`
+   - Ignore build artifacts in `/dist`
    - Document changes in CHANGELOG.md
 
 4. **Documentation**:
    - Keep documentation up-to-date
    - Include setup instructions in README.md
-   - Document API and data structures
+   - Document event system and data structures
 
 ## Project Highlights
 

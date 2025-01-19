@@ -19,10 +19,10 @@
   },
   "scripts": {
     "build": "npm run build:css && npm run build:js",
-    "build:css": "tailwindcss --input ./src/styles.css --output ./dist/styles.css",
+    "build:css": "tailwindcss --input ./src/styles.css --output ./build/styles.css",
     "build:js": "build-figma-plugin --typecheck --minify",
     "watch": "npm run build:css && concurrently npm:watch:css npm:watch:js",
-    "watch:css": "tailwindcss --input ./src/styles.css --output ./dist/styles.css --watch",
+    "watch:css": "tailwindcss --input ./src/styles.css --output ./build/styles.css --watch",
     "watch:js": "build-figma-plugin --typecheck --watch",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write ."

@@ -1,10 +1,9 @@
 # Build e Output
-dist/*
-!dist/code.js
-!dist/ui.bundle.js
+build/
 code.js
 out/
 .next/
+src/styles.css.d.ts
 
 # Dependencies
 node_modules/

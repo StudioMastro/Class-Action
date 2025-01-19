@@ -13,19 +13,20 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
     - project_overview.md
     - **scripts/**
         - task_list.md
+        - webpack_migration.md
     - CHANGELOG.md
     - CONTRIBUTING.md
     - LICENSE.md
     - README.md
     - ROADMAP.md
-    - code.js
     - manifest.json
     - package-lock.json
     - package.json
+    - tailwind.config.js
     - tsconfig.json
 ```
 
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-01-13 21:35:50
+- Last updated: 2025-01-18 16:43:40

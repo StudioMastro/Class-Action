@@ -1,119 +1,130 @@
 # Migration to Create Figma Plugin
 
-## Decision
-After evaluating different options for the plugin structure, we decided to use Create Figma Plugin for the following reasons:
-- Officially supported and widely tested solution
-- Excellent documentation and active community
-- Native TypeScript support
-- Optimized build system for Figma plugins
-- Integrated hot reload and development tools
+## Build System Clarification
 
-## Create Figma Plugin & Preact Notes
+### Previous Setup
+- Custom webpack configuration
+- Manual TypeScript configuration
+- Manual bundling setup
+- Separate configuration for UI and plugin code
 
-### Why Preact Instead of React
-1. **Performance Benefits**
-   - Smaller bundle size (~3KB vs React's ~40KB)
-   - Faster initial load times
-   - Lower memory footprint
-   - Optimized for Figma plugin environment
+### Current Setup (Create Figma Plugin)
+- Uses `esbuild` (NOT webpack) as the bundler
+- Pre-configured TypeScript settings
+- Automated bundling process with output in `/build`
+- Unified configuration for UI and plugin code
+- Tailwind CSS integration with direct build output
 
-2. **API Compatibility**
-   - Almost identical API to React
-   - Same component patterns and hooks
-   - Compatible with React libraries via `preact/compat`
-   - Minimal learning curve for React developers
+### Key Differences
+1. **Bundler**:
+   - Before: webpack (manual configuration)
+   - Now: esbuild (faster, pre-configured)
+   - Impact: Same end result, different tooling
 
-3. **Migration Considerations**
-   - Replace React imports with Preact
-   - Most components will work without changes
-   - Some React-specific features may need alternatives
-   - Use `preact/compat` for React library compatibility
+2. **TypeScript**:
+   - Before: Same TypeScript, but with looser configuration
+   - Now: Same TypeScript, but with stricter type checking
+   - Impact: Need to fix type issues that were previously ignored
 
-### Create Figma Plugin Features
-1. **Build System**
-   - Uses esbuild for faster compilation
-   - Automatic HMR (Hot Module Replacement)
-   - Optimized production builds
-   - TypeScript and JSX support out of the box
+3. **Build Process**:
+   - Before: Multiple manual configurations
+   - Now: Single, unified build process
+   - Impact: Simpler but less customizable
 
-2. **Development Experience**
-   - Built-in development server
-   - Fast refresh for UI changes
-   - Source maps for debugging
-   - Plugin reloading utilities
+## Impact Analysis
 
-3. **UI Components**
-   - Preact components matching Figma's UI
-   - Built-in Figma design system components
-   - Dark mode support
-   - Accessibility features
+### What Changes
+1. **Build System**:
+   - From: Custom webpack configuration
+   - To: Create Figma Plugin (esbuild)
+   - Impact: Only affects how code is compiled and bundled
+   - ✅ No change to plugin logic required
 
-## Migration Plan
+2. **UI Framework**:
+   - From: React + shadcn/ui
+   - To: Preact + @create-figma-plugin/ui
+   - Impact: Only affects UI implementation
+   - ✅ No change to plugin logic required
 
-### 1. Backup and Preparation
-- [x] Created backup branch `backup/pre-create-figma-plugin`
-- [x] Documented current project state
+3. **Type Safety**:
+   - Issue: Stricter TypeScript checking in new setup
+   - Impact: Need to add proper type annotations
+   - ✅ No change to actual logic, just better type safety
 
-### 2. Create Figma Plugin Setup
-- [ ] Install create-figma-plugin globally
-- [ ] Generate new project with TypeScript + UI template
-- [ ] Verify generated structure against Figma documentation
+### What Stays the Same
+1. **Core Plugin Logic**:
+   - Frame property handling
+   - Class saving/loading
+   - Property application logic
+   - Event handling logic
 
-### 3. Code Migration
-- [ ] Migrate plugin code (`code.ts`)
-  - [ ] Adapt class management logic
-  - [ ] Verify Figma API compatibility
-  - [ ] Update event handling
-- [ ] Migrate user interface
-  - [ ] Convert React components to Preact
-  - [ ] Adapt styles and layout
-  - [ ] Implement plugin-UI communication
-  - [ ] Test component compatibility
+2. **Data Structure**:
+   - Frame properties format
+   - Saved classes structure
+   - Message format between UI and plugin
 
-### 4. Testing and Validation
-- [ ] Verify core functionality
-  - [ ] Class saving
-  - [ ] Class application
-  - [ ] Import/Export
-- [ ] Performance testing
-  - [ ] Bundle size analysis
-  - [ ] Load time measurements
-  - [ ] Memory usage monitoring
-- [ ] UI/UX validation
+## Current Status (as of Jan 18, 2025)
 
-### 5. Documentation and Release
-- [ ] Update README
-- [ ] Document new structure
-- [ ] Prepare for release
+### Decision Changes
+- Initially planned to use webpack + shadcn/ui
+- Switched to Create Figma Plugin due to:
+  1. Better integration with Figma's ecosystem
+  2. Pre-configured build system with esbuild
+  3. Ready-to-use Preact components matching Figma's UI
+  4. Production-tested solution
 
-## Technical Notes
+### Implementation Status
+1. ✅ Basic project setup with Create Figma Plugin
+2. ✅ TypeScript configuration
+3. ✅ Preact + Tailwind CSS integration
+4. ✅ Project structure cleanup
+   - Removed redundant `/dist` directory
+   - Configured `/build` as standard output
+   - Cleaned up unnecessary files
+5. 🟡 UI Migration (In Progress)
+   - Basic UI structure implemented
+   - Components rendering properly
+   - Event handling partially working
+   - Layout and styling needs refinement
+6. 🟡 Plugin Logic Migration (In Progress)
+   - Frame properties saving/applying implemented
+   - Type safety improvements ongoing
+   - Event handling system working
 
-### Project Structure
-```
-src/
-├── main.ts           # Plugin entry point (ex code.ts)
-├── ui.tsx           # Interface entry point
-└── components/      # UI Components
-    ├── app.tsx      # Main UI component
-    └── ui/          # Reusable UI components
-```
+### Current Issues
+1. UI Refinement:
+   - Dropdown menu positioning and behavior needs improvement
+   - Layout spacing and alignment needs adjustment
+   - Some components need better styling integration with Figma's UI patterns
 
-### Considerations
-1. **Build System**: Create Figma Plugin automatically handles:
-   - Bundling (esbuild)
-   - TypeScript compilation
-   - Hot reload
-   - Asset management
-   - Production optimizations
+2. Plugin Logic:
+   - Some type safety improvements still needed
+   - Need to verify all frame properties are handled correctly
+   - Event system needs more robust error handling
 
-2. **Compatibility**: 
-   - Maintain compatibility with existing data
-   - Verify functionality with new structure
-   - Test React component migrations
-   - Validate plugin API usage
+3. Build Configuration:
+   ✅ manifest.json configured correctly
+   ✅ Build output directory standardized to `/build`
+   ✅ Styles bundling working with Tailwind
+   ✅ TypeScript configuration verified
 
-3. **Development Workflow**:
-   - Use `npm run build` for production
-   - Use `npm run watch` for development
-   - Utilize HMR for faster development
-   - Implement proper debugging setup 
+### Next Steps
+1. UI Polish:
+   - Improve dropdown menu behavior
+   - Refine layout spacing and alignment
+   - Ensure consistent styling with Figma's UI
+
+2. Code Quality:
+   - Complete type safety improvements
+   - Add error boundaries and better error handling
+   - Implement comprehensive validation
+
+3. Testing:
+   - Create test cases for each feature
+   - Verify UI rendering in both light/dark modes
+   - Test frame property handling
+
+### Reference Documentation
+- [Create Figma Plugin UI Components](https://yuanqing.github.io/create-figma-plugin/ui/)
+- [Figma Plugin Development Guide](https://www.figma.com/plugin-docs/)
+- [Create Figma Plugin Recipes](https://yuanqing.github.io/create-figma-plugin/recipes/) 

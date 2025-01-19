@@ -5,7 +5,7 @@ Tutte le modifiche notevoli a questo progetto saranno documentate in questo file
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2024-01-17
+## [0.2.0] - 2025-01-17
 
 ### Added
 - Supporto completo per gli stili di Figma (fillStyleId e strokeStyleId)
@@ -16,7 +16,7 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 - Aggiornato tsconfig.json per supportare ES2017
 - Migliorata tipizzazione del codice per una maggiore affidabilità
 
-## [0.1.0] - 2024-01-17
+## [0.1.0] - 2025-01-17
 
 ### Added
 - Funzionalità di ricerca con filtro
