@@ -10,13 +10,14 @@ Class Action is a powerful Figma plugin that revolutionizes how designers manage
 - **Collaborate Better**: Share and import style classes with your team
 - **Work Smarter**: Manage styles like a developer with a familiar CSS-like approach
 
-## Architecture
+## Technical Stack
 
 - **Core Logic:** Implemented in TypeScript with strict type-checking using Create Figma Plugin.
 - **UI Layer:** Built with Preact and @create-figma-plugin/ui components for native Figma look and feel.
 - **Data Storage:** Localized JSON-based storage using Figma's plugin data API.
 - **Plugin Framework:** Leverages Create Figma Plugin framework for standardized development and build process.
 - **Build System:** Uses esbuild through Create Figma Plugin for fast and efficient bundling.
+- **Styling:** Tailwind CSS for custom styling integrated with Figma's design system.
 
 ## Documentation Guidelines
 
@@ -37,17 +38,11 @@ plugin-root/
 ├── src/                    # Source code directory
 │   ├── main.ts            # Main plugin logic
 │   ├── ui.tsx             # Plugin UI (Preact components)
-│   └── styles.css         # Tailwind CSS styles
-├── build/                  # Build output directory (generated)
-│   ├── code.js           # Compiled plugin code
-│   ├── ui.js            # Compiled UI code
-│   └── styles.css       # Compiled styles
-├── .notes/               # Project documentation
-├── manifest.json        # Plugin configuration (generated)
-├── package.json        # Project dependencies
-├── tsconfig.json       # TypeScript configuration
-├── tailwind.config.js # Tailwind configuration
-└── README.md          # Project documentation
+│   ├── input.css          # Tailwind CSS input
+│   └── output.css         # Generated CSS
+├── build/                  # Build output directory
+├── .notes/                # Project documentation
+└── [configuration files]  # Various config files
 ```
 
 ### Directory Structure Guidelines
@@ -77,57 +72,86 @@ plugin-root/
 ## Key Features
 
 - **Smart Style Management**:
-  - Save any frame's styles as reusable classes
+  - Save frame properties as reusable classes
   - Apply styles with one click
-  - Update styles globally across your design
+  - Update existing classes with new properties
   - Organize and search your style library
+  - Full support for auto-layout properties
+  - Comprehensive handling of frame dimensions and constraints
 
-- **Efficient Workflow**:
-  - Batch apply styles to multiple frames
-  - Quick search and filter functionality
-  - Real-time style preview
-  - Intuitive drag-and-drop interface
+- **Auto Layout Support**:
+  - Save and apply layout mode (NONE/HORIZONTAL/VERTICAL)
+  - Handle primary and counter axis properties
+  - Support for wrap and spacing settings
+  - Manage padding values individually
+  - Control canvas stacking (layoutPositioning)
+  - Handle min/max width/height constraints
 
-- **Team Collaboration**:
-  - Export and import style libraries
-  - Share consistent styles across projects
-  - Maintain design system consistency
-  - Version control for your styles
+- **Style Properties**:
+  - Complete appearance properties (opacity, blendMode, etc.)
+  - Support for style references (fill, stroke, effect, grid)
+  - Direct style values when no references exist
+  - Stroke properties and dash patterns
+  - Corner radius settings
 
 - **Developer-Friendly**:
-  - CSS-like class naming
-  - JSON-based style definitions
-  - Easy integration with design systems
-  - Familiar interface for developers
+  - TypeScript with strict type checking
+  - Clear interface definitions
+  - Comprehensive error handling
+  - Detailed console logging for debugging
+  - Event-based communication between UI and plugin
 
 ## Future Enhancements
 
-- Add support for advanced styling options like conditional rules.
-- Integration with external design systems and cloud storage.
-- Enhanced analytics for class usage and design impact tracking.
+1. **Style Management**:
+   - Enhanced property validation
+   - Support for nested properties
+   - Improved error handling
+   - Class categories and tags
+
+2. **UI Improvements**:
+   - Class previews
+   - Drag and drop reordering
+   - Better visual feedback
+   - Advanced search capabilities
+
+3. **Collaboration**:
+   - Enhanced import/export
+   - Class sharing
+   - Team libraries
+   - Version control
+
+4. **Advanced Features**:
+   - Conditional styles
+   - Style variables
+   - Batch operations
+   - Usage analytics
 
 ## Best Practices
 
 1. **Code Organization**:
-   - Separate plugin logic (`main.ts`) and UI (`ui.tsx`)
-   - Use TypeScript with strict type checking
-   - Follow Create Figma Plugin conventions
-   - Leverage @create-figma-plugin/ui components
+   - Separate concerns between main.ts and ui.tsx
+   - Use TypeScript interfaces for type safety
+   - Follow Create Figma Plugin patterns
+   - Maintain clear error handling
 
-2. **Build Process**:
-   - Use Create Figma Plugin's build system
-   - No manual compilation required
-   - Source maps enabled for debugging
+2. **Style Management**:
+   - Save complete frame properties
+   - Handle all auto-layout cases
+   - Validate property values
+   - Provide fallbacks for missing values
 
-3. **Version Control**:
-   - Track source files and configurations
-   - Ignore build artifacts in `/dist`
-   - Document changes in CHANGELOG.md
+3. **Error Handling**:
+   - Validate input before saving
+   - Handle missing or invalid properties
+   - Provide clear user feedback
+   - Log errors for debugging
 
 4. **Documentation**:
-   - Keep documentation up-to-date
-   - Include setup instructions in README.md
-   - Document event system and data structures
+   - Keep interfaces documented
+   - Update changelog for changes
+   - Document complex logic
+   - Maintain clear examples
 
 ## Project Highlights
 
