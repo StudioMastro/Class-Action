@@ -2,76 +2,70 @@
 
 ## High Priority
 
--   [ ] Improve Auto Layout Property Management (**Status:** In Progress, **Notes:** Enhance handling of auto layout properties)
-    - [x] Implement basic auto layout property saving
-    - [x] Add support for layoutPositioning
-    - [ ] Add validation for auto layout properties
-    - [ ] Improve error handling for invalid properties
+-   [ ] Enhance Error Handling (**Status:** In Progress, **Notes:** Improve error handling and validation)
+    - [x] Basic property validation
+    - [x] Layout positioning validation
+    - [x] Style reference validation
+    - [ ] Advanced validation rules
+    - [ ] Comprehensive error messages
 
--   [ ] Enhance Style Class Management (**Status:** In Progress, **Notes:** Improve class management system)
-    - [x] Basic class saving and applying
-    - [x] Support for style references
-    - [ ] Add class validation
-    - [ ] Implement class versioning
+-   [ ] Improve User Experience (**Status:** In Progress, **Notes:** Enhance UI feedback and interactions)
+    - [x] Basic class operations
+    - [x] Search functionality
+    - [x] Error notifications
+    - [x] CSS-like property display
+    - [ ] Class previews
+    - [ ] Drag and drop support
 
--   [ ] Optimize User Interface (**Status:** In Progress, **Notes:** Make UI more intuitive)
-    - [x] Basic class list with search
-    - [x] Class actions (save, apply, update, delete)
-    - [ ] Add class previews
-    - [ ] Improve visual feedback
+-   [ ] Advanced Class Management (**Status:** To Do, **Notes:** Add advanced class features)
+    - [x] Basic class versioning
+    - [x] Class updates
+    - [x] Style reference display
+    - [ ] Class inheritance
+    - [ ] Class categories/tags
 
 ## Medium Priority
 
 -   [ ] Improve Class Import/Export (**Status:** To Do, **Notes:** Make sharing system more robust)
-    - Add JSON validation
-    - Handle class conflicts
-    - Support class versioning
-    - Add batch import/export
+    - [x] Basic JSON export/import
+    - [ ] Advanced validation
+    - [ ] Conflict resolution
+    - [ ] Batch operations
 
 -   [ ] Implement Batch Operations (**Status:** To Do, **Notes:** Operations on multiple frames)
-    - Apply to multiple frames
-    - Update multiple classes
-    - Bulk delete/rename
+    - [ ] Multi-frame selection
+    - [ ] Bulk updates
+    - [ ] Batch processing
 
 -   [ ] Add Template System (**Status:** To Do, **Notes:** Predefined class templates)
-    - Create default templates
-    - Allow custom templates
-    - Add template previews
-
-## Low Priority
-
--   [ ] Add Usage Analytics (**Status:** To Do, **Notes:** Track class usage)
-    - Track most used classes
-    - Monitor changes
-    - Generate reports
-
--   [ ] Implement Advanced Features (**Status:** To Do, **Notes:** Additional functionality)
-    - Add conditional styles
-    - Support variables
-    - Add class inheritance
+    - [ ] Default templates
+    - [ ] Custom templates
+    - [ ] Template management
 
 ## Completed
-
--   [x] Basic Plugin Setup
-    - [x] Project structure with Create Figma Plugin
-    - [x] TypeScript configuration
-    - [x] Build system setup
-    - [x] Basic UI framework
-
--   [x] Core Functionality
-    - [x] Frame property extraction
-    - [x] Class saving system
-    - [x] Property application
-    - [x] Basic error handling
 
 -   [x] Auto Layout Support
     - [x] Layout mode handling
     - [x] Spacing and padding
     - [x] Axis properties
-    - [x] Canvas stacking
+    - [x] Canvas stacking (layoutPositioning)
+    - [x] Min/max constraints
 
 -   [x] Style Properties
     - [x] Appearance properties
-    - [x] Style references
-    - [x] Direct style values
+    - [x] Style references with RGB values
+    - [x] Direct style values in CSS format
     - [x] Frame constraints
+
+-   [x] Core Functionality
+    - [x] Frame property extraction
+    - [x] Class saving/loading
+    - [x] Property application
+    - [x] Basic error handling
+
+-   [x] Basic UI Features
+    - [x] Class list with search
+    - [x] Basic operations (CRUD)
+    - [x] Error notifications
+    - [x] CSS-like property display
+    - [x] Operation feedback

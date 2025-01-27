@@ -75,7 +75,7 @@ plugin-root/
   - Save frame properties as reusable classes
   - Apply styles with one click
   - Update existing classes with new properties
-  - Organize and search your style library
+  - View detailed CSS-like property information
   - Full support for auto-layout properties
   - Comprehensive handling of frame dimensions and constraints
 
@@ -89,14 +89,14 @@ plugin-root/
 
 - **Style Properties**:
   - Complete appearance properties (opacity, blendMode, etc.)
-  - Support for style references (fill, stroke, effect, grid)
-  - Direct style values when no references exist
+  - Support for style references with RGB values
+  - Direct style values with CSS-like format
   - Stroke properties and dash patterns
   - Corner radius settings
 
 - **Developer-Friendly**:
   - TypeScript with strict type checking
-  - Clear interface definitions
+  - CSS-like property display
   - Comprehensive error handling
   - Detailed console logging for debugging
   - Event-based communication between UI and plugin
@@ -139,7 +139,7 @@ plugin-root/
    - Save complete frame properties
    - Handle all auto-layout cases
    - Validate property values
-   - Provide fallbacks for missing values
+   - Convert style references to readable format
 
 3. **Error Handling**:
    - Validate input before saving

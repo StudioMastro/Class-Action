@@ -12,11 +12,13 @@
    - Components rendering properly
    - Event handling working
    - Layout and styling refined
+   - CSS-like property display added
 6. ✅ Plugin Logic Migration
    - Frame properties saving/applying implemented
    - Type safety improvements completed
    - Event handling system working
    - Error handling improved
+   - Style reference handling enhanced
 
 ### Current Status
 1. ✅ Build System:
@@ -30,12 +32,14 @@
    - Components match Figma's design system
    - Event system working properly
    - Styling integrated with Tailwind CSS
+   - CSS-like property display implemented
 
 3. ✅ Plugin Logic:
    - Core functionality migrated
    - Auto layout properties supported
-   - Style references working
+   - Style references working with RGB values
    - Error handling improved
+   - Property conversion to CSS format
 
 4. ✅ Project Structure:
    - Clean directory organization
@@ -51,7 +55,7 @@
    - Enhance logging for debugging
 
 2. UI Polish:
-   - Add more visual feedback
+   - Add class previews
    - Improve error messages
    - Add loading states
    - Enhance accessibility
