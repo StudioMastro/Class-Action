@@ -3,6 +3,7 @@ import { h, VNode } from 'preact'
 import { Text } from '@create-figma-plugin/ui'
 import { emit } from '@create-figma-plugin/utilities'
 import type { SavedClass } from '../types'
+import { Button, IconButton } from './common'
 
 // Props per il Modal base
 interface ModalProps {
@@ -92,7 +93,6 @@ const CloseIcon = () => (
 )
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  // Controllo iniziale
   if (!isOpen) return null
 
   return (
@@ -102,14 +102,15 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         onClick={onClose}
       />
       <div className="relative z-10 w-[300px] bg-[var(--figma-color-bg)] rounded-lg shadow-lg">
-        <div className="flex items-center justify-between p-4 border-b border-[var(--figma-color-border)]">
+        <div className="flex items-center justify-between py-3 px-4 border-b border-[var(--figma-color-border)]">
           <Text className="font-bold text-base">{title}</Text>
-          <button 
+          <IconButton 
             onClick={onClose}
-            className="p-1 hover:bg-[var(--figma-color-bg-hover)] rounded"
+            variant="secondary"
+            size="small"
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </div>
         <div className="p-4">
           {children}
@@ -131,22 +132,7 @@ export function ConfirmDialog({
   showCancelButton = true,
   cancelButtonText = 'Cancel'
 }: ConfirmDialogProps) {
-  // Controllo iniziale
   if (!isOpen) return null
-
-  const getButtonVariantClass = (variant: string): string => {
-    const baseClasses = 'px-3 py-2 rounded transition-colors'
-    switch (variant) {
-      case 'danger':
-        return `${baseClasses} bg-[var(--figma-color-bg-danger)] text-[var(--figma-color-text-onbrand)] hover:bg-[var(--figma-color-bg-danger-hover)]`
-      case 'warning':
-        return `${baseClasses} bg-[var(--figma-color-bg-warning)] text-[var(--figma-color-text-onbrand)] hover:bg-[var(--figma-color-bg-warning-hover)]`
-      case 'success':
-        return `${baseClasses} bg-[var(--figma-color-bg-success)] text-[var(--figma-color-text-onbrand)] hover:bg-[var(--figma-color-bg-success-hover)]`
-      default:
-        return `${baseClasses} bg-[var(--figma-color-bg-brand)] text-[var(--figma-color-text-onbrand)] hover:bg-[var(--figma-color-bg-brand-hover)]`
-    }
-  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
@@ -155,19 +141,21 @@ export function ConfirmDialog({
         {children}
         <div className="flex justify-end gap-2 mt-4">
           {showCancelButton && (
-            <button
+            <Button
               onClick={onClose}
-              className="px-3 py-2 rounded hover:bg-[var(--figma-color-bg-hover)] transition-colors"
+              variant="secondary"
+              size="medium"
             >
               {cancelButtonText}
-            </button>
+            </Button>
           )}
-          <button 
+          <Button 
             onClick={onConfirm}
-            className={getButtonVariantClass(variant)}
+            variant={variant}
+            size="medium"
           >
             {confirmText}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>
@@ -259,18 +247,18 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
     return (
       <div className="mb-4">
         <div className="bg-[#1e1e1e] rounded-lg overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-[#333]">
             <div className="flex items-center gap-2">
               <span className="text-[#f39c12] text-xs uppercase">css</span>
               <span className="text-[#666] text-xs">Styles</span>
             </div>
-            <button
+            <Button
               onClick={() => copyToClipboard(cssCode)}
-              className="px-2 py-1 text-xs text-[#666] hover:text-[#fff] transition-colors"
+              variant="secondary"
+              size="small"
             >
               COPY
-            </button>
+            </Button>
           </div>
 
           {/* Code content */}
