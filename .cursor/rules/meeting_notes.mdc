@@ -1,3 +1,7 @@
+---
+description: Documents key decisions, discussions, and changes from project meetings. Reference for understanding recent changes and future directions.
+globs: src/**/*
+---
 # Meeting Notes
 
 ## 2024-01-10 - Project Restructuring and Planning

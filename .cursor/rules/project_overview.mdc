@@ -1,3 +1,7 @@
+---
+description: Core project documentation defining the plugin's goals, technical stack, features, and best practices. Essential for understanding architectural decisions and development guidelines.
+globs: *.ts, *.tsx, *.json, src/**/*
+---
 # Project Overview
 
 ## Goal

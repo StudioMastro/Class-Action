@@ -1,3 +1,7 @@
+---
+description: Provides a comprehensive map of the project's file organization and structure. Use this rule when working with file paths, adding new files, or understanding the project layout.
+globs: 
+---
 # Directory Structure
 
 ## Overview

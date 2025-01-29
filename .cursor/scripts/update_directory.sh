@@ -2,7 +2,7 @@
 
 # Imposta il percorso del progetto e del file di output
 PROJECT_ROOT="$(cd "$(dirname "${0}")/../.." && pwd)"
-OUTPUT_FILE="${PROJECT_ROOT}/.notes/directory_structure.md"
+OUTPUT_FILE="${PROJECT_ROOT}/.cursor/rules/directory_structure.mdc"
 
 # Directory da escludere
 EXCLUDED_DIRS=".git node_modules .next dist .vscode coverage .Trash"
@@ -17,7 +17,7 @@ get_directory_description() {
         "styles") echo "CSS and styling related files" ;;
         "lib") echo "Utility functions and shared libraries" ;;
         "types") echo "TypeScript type definitions" ;;
-        ".notes") echo "Project documentation and notes" ;;
+        ".cursor") echo "Cursor IDE configuration and project rules" ;;
         *) echo "" ;;
     esac
 }

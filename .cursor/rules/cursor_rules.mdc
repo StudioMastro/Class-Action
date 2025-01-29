@@ -1,3 +1,7 @@
+---
+description: Core configuration for AI assistant behavior, defining interaction protocols, safety requirements, and project directives. Essential for maintaining consistent AI assistance across the entire codebase.
+globs: 
+---
 {
     "rules": {
         "context_initialization": {
@@ -79,4 +83,4 @@
             }
         }
     }
-}
+} 

@@ -1,3 +1,7 @@
+---
+description: Tracks project tasks, their status, and priorities. Use this rule when implementing new features, fixing bugs, or planning development work.
+globs: src/**/*
+---
 # Task List
 
 ## High Priority
