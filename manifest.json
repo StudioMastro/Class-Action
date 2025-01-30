@@ -6,5 +6,6 @@
   "id": "class-action",
   "name": "Class Action",
   "main": "build/main.js",
-  "ui": "build/ui.js"
+  "ui": "build/ui.js",
+  "permissions": ["currentuser"]
 }

@@ -60,4 +60,28 @@ export interface SavedClassResult extends Omit<SavedClass, 'name'> {}
 
 export interface SaveClassEvent {
   name: string
+}
+
+export interface ClassExportFormat {
+  version: string
+  exportDate: string
+  classes: SavedClass[]
+  metadata: {
+    pluginVersion: string
+    figmaVersion: string
+    author?: string
+    description?: string
+    checksum: string
+    totalClasses: number
+    exportedBy: string
+  }
+}
+
+export interface ImportResult {
+  success: boolean
+  error?: string
+  importedClasses?: SavedClass[]
+  skippedClasses?: string[]
+  message?: string
+  conflicts?: string[]
 } 

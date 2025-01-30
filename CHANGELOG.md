@@ -5,6 +5,13 @@ Tutte le modifiche notevoli a questo progetto saranno documentate in questo file
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-01-19
+
+### Fixed
+- Risolto il problema con la reimportazione dello stesso file
+- Migliorati i messaggi di feedback durante l'importazione
+- Ottimizzata la gestione degli eventi di importazione
+
 ## [0.2.0] - 2025-01-17
 
 ### Added

@@ -1,5 +1,6 @@
 import { emit, on, showUI } from '@create-figma-plugin/utilities'
-import type { SavedClass, ClassData, SavedClassResult, AppearanceProperties } from './types'
+import type { SavedClass, ClassData, SavedClassResult, AppearanceProperties, ClassExportFormat } from './types'
+import { validateClassData, generateChecksum } from './utils/validation'
 
 const STORAGE_KEY = 'savedClasses'
 
@@ -119,10 +120,10 @@ export default function () {
     let hasStyleReferences = false
 
     // Check style IDs and get style names and values
-    async function getStyleInfo(styleId: string): Promise<{ name: string; value?: string }> {
+    async function getStyleInfo(styleId: string): Promise<{ id: string; name: string; value?: string }> {
       try {
         const style = await figma.getStyleByIdAsync(styleId)
-        if (!style) return { name: styleId }
+        if (!style) return { id: styleId, name: styleId }
 
         let value: string | undefined
         if ('paints' in style) {
@@ -135,26 +136,27 @@ export default function () {
         }
 
         return { 
+          id: styleId,
           name: style.name,
           value
         }
       } catch (error) {
         console.error('Error getting style info:', error)
-        return { name: styleId }
+        return { id: styleId, name: styleId }
       }
     }
 
     if (frame.fillStyleId && typeof frame.fillStyleId === 'string') {
-      const { name, value } = await getStyleInfo(frame.fillStyleId)
-      styleReferences.fillStyleId = `${name}${value ? ` (${value})` : ''}`
+      const { id } = await getStyleInfo(frame.fillStyleId)
+      styleReferences.fillStyleId = id
       hasStyleReferences = true
-      console.log('Found fill style:', name, value)
+      console.log('Found fill style ID:', id)
     }
     if (frame.strokeStyleId && typeof frame.strokeStyleId === 'string') {
-      const { name, value } = await getStyleInfo(frame.strokeStyleId)
-      styleReferences.strokeStyleId = `${name}${value ? ` (${value})` : ''}`
+      const { id } = await getStyleInfo(frame.strokeStyleId)
+      styleReferences.strokeStyleId = id
       hasStyleReferences = true
-      console.log('Found stroke style:', name, value)
+      console.log('Found stroke style ID:', id)
     }
     if (frame.effectStyleId && typeof frame.effectStyleId === 'string') {
       const { name } = await getStyleInfo(frame.effectStyleId)
@@ -391,18 +393,26 @@ export default function () {
       if (classData.styleReferences) {
         const { fillStyleId, strokeStyleId, effectStyleId, gridStyleId } = classData.styleReferences
         
-        if (fillStyleId && typeof fillStyleId === 'string') {
-          await frame.setFillStyleIdAsync(fillStyleId)
-          console.log('Applied fill style ID:', fillStyleId)
-        }
-        if (strokeStyleId && typeof strokeStyleId === 'string') {
-          await frame.setStrokeStyleIdAsync(strokeStyleId)
-        }
-        if (effectStyleId && typeof effectStyleId === 'string') {
-          await frame.setEffectStyleIdAsync(effectStyleId)
-        }
-        if (gridStyleId && typeof gridStyleId === 'string') {
-          await frame.setGridStyleIdAsync(gridStyleId)
+        try {
+          if (fillStyleId && typeof fillStyleId === 'string') {
+            await frame.setFillStyleIdAsync(fillStyleId)
+            console.log('Applied fill style ID:', fillStyleId)
+          }
+          if (strokeStyleId && typeof strokeStyleId === 'string') {
+            await frame.setStrokeStyleIdAsync(strokeStyleId)
+            console.log('Applied stroke style ID:', strokeStyleId)
+          }
+          if (effectStyleId && typeof effectStyleId === 'string') {
+            await frame.setEffectStyleIdAsync(effectStyleId)
+            console.log('Applied effect style ID:', effectStyleId)
+          }
+          if (gridStyleId && typeof gridStyleId === 'string') {
+            await frame.setGridStyleIdAsync(gridStyleId)
+            console.log('Applied grid style ID:', gridStyleId)
+          }
+        } catch (error) {
+          console.error('Error applying style references:', error)
+          // Continue with direct styles if style references fail
         }
       }
 
@@ -535,6 +545,11 @@ export default function () {
       const frameProperties = await extractFrameProperties(frame)
       console.log('Extracted new properties:', frameProperties)
 
+      // Verifica se ci sono stili applicati
+      if (frameProperties.styleReferences) {
+        console.log('Found style references:', frameProperties.styleReferences)
+      }
+
       // Load existing classes
       const savedClasses = await loadSavedClasses()
       
@@ -579,11 +594,153 @@ export default function () {
     }
   }
 
+  async function handleExportClasses(selectedClasses?: string[]) {
+    try {
+      // Notifica iniziale
+      figma.notify('Preparing classes for export...', { timeout: 1000 })
+      
+      const savedClasses = await loadSavedClasses()
+      const classesToExport = selectedClasses 
+        ? savedClasses.filter((cls: ClassData) => selectedClasses.includes(cls.name))
+        : savedClasses
+
+      // Validazione delle classi
+      const invalidClasses = classesToExport.filter((cls: ClassData) => !validateClassData(cls))
+      if (invalidClasses.length > 0) {
+        const invalidNames = invalidClasses.map((cls: ClassData) => cls.name).join(', ')
+        throw new Error(`Invalid class data found in: ${invalidNames}`)
+      }
+
+      // Preparazione dati di export
+      const exportData: ClassExportFormat = {
+        version: '1.0.0',
+        exportDate: new Date().toISOString(),
+        classes: classesToExport,
+        metadata: {
+          pluginVersion: '1.0.0',
+          figmaVersion: figma.editorType,
+          checksum: '', // Sarà aggiunto dopo
+          totalClasses: classesToExport.length,
+          exportedBy: figma.currentUser?.name || 'Unknown'
+        }
+      }
+
+      // Aggiungi checksum
+      exportData.metadata.checksum = generateChecksum(exportData.classes)
+
+      // Genera nome file suggerito
+      const timestamp = new Date().toISOString()
+        .split('T')[0] // Prende solo la parte della data (YYYY-MM-DD)
+      const suggestedFileName = `class-action-export-${timestamp}.json`
+
+      // Prepara il contenuto del file
+      const jsonString = JSON.stringify(exportData, null, 2)
+
+      // Emetti evento per mostrare dialog di salvataggio
+      emit('SHOW_SAVE_DIALOG', {
+        suggestedFileName,
+        fileContent: jsonString,
+        totalClasses: classesToExport.length
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error exporting classes:', error)
+      figma.notify(error instanceof Error ? error.message : 'Failed to export classes', { error: true })
+      return false
+    }
+  }
+
+  async function handleImportClasses(jsonString: string) {
+    try {
+      console.log('Starting import process with data:', jsonString.substring(0, 200) + '...')
+      
+      const importData = JSON.parse(jsonString) as ClassExportFormat
+      console.log('Parsed import data:', {
+        version: importData.version,
+        totalClasses: importData.classes?.length,
+        metadata: importData.metadata
+      })
+      
+      // Validazione base del formato
+      if (!importData.version || !importData.classes || !Array.isArray(importData.classes)) {
+        console.error('Validation failed:', { 
+          hasVersion: !!importData.version,
+          hasClasses: !!importData.classes,
+          isArray: Array.isArray(importData.classes)
+        })
+        emit('IMPORT_RESULT', {
+          success: false,
+          error: 'Invalid file format'
+        })
+        return
+      }
+
+      // Carica le classi esistenti
+      const existingClasses = await loadSavedClasses()
+      console.log('Loaded existing classes:', existingClasses.length)
+      
+      // Identifica le classi da importare e quelle già presenti
+      const existingNames = new Set(existingClasses.map((cls: ClassData) => cls.name))
+      const newClasses = []
+      const alreadyExistingClasses = []
+
+      for (const importClass of importData.classes) {
+        if (existingNames.has(importClass.name)) {
+          alreadyExistingClasses.push(importClass.name)
+        } else {
+          newClasses.push(importClass)
+        }
+      }
+
+      // Prepara il messaggio appropriato
+      let notificationMessage = ''
+      if (newClasses.length === 0 && alreadyExistingClasses.length > 0) {
+        notificationMessage = `No classes imported - all ${alreadyExistingClasses.length} classes already exist`
+      } else if (newClasses.length > 0 && alreadyExistingClasses.length > 0) {
+        notificationMessage = `Imported ${newClasses.length} classes, skipped ${alreadyExistingClasses.length} existing classes`
+      } else if (newClasses.length > 0) {
+        notificationMessage = `Successfully imported ${newClasses.length} classes`
+      } else {
+        notificationMessage = 'No classes to import'
+      }
+
+      // Se ci sono nuove classi da importare, le aggiungiamo
+      if (newClasses.length > 0) {
+        const mergedClasses = [...existingClasses, ...newClasses]
+        await saveToStorage(mergedClasses)
+        console.log('Successfully saved merged classes')
+      }
+
+      // Notifica l'utente
+      figma.notify(notificationMessage)
+
+      // Invia il risultato dell'importazione alla UI
+      emit('IMPORT_RESULT', {
+        success: true,
+        importedClasses: newClasses,
+        skippedClasses: alreadyExistingClasses,
+        message: notificationMessage
+      })
+
+    } catch (error) {
+      console.error('Error importing classes:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      figma.notify('Failed to import classes: ' + errorMessage, { error: true })
+      emit('IMPORT_RESULT', {
+        success: false,
+        error: errorMessage
+      })
+    }
+  }
+
   // Event handlers
   on('SAVE_CLASS', handleSaveClass)
   on('APPLY_CLASS', handleApplyClass)
   on('UPDATE_CLASS', handleUpdateClass)
   on('DELETE_CLASS', handleDeleteClass)
+  on('EXPORT_CLASSES', handleExportClasses)
+  on('IMPORT_CLASSES', handleImportClasses)
   on('SAVE_TO_STORAGE', saveToStorage)
   on('LOAD_CLASSES', loadSavedClasses)
   on('CHECK_SELECTION', checkSelection)

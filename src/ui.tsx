@@ -2,7 +2,6 @@
 import { h } from 'preact'
 import { useState, useEffect, useRef } from 'preact/hooks'
 import {
-  Text,
   SearchTextbox,
   Textbox,
   render
@@ -10,9 +9,9 @@ import {
 import { emit, on } from '@create-figma-plugin/utilities'
 import '!./output.css'
 import { ConfirmDialog, ClassDetailsModal } from './components/Modal'
-import { Button, IconButton } from './components/common'
+import { Button, IconButton, Text } from './components/common'
 import { DropdownItem } from './components/common/DropdownItem'
-import type { SavedClass } from './types'
+import type { SavedClass, ImportResult } from './types'
 
 // Icone personalizzate
 const InfoIcon = () => (
@@ -54,6 +53,20 @@ const EllipsisIcon = () => (
   </svg>
 )
 
+const ImportIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M8 2V11M8 11L5 8M8 11L11 8" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M3 13H13" stroke="currentColor" stroke-width="1.5"/>
+  </svg>
+)
+
+const ExportIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M8 11V2M8 2L5 5M8 2L11 5" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M3 13H13" stroke="currentColor" stroke-width="1.5"/>
+  </svg>
+)
+
 function Plugin() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [savedClasses, setSavedClasses] = useState<SavedClass[]>([])
@@ -71,6 +84,8 @@ function Plugin() {
   const [classToUpdate, setClassToUpdate] = useState<SavedClass | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [classToView, setClassToView] = useState<SavedClass | null>(null)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [importConflicts, setImportConflicts] = useState<string[]>([])
 
   // Aggiungiamo un ref per il dropdown
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -135,6 +150,15 @@ function Plugin() {
       }
     })
 
+    const unsubscribeImportResult = on('IMPORT_RESULT', (result: ImportResult) => {
+      if (result.success) {
+        // Non mostriamo più una notifica qui perché viene già mostrata dal plugin
+        emit('LOAD_CLASSES')
+      } else {
+        emit('SHOW_ERROR', result.error || 'Failed to import classes')
+      }
+    })
+
     // Carica i dati iniziali dopo aver registrato gli handlers
     requestAnimationFrame(() => {
       if (mounted) {
@@ -151,6 +175,7 @@ function Plugin() {
       unsubscribeClassDeleted()
       unsubscribeClassUpdated()
       unsubscribeClassApplied()
+      unsubscribeImportResult()
     }
   }, [])
 
@@ -268,11 +293,81 @@ function Plugin() {
     setIsDetailsModalOpen(true)
   }
 
+  const handleExportClasses = async () => {
+    const exportResult = await emit('EXPORT_CLASSES')
+    if (typeof exportResult === 'string') {
+      // Crea un blob con il JSON
+      const blob = new Blob([exportResult], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      
+      // Crea un link temporaneo per il download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `class-action-export-${new Date().toISOString().split('T')[0]}.classaction`
+      document.body.appendChild(link)
+      link.click()
+      
+      // Cleanup
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      emit('SHOW_NOTIFICATION', 'Classes exported successfully')
+    }
+  }
+
+  const handleFileChange = async (event: Event) => {
+    const input = event.target as HTMLInputElement
+    if (!input.files || input.files.length === 0) return
+    
+    const file = input.files[0]
+    const reader = new FileReader()
+    
+    reader.onload = (e) => {
+      if (!e.target?.result) return
+      const jsonString = e.target.result as string
+      emit('IMPORT_CLASSES', jsonString)
+      // Reset the input value so the same file can be imported again
+      input.value = ''
+    }
+    
+    reader.readAsText(file)
+  }
+
+  // Aggiungi questa funzione per gestire il salvataggio del file
+  const handleSaveDialog = async (data: { suggestedFileName: string, fileContent: string, totalClasses: number }) => {
+    try {
+      // Crea un Blob con il contenuto JSON
+      const blob = new Blob([data.fileContent], { type: 'application/json' })
+      
+      // Crea un elemento <a> per il download
+      const downloadLink = document.createElement('a')
+      downloadLink.href = URL.createObjectURL(blob)
+      downloadLink.download = data.suggestedFileName
+      
+      // Simula il click per far partire il download
+      document.body.appendChild(downloadLink)
+      downloadLink.click()
+      document.body.removeChild(downloadLink)
+      
+      // Pulisci l'URL object
+      URL.revokeObjectURL(downloadLink.href)
+      
+      // Mostra notifica di successo
+      emit('SHOW_NOTIFICATION', `Successfully exported ${data.totalClasses} classes`)
+    } catch (error) {
+      console.error('Error saving file:', error)
+      emit('SHOW_ERROR', 'Failed to save export file')
+    }
+  }
+
+  // Aggiungi l'event listener per SHOW_SAVE_DIALOG
+  on('SHOW_SAVE_DIALOG', handleSaveDialog)
+
   if (!isInitialized) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center gap-2">
-          <Text>Initializing plugin...</Text>
+          <Text size="base">Initializing plugin...</Text>
         </div>
       </div>
     )
@@ -282,10 +377,8 @@ function Plugin() {
     <div className="flex flex-col p-4 gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Text>
-          <span className="text-lg font-bold" style={{ color: 'var(--figma-color-text)' }}>
-            Class Action
-          </span>
+        <Text size="lg" weight="bold" className="text-[var(--figma-color-text)]">
+          Class Action
         </Text>
       </div>
 
@@ -363,11 +456,10 @@ function Plugin() {
               {activeMenu === savedClass.name && (
                 <div 
                   ref={dropdownRef}
-                  className="absolute right-0 top-full p-1 mt-1 rounded-md z-10 overflow-hidden whitespace-nowrap"
+                  className="absolute right-0 top-full p-1 mt-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg"
                   style={{ 
                     backgroundColor: 'var(--figma-color-bg)',
-                    border: '1px solid var(--figma-color-border)',
-                    boxShadow: 'var(--shadow-floating)'
+                    border: '1px solid var(--figma-color-border)'
                   }}
                 >
                   <div className="flex flex-col gap-1">
@@ -376,7 +468,7 @@ function Plugin() {
                       variant="secondary"
                       icon={<InfoIcon />}
                     >
-                      View Details
+                      Info
                     </DropdownItem>
 
                     <DropdownItem 
@@ -408,10 +500,46 @@ function Plugin() {
             </div>
           ))
         ) : (
-          <Text style={{ color: 'var(--figma-color-text-secondary)' }}>
+          <Text variant="muted">
             No classes found
           </Text>
         )}
+      </div>
+
+      {/* Import/Export Section */}
+      <div className="flex items-center justify-between mb-2">
+        <Text size="base" weight="medium">Saved Classes</Text>
+        <div className="flex gap-2">
+          <div>
+            <input
+              type="file"
+              accept=".classaction,application/json"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+              id="import-input"
+            />
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={() => document.getElementById('import-input')?.click()}
+            >
+              <div className="flex items-center gap-1">
+                <ImportIcon />
+                <span>Import</span>
+              </div>
+            </Button>
+          </div>
+          <Button
+            onClick={handleExportClasses}
+            variant="secondary"
+            size="medium"
+          >
+            <div className="flex items-center gap-1">
+              <ExportIcon />
+              <span>Export</span>
+            </div>
+          </Button>
+        </div>
       </div>
 
       {/* Modals */}
@@ -470,6 +598,26 @@ function Plugin() {
         }}
         classData={classToView}
       />
+
+      {/* Import Conflicts Modal */}
+      {isImportModalOpen && (
+        <ConfirmDialog
+          isOpen={isImportModalOpen}
+          onClose={() => {
+            setIsImportModalOpen(false)
+            setImportConflicts([])
+          }}
+          title="Import Conflicts"
+          message={`The following classes already exist:\n${importConflicts.join(', ')}\n\nDo you want to overwrite them?`}
+          onConfirm={() => {
+            // TODO: Implementare la logica di overwrite
+            setIsImportModalOpen(false)
+            setImportConflicts([])
+          }}
+          confirmText="Overwrite"
+          variant="warning"
+        />
+      )}
     </div>
   )
 }

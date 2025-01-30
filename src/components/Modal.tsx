@@ -1,6 +1,6 @@
 /** @jsx h */
 import { h, VNode } from 'preact'
-import { Text } from '@create-figma-plugin/ui'
+import { Text } from './common/Text'
 import { emit } from '@create-figma-plugin/utilities'
 import type { SavedClass } from '../types'
 import { Button, IconButton } from './common'
@@ -103,7 +103,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
       <div className="relative z-10 w-[300px] bg-[var(--figma-color-bg)] rounded-lg shadow-lg">
         <div className="flex items-center justify-between py-3 px-4 border-b border-[var(--figma-color-border)]">
-          <Text className="font-bold text-base">{title}</Text>
+          <div className="mb-4">
+            <Text size="lg" weight="bold">{title}</Text>
+          </div>
           <IconButton 
             onClick={onClose}
             variant="secondary"
@@ -137,7 +139,7 @@ export function ConfirmDialog({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="flex flex-col gap-2">
-        {message && <Text>{message}</Text>}
+        {message && <Text size="base">{message}</Text>}
         {children}
         <div className="flex justify-end gap-2 mt-4">
           {showCancelButton && (
@@ -151,7 +153,7 @@ export function ConfirmDialog({
           )}
           <Button 
             onClick={onConfirm}
-            variant={variant}
+            variant={variant === 'danger' ? 'danger' : 'primary'}
             size="medium"
           >
             {confirmText}
@@ -207,7 +209,7 @@ export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsMo
         styleProps.backgroundColor = classData.styles.fills[0]
       } else if (classData.styleReferences?.fillStyleId) {
         const fillStyleId = String(classData.styleReferences.fillStyleId)
-        styleProps.backgroundColor = `[style: ${fillStyleId}]`
+        styleProps.backgroundColor = `[style-id: ${fillStyleId}]`
       }
 
       // Gestione del border-color
@@ -215,7 +217,7 @@ export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsMo
         styleProps.borderColor = classData.styles.strokes[0]
       } else if (classData.styleReferences?.strokeStyleId) {
         const strokeStyleId = String(classData.styleReferences.strokeStyleId)
-        styleProps.borderColor = `[style: ${strokeStyleId}]`
+        styleProps.borderColor = `[style-id: ${strokeStyleId}]`
       }
 
       // Gestione del box-shadow
@@ -223,7 +225,7 @@ export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsMo
         styleProps.boxShadow = classData.styles.effects[0]
       } else if (classData.styleReferences?.effectStyleId) {
         const effectStyleId = String(classData.styleReferences.effectStyleId)
-        styleProps.boxShadow = `[style: ${effectStyleId}]`
+        styleProps.boxShadow = `[style-id: ${effectStyleId}]`
       }
 
       return styleProps
@@ -284,7 +286,7 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="View detail">
+    <Modal isOpen={isOpen} onClose={onClose} title="Info">
       <div className="max-h-[70vh] overflow-y-auto">
         <CodeBlock properties={allProperties} />
       </div>

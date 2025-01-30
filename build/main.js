@@ -122,6 +122,50 @@ var init_lib = __esm({
   }
 });
 
+// src/utils/validation.ts
+var validateClassData, generateChecksum;
+var init_validation = __esm({
+  "src/utils/validation.ts"() {
+    "use strict";
+    validateClassData = (cls) => {
+      if (!cls.name || typeof cls.name !== "string") return false;
+      if (typeof cls.width !== "number" || typeof cls.height !== "number") return false;
+      if (!["NONE", "HORIZONTAL", "VERTICAL"].includes(cls.layoutMode)) return false;
+      if (cls.layoutProperties) {
+        const {
+          primaryAxisSizingMode,
+          counterAxisSizingMode,
+          primaryAxisAlignItems,
+          counterAxisAlignItems,
+          layoutWrap,
+          padding
+        } = cls.layoutProperties;
+        if (!primaryAxisSizingMode || !counterAxisSizingMode) return false;
+        if (!primaryAxisAlignItems || !counterAxisAlignItems) return false;
+        if (!layoutWrap) return false;
+        if (!padding || typeof padding.top !== "number" || typeof padding.right !== "number" || typeof padding.bottom !== "number" || typeof padding.left !== "number") return false;
+      }
+      if (cls.appearance) {
+        const { opacity, blendMode, cornerRadius } = cls.appearance;
+        if (typeof opacity !== "number" || opacity < 0 || opacity > 1) return false;
+        if (!blendMode) return false;
+        if (typeof cornerRadius !== "number" && !Array.isArray(cornerRadius)) return false;
+      }
+      return true;
+    };
+    generateChecksum = (data) => {
+      const str = JSON.stringify(data);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash;
+      }
+      return hash.toString(16);
+    };
+  }
+});
+
 // src/main.ts
 var main_exports = {};
 __export(main_exports, {
@@ -226,7 +270,7 @@ function main_default() {
     async function getStyleInfo(styleId) {
       try {
         const style = await figma.getStyleByIdAsync(styleId);
-        if (!style) return { name: styleId };
+        if (!style) return { id: styleId, name: styleId };
         let value;
         if ("paints" in style) {
           const paint = style.paints[0];
@@ -237,25 +281,26 @@ function main_default() {
           }
         }
         return {
+          id: styleId,
           name: style.name,
           value
         };
       } catch (error) {
         console.error("Error getting style info:", error);
-        return { name: styleId };
+        return { id: styleId, name: styleId };
       }
     }
     if (frame.fillStyleId && typeof frame.fillStyleId === "string") {
-      const { name, value } = await getStyleInfo(frame.fillStyleId);
-      styleReferences.fillStyleId = `${name}${value ? ` (${value})` : ""}`;
+      const { id } = await getStyleInfo(frame.fillStyleId);
+      styleReferences.fillStyleId = id;
       hasStyleReferences = true;
-      console.log("Found fill style:", name, value);
+      console.log("Found fill style ID:", id);
     }
     if (frame.strokeStyleId && typeof frame.strokeStyleId === "string") {
-      const { name, value } = await getStyleInfo(frame.strokeStyleId);
-      styleReferences.strokeStyleId = `${name}${value ? ` (${value})` : ""}`;
+      const { id } = await getStyleInfo(frame.strokeStyleId);
+      styleReferences.strokeStyleId = id;
       hasStyleReferences = true;
-      console.log("Found stroke style:", name, value);
+      console.log("Found stroke style ID:", id);
     }
     if (frame.effectStyleId && typeof frame.effectStyleId === "string") {
       const { name } = await getStyleInfo(frame.effectStyleId);
@@ -444,18 +489,25 @@ function main_default() {
       }
       if (classData.styleReferences) {
         const { fillStyleId, strokeStyleId, effectStyleId, gridStyleId } = classData.styleReferences;
-        if (fillStyleId && typeof fillStyleId === "string") {
-          await frame.setFillStyleIdAsync(fillStyleId);
-          console.log("Applied fill style ID:", fillStyleId);
-        }
-        if (strokeStyleId && typeof strokeStyleId === "string") {
-          await frame.setStrokeStyleIdAsync(strokeStyleId);
-        }
-        if (effectStyleId && typeof effectStyleId === "string") {
-          await frame.setEffectStyleIdAsync(effectStyleId);
-        }
-        if (gridStyleId && typeof gridStyleId === "string") {
-          await frame.setGridStyleIdAsync(gridStyleId);
+        try {
+          if (fillStyleId && typeof fillStyleId === "string") {
+            await frame.setFillStyleIdAsync(fillStyleId);
+            console.log("Applied fill style ID:", fillStyleId);
+          }
+          if (strokeStyleId && typeof strokeStyleId === "string") {
+            await frame.setStrokeStyleIdAsync(strokeStyleId);
+            console.log("Applied stroke style ID:", strokeStyleId);
+          }
+          if (effectStyleId && typeof effectStyleId === "string") {
+            await frame.setEffectStyleIdAsync(effectStyleId);
+            console.log("Applied effect style ID:", effectStyleId);
+          }
+          if (gridStyleId && typeof gridStyleId === "string") {
+            await frame.setGridStyleIdAsync(gridStyleId);
+            console.log("Applied grid style ID:", gridStyleId);
+          }
+        } catch (error) {
+          console.error("Error applying style references:", error);
         }
       }
       if (classData.styles) {
@@ -572,6 +624,9 @@ function main_default() {
     try {
       const frameProperties = await extractFrameProperties(frame);
       console.log("Extracted new properties:", frameProperties);
+      if (frameProperties.styleReferences) {
+        console.log("Found style references:", frameProperties.styleReferences);
+      }
       const savedClasses = await loadSavedClasses();
       const updatedClasses = savedClasses.map(
         (cls) => cls.name === classToUpdate.name ? __spreadProps(__spreadValues({}, frameProperties), { name: classToUpdate.name }) : cls
@@ -603,10 +658,118 @@ function main_default() {
       return false;
     }
   }
+  async function handleExportClasses(selectedClasses) {
+    var _a;
+    try {
+      figma.notify("Preparing classes for export...", { timeout: 1e3 });
+      const savedClasses = await loadSavedClasses();
+      const classesToExport = selectedClasses ? savedClasses.filter((cls) => selectedClasses.includes(cls.name)) : savedClasses;
+      const invalidClasses = classesToExport.filter((cls) => !validateClassData(cls));
+      if (invalidClasses.length > 0) {
+        const invalidNames = invalidClasses.map((cls) => cls.name).join(", ");
+        throw new Error(`Invalid class data found in: ${invalidNames}`);
+      }
+      const exportData = {
+        version: "1.0.0",
+        exportDate: (/* @__PURE__ */ new Date()).toISOString(),
+        classes: classesToExport,
+        metadata: {
+          pluginVersion: "1.0.0",
+          figmaVersion: figma.editorType,
+          checksum: "",
+          // Sarà aggiunto dopo
+          totalClasses: classesToExport.length,
+          exportedBy: ((_a = figma.currentUser) == null ? void 0 : _a.name) || "Unknown"
+        }
+      };
+      exportData.metadata.checksum = generateChecksum(exportData.classes);
+      const timestamp = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      const suggestedFileName = `class-action-export-${timestamp}.json`;
+      const jsonString = JSON.stringify(exportData, null, 2);
+      emit("SHOW_SAVE_DIALOG", {
+        suggestedFileName,
+        fileContent: jsonString,
+        totalClasses: classesToExport.length
+      });
+      return true;
+    } catch (error) {
+      console.error("Error exporting classes:", error);
+      figma.notify(error instanceof Error ? error.message : "Failed to export classes", { error: true });
+      return false;
+    }
+  }
+  async function handleImportClasses(jsonString) {
+    var _a;
+    try {
+      console.log("Starting import process with data:", jsonString.substring(0, 200) + "...");
+      const importData = JSON.parse(jsonString);
+      console.log("Parsed import data:", {
+        version: importData.version,
+        totalClasses: (_a = importData.classes) == null ? void 0 : _a.length,
+        metadata: importData.metadata
+      });
+      if (!importData.version || !importData.classes || !Array.isArray(importData.classes)) {
+        console.error("Validation failed:", {
+          hasVersion: !!importData.version,
+          hasClasses: !!importData.classes,
+          isArray: Array.isArray(importData.classes)
+        });
+        emit("IMPORT_RESULT", {
+          success: false,
+          error: "Invalid file format"
+        });
+        return;
+      }
+      const existingClasses = await loadSavedClasses();
+      console.log("Loaded existing classes:", existingClasses.length);
+      const existingNames = new Set(existingClasses.map((cls) => cls.name));
+      const newClasses = [];
+      const alreadyExistingClasses = [];
+      for (const importClass of importData.classes) {
+        if (existingNames.has(importClass.name)) {
+          alreadyExistingClasses.push(importClass.name);
+        } else {
+          newClasses.push(importClass);
+        }
+      }
+      let notificationMessage = "";
+      if (newClasses.length === 0 && alreadyExistingClasses.length > 0) {
+        notificationMessage = `No classes imported - all ${alreadyExistingClasses.length} classes already exist`;
+      } else if (newClasses.length > 0 && alreadyExistingClasses.length > 0) {
+        notificationMessage = `Imported ${newClasses.length} classes, skipped ${alreadyExistingClasses.length} existing classes`;
+      } else if (newClasses.length > 0) {
+        notificationMessage = `Successfully imported ${newClasses.length} classes`;
+      } else {
+        notificationMessage = "No classes to import";
+      }
+      if (newClasses.length > 0) {
+        const mergedClasses = [...existingClasses, ...newClasses];
+        await saveToStorage(mergedClasses);
+        console.log("Successfully saved merged classes");
+      }
+      figma.notify(notificationMessage);
+      emit("IMPORT_RESULT", {
+        success: true,
+        importedClasses: newClasses,
+        skippedClasses: alreadyExistingClasses,
+        message: notificationMessage
+      });
+    } catch (error) {
+      console.error("Error importing classes:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      figma.notify("Failed to import classes: " + errorMessage, { error: true });
+      emit("IMPORT_RESULT", {
+        success: false,
+        error: errorMessage
+      });
+    }
+  }
   on("SAVE_CLASS", handleSaveClass);
   on("APPLY_CLASS", handleApplyClass);
   on("UPDATE_CLASS", handleUpdateClass);
   on("DELETE_CLASS", handleDeleteClass);
+  on("EXPORT_CLASSES", handleExportClasses);
+  on("IMPORT_CLASSES", handleImportClasses);
   on("SAVE_TO_STORAGE", saveToStorage);
   on("LOAD_CLASSES", loadSavedClasses);
   on("CHECK_SELECTION", checkSelection);
@@ -626,6 +789,7 @@ var init_main = __esm({
   "src/main.ts"() {
     "use strict";
     init_lib();
+    init_validation();
     STORAGE_KEY = "savedClasses";
   }
 });

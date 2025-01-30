@@ -28,6 +28,8 @@ declare const styles: {
   readonly "font-bold": string;
   readonly "font-medium": string;
   readonly "font-mono": string;
+  readonly "font-normal": string;
+  readonly "font-sans": string;
   readonly "gap-1": string;
   readonly "gap-2": string;
   readonly "gap-4": string;
@@ -98,8 +100,11 @@ declare const styles: {
   readonly "scale-[0.5]": string;
   readonly "shadow": string;
   readonly "shadow-lg": string;
+  readonly "shadow-md": string;
+  readonly "shadow-sm": string;
   readonly "space-y-2": string;
   readonly "space-y-4": string;
+  readonly "tabular-nums": string;
   readonly "text-[#666]": string;
   readonly "text-[#6a8759]": string;
   readonly "text-[#9b703f]": string;
@@ -107,6 +112,7 @@ declare const styles: {
   readonly "text-[#e6e6e6]": string;
   readonly "text-[#f39c12]": string;
   readonly "text-[var(--figma-color-text)]": string;
+  readonly "text-[var(--figma-color-text-brand)]": string;
   readonly "text-[var(--figma-color-text-danger)]": string;
   readonly "text-[var(--figma-color-text-onbrand)]": string;
   readonly "text-[var(--figma-color-text-secondary)]": string;
@@ -114,8 +120,10 @@ declare const styles: {
   readonly "text-center": string;
   readonly "text-left": string;
   readonly "text-lg": string;
+  readonly "text-right": string;
   readonly "text-sm": string;
   readonly "text-white": string;
+  readonly "text-xl": string;
   readonly "text-xs": string;
   readonly "top-full": string;
   readonly "transition-colors": string;
