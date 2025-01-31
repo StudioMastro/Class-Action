@@ -4,12 +4,15 @@ code.js
 out/
 .next/
 src/styles.css.d.ts
+dist/
+*.tsbuildinfo
 
 # Dependencies
 node_modules/
 .pnp.*
 .yarn/
 .npm
+package-lock.json
 
 # Debug e Log
 *.log
@@ -17,6 +20,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.debug/
 
 # IDE e Editor
 .vscode/
@@ -24,8 +28,26 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+.cursor/
+.cursorignore
 
 # Sistema e Environment
 .DS_Store
 Thumbs.db
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache
+.cache/
+.eslintcache
+.stylelintcache
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Figma specific
+manifest.json

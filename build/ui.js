@@ -665,10 +665,10 @@
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/ae4e6ff7-9fb3-4c25-bff9-f4f408b56235/icon.module.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/44d9ce49-6da8-4f78-b1cc-9b80ecb6c7e0/icon.module.js
   var icon_module_default;
   var init_icon_module = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/ae4e6ff7-9fb3-4c25-bff9-f4f408b56235/icon.module.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/44d9ce49-6da8-4f78-b1cc-9b80ecb6c7e0/icon.module.js"() {
       if (document.getElementById("44cd31a4bb") === null) {
         const element = document.createElement("style");
         element.id = "44cd31a4bb";
@@ -735,10 +735,10 @@
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/faea3451-ebf3-4f2a-b18a-1ee6ce6d4141/search-textbox.module.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/44a180ac-71ff-42c6-899f-e5c2e65fa7d8/search-textbox.module.js
   var search_textbox_module_default;
   var init_search_textbox_module = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/faea3451-ebf3-4f2a-b18a-1ee6ce6d4141/search-textbox.module.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/44a180ac-71ff-42c6-899f-e5c2e65fa7d8/search-textbox.module.js"() {
       if (document.getElementById("c51b28009c") === null) {
         const element = document.createElement("style");
         element.id = "c51b28009c";
@@ -1085,10 +1085,10 @@
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/505efe92-2424-4cdf-b470-e172378bf966/textbox.module.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/7a1180e3-394a-4bb7-b543-1e72dfe64da7/textbox.module.js
   var textbox_module_default;
   var init_textbox_module = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/505efe92-2424-4cdf-b470-e172378bf966/textbox.module.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/7a1180e3-394a-4bb7-b543-1e72dfe64da7/textbox.module.js"() {
       if (document.getElementById("574dc931b3") === null) {
         const element = document.createElement("style");
         element.id = "574dc931b3";
@@ -1212,9 +1212,9 @@
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/c2f0a34c-ed4c-4876-b092-72fe5c0af78f/base.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/caa431bd-5dc8-4a89-a70d-51751df4cfe9/base.js
   var init_base = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/c2f0a34c-ed4c-4876-b092-72fe5c0af78f/base.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/caa431bd-5dc8-4a89-a70d-51751df4cfe9/base.js"() {
       if (document.getElementById("1b9108f9bd") === null) {
         const element = document.createElement("style");
         element.id = "1b9108f9bd";
@@ -1349,9 +1349,9 @@ svg {
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/5d8c1ea4-8929-4ca9-a6ab-859a428c268b/output.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/10e9519f-6bc5-4627-9a9c-9bb99dffb259/output.js
   var init_output = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/5d8c1ea4-8929-4ca9-a6ab-859a428c268b/output.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/10e9519f-6bc5-4627-9a9c-9bb99dffb259/output.js"() {
       if (document.getElementById("7da87ebefd") === null) {
         const element = document.createElement("style");
         element.id = "7da87ebefd";
@@ -2341,14 +2341,14 @@ video {
   line-height: 1.25rem;
 }
 
-.text-xs {
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
 .text-xl {
   font-size: 1.25rem;
   line-height: 1.75rem;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
 }
 
 .font-bold {
@@ -2410,6 +2410,10 @@ video {
   color: var(--figma-color-text);
 }
 
+.text-\\[var\\(--figma-color-text-brand\\)\\] {
+  color: var(--figma-color-text-brand);
+}
+
 .text-\\[var\\(--figma-color-text-danger\\)\\] {
   color: var(--figma-color-text-danger);
 }
@@ -2425,10 +2429,6 @@ video {
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
-}
-
-.text-\\[var\\(--figma-color-text-brand\\)\\] {
-  color: var(--figma-color-text-brand);
 }
 
 .opacity-50 {
@@ -2447,15 +2447,15 @@ video {
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
-.shadow-sm {
-  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-}
-
 .shadow-md {
   --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+.shadow-sm {
+  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
