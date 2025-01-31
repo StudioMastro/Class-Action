@@ -1,11 +1,14 @@
 # Build e Output
 build/
 code.js
+ui.js
+main.js
 out/
 .next/
 src/styles.css.d.ts
 dist/
 *.tsbuildinfo
+output.css
 
 # Dependencies
 node_modules/
