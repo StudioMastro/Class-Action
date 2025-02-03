@@ -1,5 +1,5 @@
 ---
-description: Provides a comprehensive map of the project's file organization and structure. Use this rule when working with file paths, adding new files, or understanding the project layout.
+description: This document provides a structured view of the project's organization, highlighting key directories and files. Only relevant source files are shown (excluding build artifacts, dependencies, and version control files).
 globs: 
 ---
 # Directory Structure
@@ -11,13 +11,8 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 ## Project Components
 
 ```
-- **.notes/** - Project documentation and notes
-    - directory_structure.md
-    - meeting_notes.md
-    - project_overview.md
-    - **scripts/**
-        - task_list.md
-        - webpack_migration.md
+- **.cursor/** - Cursor IDE configuration and project rules
+    - **rules/**
     - CHANGELOG.md
     - CONTRIBUTING.md
     - LICENSE.md
@@ -26,6 +21,7 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
     - manifest.json
     - package-lock.json
     - package.json
+    - postcss.config.js
     - tailwind.config.js
     - tsconfig.json
 ```
@@ -33,4 +29,4 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-01-18 16:43:40
+- Last updated: 2025-02-03 11:02:45
