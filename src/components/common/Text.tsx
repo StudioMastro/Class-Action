@@ -1,59 +1,50 @@
 /** @jsx h */
 import { h } from 'preact'
-import { ComponentChildren } from 'preact'
-import { cn } from '../../lib/utils'
+import type { ComponentChildren } from 'preact'
 
-export interface TextProps {
+interface TextProps {
   children: ComponentChildren
-  align?: 'left' | 'center' | 'right'
-  size?: 'xs' | 'sm' | 'base' | 'lg' | 'xl'
+  size?: 'xs' | 'sm' | 'base' | 'lg'
   weight?: 'normal' | 'medium' | 'bold'
-  variant?: 'default' | 'muted' | 'primary' | 'error'
-  numeric?: boolean
+  variant?: 'muted' | 'default'
   className?: string
+  mono?: boolean
 }
 
-export function Text({
-  children,
-  align = 'left',
-  size = 'base',
-  weight = 'normal',
+export function Text({ 
+  children, 
+  size = 'base', 
+  weight = 'normal', 
   variant = 'default',
-  numeric = false,
-  className,
-  ...props
+  className = '',
+  mono = false
 }: TextProps) {
+  const sizeClasses = {
+    xs: 'text-xs',
+    sm: 'text-sm',
+    base: 'text-base',
+    lg: 'text-lg'
+  }
+
+  const weightClasses = {
+    normal: 'font-normal',
+    medium: 'font-medium',
+    bold: 'font-bold'
+  }
+
+  const variantClasses = {
+    muted: 'text-[var(--figma-color-text-secondary)]',
+    default: 'text-[var(--figma-color-text)]'
+  }
+
   return (
-    <span
-      className={cn(
-        // Base styles
-        'block font-sans',
-        // Text alignment
-        align === 'left' && 'text-left',
-        align === 'center' && 'text-center',
-        align === 'right' && 'text-right',
-        // Font size
-        size === 'xs' && 'text-xs',
-        size === 'sm' && 'text-sm',
-        size === 'base' && 'text-base',
-        size === 'lg' && 'text-lg',
-        size === 'xl' && 'text-xl',
-        // Font weight
-        weight === 'normal' && 'font-normal',
-        weight === 'medium' && 'font-medium',
-        weight === 'bold' && 'font-bold',
-        // Variants
-        variant === 'default' && 'text-[var(--figma-color-text)]',
-        variant === 'muted' && 'text-[var(--figma-color-text-secondary)]',
-        variant === 'primary' && 'text-[var(--figma-color-text-brand)]',
-        variant === 'error' && 'text-[var(--figma-color-text-danger)]',
-        // Numeric
-        numeric && 'tabular-nums',
-        // Custom classes
-        className
-      )}
-      {...props}
-    >
+    <span className={`
+      ${sizeClasses[size]}
+      ${weightClasses[weight]}
+      ${variantClasses[variant]}
+      ${mono ? 'font-mono' : 'font-sans'}
+      ${className}
+    `.trim()}>
       {children}
     </span>
   )

@@ -2,8 +2,6 @@
 import { h } from 'preact'
 import { useState, useEffect, useRef } from 'preact/hooks'
 import {
-  SearchTextbox,
-  Textbox,
   render
 } from '@create-figma-plugin/ui'
 import { emit, on } from '@create-figma-plugin/utilities'
@@ -11,6 +9,8 @@ import '!./output.css'
 import { ConfirmDialog, ClassDetailsModal } from './components/Modal'
 import { Button, IconButton, Text } from './components/common'
 import { DropdownItem } from './components/common/DropdownItem'
+import { SearchInput } from './components/SearchInput'
+import { TextInput } from './components/TextInput'
 import type { SavedClass, ImportResult } from './types'
 
 // Icone personalizzate
@@ -67,6 +67,15 @@ const ExportIcon = () => (
   </svg>
 )
 
+// Aggiungo l'icona per Apply All
+const ApplyAllIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M2 4L8 7L14 4L8 1L2 4Z" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M2 8L8 11L14 8" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M2 12L8 15L14 12" stroke="currentColor" stroke-width="1.5"/>
+  </svg>
+)
+
 function Plugin() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [savedClasses, setSavedClasses] = useState<SavedClass[]>([])
@@ -84,8 +93,9 @@ function Plugin() {
   const [classToUpdate, setClassToUpdate] = useState<SavedClass | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [classToView, setClassToView] = useState<SavedClass | null>(null)
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
-  const [importConflicts, setImportConflicts] = useState<string[]>([])
+  const [isApplyAllModalOpen, setIsApplyAllModalOpen] = useState(false)
+  const [applyAllAnalysis, setApplyAllAnalysis] = useState<{ totalFrames: number, matchingFrames: number } | null>(null)
+  const [showSearch, setShowSearch] = useState(false)
 
   // Aggiungiamo un ref per il dropdown
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -150,12 +160,47 @@ function Plugin() {
       }
     })
 
+    const unsubscribeClassesAppliedAll = on('CLASSES_APPLIED_ALL', (_result: { success: boolean, error?: string }) => {
+      // Non facciamo nulla qui, le notifiche vengono gestite da main.ts
+    })
+
     const unsubscribeImportResult = on('IMPORT_RESULT', (result: ImportResult) => {
       if (result.success) {
         // Non mostriamo più una notifica qui perché viene già mostrata dal plugin
         emit('LOAD_CLASSES')
       } else {
         emit('SHOW_ERROR', result.error || 'Failed to import classes')
+      }
+    })
+
+    const unsubscribeAnalysisResult = on('APPLY_ALL_ANALYSIS_RESULT', (result: { totalFrames: number, matchingFrames: number }) => {
+      if (!mounted) return
+      setApplyAllAnalysis(result)
+      setIsApplyAllModalOpen(true)
+    })
+
+    // Aggiungiamo l'event listener per SHOW_SAVE_DIALOG qui
+    const unsubscribeSaveDialog = on('SHOW_SAVE_DIALOG', async (data: { suggestedFileName: string, fileContent: string, totalClasses: number }) => {
+      if (!mounted) return
+      try {
+        // Crea un Blob con il contenuto JSON
+        const blob = new Blob([data.fileContent], { type: 'application/json' })
+        
+        // Crea un elemento <a> per il download
+        const downloadLink = document.createElement('a')
+        downloadLink.href = URL.createObjectURL(blob)
+        downloadLink.download = data.suggestedFileName
+        
+        // Simula il click per far partire il download
+        document.body.appendChild(downloadLink)
+        downloadLink.click()
+        document.body.removeChild(downloadLink)
+        
+        // Pulisci l'URL object
+        URL.revokeObjectURL(downloadLink.href)
+      } catch (error) {
+        console.error('Error saving file:', error)
+        emit('SHOW_ERROR', 'Failed to save export file')
       }
     })
 
@@ -175,7 +220,10 @@ function Plugin() {
       unsubscribeClassDeleted()
       unsubscribeClassUpdated()
       unsubscribeClassApplied()
+      unsubscribeClassesAppliedAll()
       unsubscribeImportResult()
+      unsubscribeAnalysisResult()
+      unsubscribeSaveDialog() // Aggiungiamo la pulizia del listener
     }
   }, [])
 
@@ -294,25 +342,8 @@ function Plugin() {
   }
 
   const handleExportClasses = async () => {
-    const exportResult = await emit('EXPORT_CLASSES')
-    if (typeof exportResult === 'string') {
-      // Crea un blob con il JSON
-      const blob = new Blob([exportResult], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      
-      // Crea un link temporaneo per il download
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `class-action-export-${new Date().toISOString().split('T')[0]}.classaction`
-      document.body.appendChild(link)
-      link.click()
-      
-      // Cleanup
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-      
-      emit('SHOW_NOTIFICATION', 'Classes exported successfully')
-    }
+    // Emettiamo solo l'evento di export e lasciamo che main.ts gestisca tutto
+    await emit('EXPORT_CLASSES')
   }
 
   const handleFileChange = async (event: Event) => {
@@ -333,35 +364,25 @@ function Plugin() {
     reader.readAsText(file)
   }
 
-  // Aggiungi questa funzione per gestire il salvataggio del file
-  const handleSaveDialog = async (data: { suggestedFileName: string, fileContent: string, totalClasses: number }) => {
+  const handleApplyAllClick = async () => {
     try {
-      // Crea un Blob con il contenuto JSON
-      const blob = new Blob([data.fileContent], { type: 'application/json' })
-      
-      // Crea un elemento <a> per il download
-      const downloadLink = document.createElement('a')
-      downloadLink.href = URL.createObjectURL(blob)
-      downloadLink.download = data.suggestedFileName
-      
-      // Simula il click per far partire il download
-      document.body.appendChild(downloadLink)
-      downloadLink.click()
-      document.body.removeChild(downloadLink)
-      
-      // Pulisci l'URL object
-      URL.revokeObjectURL(downloadLink.href)
-      
-      // Mostra notifica di successo
-      emit('SHOW_NOTIFICATION', `Successfully exported ${data.totalClasses} classes`)
+      await emit('ANALYZE_APPLY_ALL')
     } catch (error) {
-      console.error('Error saving file:', error)
-      emit('SHOW_ERROR', 'Failed to save export file')
+      console.error('Error analyzing frames:', error)
+      emit('SHOW_ERROR', 'An error occurred while analyzing frames')
     }
   }
 
-  // Aggiungi l'event listener per SHOW_SAVE_DIALOG
-  on('SHOW_SAVE_DIALOG', handleSaveDialog)
+  const handleConfirmApplyAll = async () => {
+    try {
+      await emit('APPLY_ALL_MATCHING_CLASSES')
+      setIsApplyAllModalOpen(false)
+      setApplyAllAnalysis(null)
+    } catch (error) {
+      console.error('Error applying all matching classes:', error)
+      emit('SHOW_ERROR', 'An error occurred while applying classes')
+    }
+  }
 
   if (!isInitialized) {
     return (
@@ -377,7 +398,11 @@ function Plugin() {
     <div className="flex flex-col p-4 gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Text size="lg" weight="bold" className="text-[var(--figma-color-text)]">
+        <Text 
+          size="lg" 
+          weight="bold" 
+          className="text-lg"
+        >
           Class Action
         </Text>
       </div>
@@ -385,7 +410,7 @@ function Plugin() {
       {/* Save Class Section */}
       <div className="flex items-center gap-2">
         <div className="flex-1">
-          <Textbox
+          <TextInput
             placeholder="Enter class name..."
             value={newClassName}
             onValueInput={setNewClassName}
@@ -407,21 +432,115 @@ function Plugin() {
         </Button>
       </div>
 
-      {/* Search Section */}
-      <div className="w-full">
-        <div 
-          className="w-full bg-[var(--figma-color-bg-secondary)] border border-[var(--figma-color-border)] rounded-md"
-        >
-          <SearchTextbox
-            placeholder="Search classes..."
-            value={searchQuery}
-            onValueInput={setSearchQuery}
-          />
-        </div>
-      </div>
-
-      {/* Classes List */}
+      {/* Saved Classes Section */}
       <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between mb-2">
+          <Text size="base" weight="medium">Saved Classes</Text>
+          <div className="flex items-center gap-2">
+            <IconButton 
+              onClick={(e) => {
+                e.stopPropagation()
+                setActiveMenu(activeMenu === 'actions' ? null : 'actions')
+              }}
+              variant="secondary"
+              size="medium"
+            >
+              <EllipsisIcon />
+            </IconButton>
+
+            {/* Actions Dropdown */}
+            {activeMenu === 'actions' && (
+              <div 
+                ref={dropdownRef}
+                className="absolute right-4 mt-24 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg"
+                style={{ 
+                  backgroundColor: 'var(--figma-color-bg)',
+                  border: '1px solid var(--figma-color-border)'
+                }}
+              >
+                <div className="flex flex-col gap-1">
+                  <DropdownItem 
+                    onClick={() => {
+                      setShowSearch(!showSearch)
+                      setActiveMenu(null)
+                    }}
+                    variant="secondary"
+                    icon={
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M7.333 12.667A5.333 5.333 0 1 0 7.333 2a5.333 5.333 0 0 0 0 10.667zM14 14l-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    }
+                  >
+                    Search
+                  </DropdownItem>
+
+                  <DropdownItem 
+                    onClick={() => {
+                      document.getElementById('import-input')?.click()
+                      setActiveMenu(null)
+                    }}
+                    variant="secondary"
+                    icon={<ImportIcon />}
+                  >
+                    Import
+                  </DropdownItem>
+
+                  <DropdownItem 
+                    onClick={() => {
+                      handleExportClasses()
+                      setActiveMenu(null)
+                    }}
+                    variant="secondary"
+                    icon={<ExportIcon />}
+                  >
+                    Export
+                  </DropdownItem>
+
+                  <DropdownItem 
+                    onClick={() => {
+                      handleApplyAllClick()
+                      setActiveMenu(null)
+                    }}
+                    variant="secondary"
+                    icon={<ApplyAllIcon />}
+                  >
+                    Apply All
+                  </DropdownItem>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Search Input */}
+        <div className={`
+          transform transition-all duration-300 ease-in-out
+          ${showSearch 
+            ? 'translate-y-0 opacity-100 h-10' 
+            : '-translate-y-2 opacity-0 h-0 overflow-hidden'
+          }
+        `}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1">
+              <SearchInput
+                placeholder="Search classes..."
+                value={searchQuery}
+                onValueInput={setSearchQuery}
+              />
+            </div>
+            <IconButton 
+              onClick={() => setShowSearch(false)}
+              variant="secondary"
+              size="medium"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </IconButton>
+          </div>
+        </div>
+
+        {/* Classes List */}
         {filteredClasses.length > 0 ? (
           filteredClasses.map((savedClass) => (
             <div 
@@ -430,7 +549,7 @@ function Plugin() {
               style={{ borderColor: 'var(--figma-color-border)' }}
             >
               <div className="flex items-center justify-between">
-                <Text>{savedClass.name}</Text>
+                <Text mono size="xs">{savedClass.name}</Text>
                 <div className="flex items-center gap-2">
                   <Button 
                     onClick={() => handleApplyClass(savedClass)}
@@ -452,7 +571,7 @@ function Plugin() {
                 </div>
               </div>
 
-              {/* Dropdown Menu */}
+              {/* Class Actions Dropdown */}
               {activeMenu === savedClass.name && (
                 <div 
                   ref={dropdownRef}
@@ -506,41 +625,14 @@ function Plugin() {
         )}
       </div>
 
-      {/* Import/Export Section */}
-      <div className="flex items-center justify-between mb-2">
-        <Text size="base" weight="medium">Saved Classes</Text>
-        <div className="flex gap-2">
-          <div>
-            <input
-              type="file"
-              accept=".classaction,application/json"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-              id="import-input"
-            />
-            <Button
-              variant="secondary"
-              size="medium"
-              onClick={() => document.getElementById('import-input')?.click()}
-            >
-              <div className="flex items-center gap-1">
-                <ImportIcon />
-                <span>Import</span>
-              </div>
-            </Button>
-          </div>
-          <Button
-            onClick={handleExportClasses}
-            variant="secondary"
-            size="medium"
-          >
-            <div className="flex items-center gap-1">
-              <ExportIcon />
-              <span>Export</span>
-            </div>
-          </Button>
-        </div>
-      </div>
+      {/* Hidden file input for import */}
+      <input
+        type="file"
+        accept=".classaction,application/json"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+        id="import-input"
+      />
 
       {/* Modals */}
       <ConfirmDialog
@@ -574,9 +666,10 @@ function Plugin() {
         title="Rename Class"
         variant="info"
         message="Enter new name for the selected class:"
+        confirmText="Rename"
       >
         <div className="mt-2">
-          <Textbox
+          <TextInput
             value={newName}
             onValueInput={setNewName}
             variant="border"
@@ -599,25 +692,22 @@ function Plugin() {
         classData={classToView}
       />
 
-      {/* Import Conflicts Modal */}
-      {isImportModalOpen && (
-        <ConfirmDialog
-          isOpen={isImportModalOpen}
-          onClose={() => {
-            setIsImportModalOpen(false)
-            setImportConflicts([])
-          }}
-          title="Import Conflicts"
-          message={`The following classes already exist:\n${importConflicts.join(', ')}\n\nDo you want to overwrite them?`}
-          onConfirm={() => {
-            // TODO: Implementare la logica di overwrite
-            setIsImportModalOpen(false)
-            setImportConflicts([])
-          }}
-          confirmText="Overwrite"
-          variant="warning"
-        />
-      )}
+      <ConfirmDialog
+        isOpen={isApplyAllModalOpen}
+        onClose={() => {
+          setIsApplyAllModalOpen(false)
+          setApplyAllAnalysis(null)
+        }}
+        onConfirm={handleConfirmApplyAll}
+        title="Apply All Classes"
+        message={
+          applyAllAnalysis
+            ? `This will apply matching classes to ${applyAllAnalysis.matchingFrames} out of ${applyAllAnalysis.totalFrames} frames in the current page. Continue?`
+            : 'Analyzing frames...'
+        }
+        confirmText="Apply"
+        variant="info"
+      />
     </div>
   )
 }

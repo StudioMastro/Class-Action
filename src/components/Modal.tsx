@@ -103,7 +103,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
       <div className="relative z-10 w-[300px] bg-[var(--figma-color-bg)] rounded-lg shadow-lg">
         <div className="flex items-center justify-between py-3 px-4 border-b border-[var(--figma-color-border)]">
-          <div className="mb-4">
+          <div>
             <Text size="lg" weight="bold">{title}</Text>
           </div>
           <IconButton 

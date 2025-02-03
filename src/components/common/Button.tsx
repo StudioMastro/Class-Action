@@ -19,12 +19,12 @@ export function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const baseClasses = 'inline-flex items-center justify-center transition-colors font-medium h-[32px]'
+  const baseClasses = 'inline-flex items-center justify-center transition-colors font-medium'
   
   const sizeClasses = {
-    small: 'px-2 text-xs rounded',
-    medium: 'px-3 text-xs rounded-md',
-    large: 'px-4 text-sm rounded-lg'
+    small: 'px-2 text-xs rounded-md h-7',
+    medium: 'px-3 text-xs rounded-md h-8',
+    large: 'px-4 text-sm rounded-lg h-9'
   }
 
   // Map 'info' variant to 'secondary'

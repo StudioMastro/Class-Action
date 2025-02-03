@@ -288,7 +288,7 @@ export default function () {
     }
   }
 
-  async function handleApplyClass(classData: SavedClass) {
+  async function handleApplyClass(classData: SavedClass, showNotification = true) {
     if (!checkSelection()) {
       figma.notify('Please select a frame first', { error: true })
       return false
@@ -516,13 +516,17 @@ export default function () {
         }
       }
 
-      figma.notify('Class applied successfully')
+      if (showNotification) {
+        figma.notify('Class applied successfully')
+      }
       emit('CLASS_APPLIED', { success: true })
       return true
     } catch (error) {
       console.error('Error applying class:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      figma.notify('Failed to apply class', { error: true })
+      if (showNotification) {
+        figma.notify('Failed to apply class', { error: true })
+      }
       emit('CLASS_APPLIED', { success: false, error: errorMessage })
       return false
     }
@@ -596,9 +600,6 @@ export default function () {
 
   async function handleExportClasses(selectedClasses?: string[]) {
     try {
-      // Notifica iniziale
-      figma.notify('Preparing classes for export...', { timeout: 1000 })
-      
       const savedClasses = await loadSavedClasses()
       const classesToExport = selectedClasses 
         ? savedClasses.filter((cls: ClassData) => selectedClasses.includes(cls.name))
@@ -621,8 +622,15 @@ export default function () {
           figmaVersion: figma.editorType,
           checksum: '', // Sarà aggiunto dopo
           totalClasses: classesToExport.length,
-          exportedBy: figma.currentUser?.name || 'Unknown'
+          exportedBy: 'Unknown' // Default value
         }
+      }
+
+      // Try to get current user if permission is available
+      try {
+        exportData.metadata.exportedBy = figma.currentUser?.name || 'Unknown'
+      } catch (error) {
+        console.log('Current user information not available')
       }
 
       // Aggiungi checksum
@@ -642,11 +650,12 @@ export default function () {
         fileContent: jsonString,
         totalClasses: classesToExport.length
       })
-
-      return true
+      
+      return jsonString
     } catch (error) {
       console.error('Error exporting classes:', error)
-      figma.notify(error instanceof Error ? error.message : 'Failed to export classes', { error: true })
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export classes'
+      figma.notify(errorMessage, { error: true, timeout: 3000 })
       return false
     }
   }
@@ -734,9 +743,95 @@ export default function () {
     }
   }
 
+  async function handleApplyAllMatchingClasses() {
+    try {
+      // Load all saved classes
+      const savedClasses = await loadSavedClasses()
+      if (!savedClasses.length) {
+        figma.notify('No saved classes found')
+        return false
+      }
+
+      // Get all frames in current page
+      const frames = figma.currentPage.findAll(node => node.type === 'FRAME') as FrameNode[]
+      if (!frames.length) {
+        figma.notify('No frames found in current page')
+        return false
+      }
+
+      let appliedCount = 0
+      let errorCount = 0
+
+      // For each frame, try to find and apply matching class
+      for (const frame of frames) {
+        const matchingClass = savedClasses.find((cls: SavedClass) => cls.name === frame.name)
+        if (matchingClass) {
+          try {
+            // Create a temporary selection to use handleApplyClass
+            figma.currentPage.selection = [frame]
+            await handleApplyClass(matchingClass, false)
+            appliedCount++
+          } catch (error) {
+            console.error(`Error applying class to frame ${frame.name}:`, error)
+            errorCount++
+          }
+        }
+      }
+
+      // Show results
+      if (appliedCount > 0) {
+        figma.notify(`Applied ${appliedCount} classes successfully${errorCount > 0 ? ` (${errorCount} errors)` : ''}`)
+        emit('CLASSES_APPLIED_ALL', { success: true, appliedCount, errorCount })
+        return true
+      } else {
+        figma.notify('No matching classes found')
+        return false
+      }
+    } catch (error) {
+      console.error('Error in apply all matching classes:', error)
+      figma.notify('Failed to apply matching classes', { error: true })
+      emit('CLASSES_APPLIED_ALL', { success: false, error: String(error) })
+      return false
+    }
+  }
+
+  async function handleAnalyzeApplyAll() {
+    try {
+      // Load all saved classes
+      const savedClasses = await loadSavedClasses()
+      if (!savedClasses.length) {
+        figma.notify('No saved classes found')
+        return
+      }
+
+      // Get all frames in current page
+      const frames = figma.currentPage.findAll(node => node.type === 'FRAME') as FrameNode[]
+      if (!frames.length) {
+        figma.notify('No frames found in current page')
+        return
+      }
+
+      // Count matching frames
+      const matchingFrames = frames.filter(frame => 
+        savedClasses.some((cls: SavedClass) => cls.name === frame.name)
+      ).length
+
+      // Emit analysis result
+      emit('APPLY_ALL_ANALYSIS_RESULT', {
+        totalFrames: frames.length,
+        matchingFrames
+      })
+    } catch (error) {
+      console.error('Error analyzing frames:', error)
+      figma.notify('Failed to analyze frames', { error: true })
+    }
+  }
+
   // Event handlers
   on('SAVE_CLASS', handleSaveClass)
   on('APPLY_CLASS', handleApplyClass)
+  on('APPLY_ALL_MATCHING_CLASSES', handleApplyAllMatchingClasses)
+  on('ANALYZE_APPLY_ALL', handleAnalyzeApplyAll)
   on('UPDATE_CLASS', handleUpdateClass)
   on('DELETE_CLASS', handleDeleteClass)
   on('EXPORT_CLASSES', handleExportClasses)

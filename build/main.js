@@ -406,7 +406,7 @@ function main_default() {
       return null;
     }
   }
-  async function handleApplyClass(classData) {
+  async function handleApplyClass(classData, showNotification = true) {
     var _a, _b, _c;
     if (!checkSelection()) {
       figma.notify("Please select a frame first", { error: true });
@@ -600,13 +600,17 @@ function main_default() {
           }
         }
       }
-      figma.notify("Class applied successfully");
+      if (showNotification) {
+        figma.notify("Class applied successfully");
+      }
       emit("CLASS_APPLIED", { success: true });
       return true;
     } catch (error) {
       console.error("Error applying class:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      figma.notify("Failed to apply class", { error: true });
+      if (showNotification) {
+        figma.notify("Failed to apply class", { error: true });
+      }
       emit("CLASS_APPLIED", { success: false, error: errorMessage });
       return false;
     }
@@ -661,7 +665,6 @@ function main_default() {
   async function handleExportClasses(selectedClasses) {
     var _a;
     try {
-      figma.notify("Preparing classes for export...", { timeout: 1e3 });
       const savedClasses = await loadSavedClasses();
       const classesToExport = selectedClasses ? savedClasses.filter((cls) => selectedClasses.includes(cls.name)) : savedClasses;
       const invalidClasses = classesToExport.filter((cls) => !validateClassData(cls));
@@ -679,9 +682,15 @@ function main_default() {
           checksum: "",
           // Sarà aggiunto dopo
           totalClasses: classesToExport.length,
-          exportedBy: ((_a = figma.currentUser) == null ? void 0 : _a.name) || "Unknown"
+          exportedBy: "Unknown"
+          // Default value
         }
       };
+      try {
+        exportData.metadata.exportedBy = ((_a = figma.currentUser) == null ? void 0 : _a.name) || "Unknown";
+      } catch (error) {
+        console.log("Current user information not available");
+      }
       exportData.metadata.checksum = generateChecksum(exportData.classes);
       const timestamp = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const suggestedFileName = `class-action-export-${timestamp}.json`;
@@ -691,10 +700,11 @@ function main_default() {
         fileContent: jsonString,
         totalClasses: classesToExport.length
       });
-      return true;
+      return jsonString;
     } catch (error) {
       console.error("Error exporting classes:", error);
-      figma.notify(error instanceof Error ? error.message : "Failed to export classes", { error: true });
+      const errorMessage = error instanceof Error ? error.message : "Failed to export classes";
+      figma.notify(errorMessage, { error: true, timeout: 3e3 });
       return false;
     }
   }
@@ -764,8 +774,76 @@ function main_default() {
       });
     }
   }
+  async function handleApplyAllMatchingClasses() {
+    try {
+      const savedClasses = await loadSavedClasses();
+      if (!savedClasses.length) {
+        figma.notify("No saved classes found");
+        return false;
+      }
+      const frames = figma.currentPage.findAll((node) => node.type === "FRAME");
+      if (!frames.length) {
+        figma.notify("No frames found in current page");
+        return false;
+      }
+      let appliedCount = 0;
+      let errorCount = 0;
+      for (const frame of frames) {
+        const matchingClass = savedClasses.find((cls) => cls.name === frame.name);
+        if (matchingClass) {
+          try {
+            figma.currentPage.selection = [frame];
+            await handleApplyClass(matchingClass, false);
+            appliedCount++;
+          } catch (error) {
+            console.error(`Error applying class to frame ${frame.name}:`, error);
+            errorCount++;
+          }
+        }
+      }
+      if (appliedCount > 0) {
+        figma.notify(`Applied ${appliedCount} classes successfully${errorCount > 0 ? ` (${errorCount} errors)` : ""}`);
+        emit("CLASSES_APPLIED_ALL", { success: true, appliedCount, errorCount });
+        return true;
+      } else {
+        figma.notify("No matching classes found");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error in apply all matching classes:", error);
+      figma.notify("Failed to apply matching classes", { error: true });
+      emit("CLASSES_APPLIED_ALL", { success: false, error: String(error) });
+      return false;
+    }
+  }
+  async function handleAnalyzeApplyAll() {
+    try {
+      const savedClasses = await loadSavedClasses();
+      if (!savedClasses.length) {
+        figma.notify("No saved classes found");
+        return;
+      }
+      const frames = figma.currentPage.findAll((node) => node.type === "FRAME");
+      if (!frames.length) {
+        figma.notify("No frames found in current page");
+        return;
+      }
+      const matchingFrames = frames.filter(
+        (frame) => savedClasses.some((cls) => cls.name === frame.name)
+      ).length;
+      emit("APPLY_ALL_ANALYSIS_RESULT", {
+        totalFrames: frames.length,
+        matchingFrames
+      });
+    } catch (error) {
+      console.error("Error analyzing frames:", error);
+      figma.notify("Failed to analyze frames", { error: true });
+    }
+  }
   on("SAVE_CLASS", handleSaveClass);
   on("APPLY_CLASS", handleApplyClass);
+  on("APPLY_ALL_MATCHING_CLASSES", handleApplyAllMatchingClasses);
+  on("ANALYZE_APPLY_ALL", handleAnalyzeApplyAll);
   on("UPDATE_CLASS", handleUpdateClass);
   on("DELETE_CLASS", handleDeleteClass);
   on("EXPORT_CLASSES", handleExportClasses);
