@@ -608,12 +608,12 @@ button {
   right: 2rem;
 }
 
-.top-full {
-  top: 100%;
-}
-
 .top-1\/2 {
   top: 50%;
+}
+
+.top-full {
+  top: 100%;
 }
 
 .z-10 {
@@ -672,6 +672,14 @@ button {
   display: grid;
 }
 
+.h-0 {
+  height: 0px;
+}
+
+.h-10 {
+  height: 2.5rem;
+}
+
 .h-4 {
   height: 1rem;
 }
@@ -702,14 +710,6 @@ button {
 
 .h-screen {
   height: 100vh;
-}
-
-.h-0 {
-  height: 0px;
-}
-
-.h-10 {
-  height: 2.5rem;
 }
 
 .max-h-\[60vh\] {
@@ -1040,6 +1040,10 @@ button {
   padding-left: 2rem;
 }
 
+.pr-10 {
+  padding-right: 2.5rem;
+}
+
 .pr-8 {
   padding-right: 2rem;
 }
@@ -1050,10 +1054,6 @@ button {
 
 .pt-4 {
   padding-top: 1rem;
-}
-
-.pr-10 {
-  padding-right: 2.5rem;
 }
 
 .text-left {
@@ -1196,11 +1196,6 @@ button {
   color: var(--figma-color-text-tertiary);
 }
 
-.text-white {
-  --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
-}
-
 .text-gray-400 {
   --tw-text-opacity: 1;
   color: rgb(156 163 175 / var(--tw-text-opacity, 1));
@@ -1211,8 +1206,9 @@ button {
   color: rgb(75 85 99 / var(--tw-text-opacity, 1));
 }
 
-.opacity-50 {
-  opacity: 0.5;
+.text-white {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
 .opacity-0 {
@@ -1221,6 +1217,10 @@ button {
 
 .opacity-100 {
   opacity: 1;
+}
+
+.opacity-50 {
+  opacity: 0.5;
 }
 
 .shadow {
@@ -1278,14 +1278,14 @@ button {
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
-.transition-colors {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+.transition-all {
+  transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
 
-.transition-all {
-  transition-property: all;
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
@@ -1349,14 +1349,14 @@ button {
   color: var(--figma-color-text);
 }
 
-.hover\:text-white:hover {
-  --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
-}
-
 .hover\:text-gray-600:hover {
   --tw-text-opacity: 1;
   color: rgb(75 85 99 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-white:hover {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
 .focus\:border-\[var\(--figma-color-border-brand-strong\)\]:focus {

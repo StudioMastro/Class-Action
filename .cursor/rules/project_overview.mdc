@@ -16,16 +16,29 @@ Class Action is a powerful Figma plugin that revolutionizes how designers manage
 
 ## Technical Stack
 
-- **Core Logic:** Implemented in TypeScript with strict type-checking using Create Figma Plugin.
-- **UI Layer:** Built with Preact and @create-figma-plugin/ui components for native Figma look and feel.
-- **Data Storage:** Localized JSON-based storage using Figma's plugin data API.
-- **Plugin Framework:** Leverages Create Figma Plugin framework for standardized development and build process.
-- **Build System:** Uses esbuild through Create Figma Plugin for fast and efficient bundling.
-- **Styling:** Tailwind CSS for custom styling integrated with Figma's design system.
+- **Core Logic:** TypeScript with strict type-checking using Create Figma Plugin
+- **UI Framework:** 
+  - Preact for component architecture
+  - @create-figma-plugin/ui for native Figma components
+  - Tailwind CSS for styling with Figma's design system
+  - Geist Font for modern typography
+- **Build System:** 
+  - esbuild through Create Figma Plugin
+  - PostCSS for CSS processing
+  - Tailwind CSS for utility-first styling
+- **Type Safety:** 
+  - TypeScript with strict mode
+  - Custom type definitions for plugin-specific data
+- **Code Quality:**
+  - ESLint for code linting
+  - Prettier for code formatting
+  - TypeScript for type checking
 
 ## Documentation Guidelines
 
 - All documentation must be written in English
+- All documentation files must be stored in `.cursor/rules/` directory
+- Documentation changes and updates must be made directly in `.cursor/rules/` files
 - This includes:
   - Project Overview
   - Meeting Notes
@@ -34,6 +47,7 @@ Class Action is a powerful Figma plugin that revolutionizes how designers manage
   - User Documentation
   - API Documentation
 - Exception: User interface can be multilingual based on target market
+- Note: The `.cursor/rules/` directory serves as the single source of truth for project documentation and AI assistant support
 
 ## Project Structure
 
@@ -42,12 +56,30 @@ plugin-root/
 ├── src/                    # Source code directory
 │   ├── main.ts            # Main plugin logic
 │   ├── ui.tsx             # Plugin UI (Preact components)
-│   ├── input.css          # Tailwind CSS input
+│   ├── components/        # Reusable UI components
+│   │   ├── common/        # Base components (Button, Text, etc.)
+│   │   └── Modal.tsx      # Modal components
+│   ├── types.ts           # TypeScript type definitions
+│   ├── utils/             # Utility functions
+│   │   └── validation.ts  # Data validation
+│   ├── lib/               # Library code
+│   │   └── utils.ts       # Utility functions
+│   ├── styles/            # Style-related files
+│   │   ├── fonts.css      # Font definitions
+│   │   └── geist.css      # Geist font configuration
+│   ├── input.css          # Tailwind CSS entry point
 │   └── output.css         # Generated CSS
-├── build/                  # Build output directory
-├── .notes/                # Project documentation
-└── [configuration files]  # Various config files
+├── build/                 # Build output directory
+├── .cursor/rules/        # Project documentation and AI rules
+└── [configuration files] # Various config files
 ```
+
+### Configuration Files
+- `manifest.json`: Plugin metadata and settings
+- `tsconfig.json`: TypeScript configuration
+- `package.json`: Dependencies and scripts
+- `tailwind.config.js`: Tailwind CSS configuration
+- `postcss.config.js`: PostCSS configuration
 
 ### Directory Structure Guidelines
 
@@ -63,13 +95,7 @@ plugin-root/
    - Automatically created by build process
    - Not tracked in version control
 
-3. **Configuration Files**:
-   - `manifest.json` for plugin settings (generated)
-   - `tsconfig.json` for TypeScript configuration
-   - `package.json` for dependencies and scripts
-   - `tailwind.config.js` for styling configuration
-
-4. **Documentation**:
+3. **Documentation**:
    - Project documentation in `.notes/` directory
    - Main README.md in root for quick start guide
 
@@ -156,6 +182,13 @@ plugin-root/
    - Update changelog for changes
    - Document complex logic
    - Maintain clear examples
+
+5. **Notifications**:
+   - ALWAYS use Figma's native notification system (figma.notify)
+   - Never implement custom notification components
+   - Follow Figma's notification patterns and timing
+   - Use appropriate timeouts (2s for success, 3s for errors)
+   - Handle notification stacking and cancellation properly
 
 ## Project Highlights
 

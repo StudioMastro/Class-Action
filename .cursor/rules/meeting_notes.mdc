@@ -187,5 +187,21 @@ globs: src/**/*
   - Documented remaining technical debt
   - Updated project roadmap
 
+## 2025-01-19 - Documentation Organization Update
+
+### Documentation Files Location
+- **Discussion**: Review of documentation files location for better IDE integration
+- **Decisions**: 
+  - Move documentation files to `.cursor/rules` directory for better IDE and AI assistant support
+  - Standardize documentation location for better tooling support
+  - Remove duplicates from `.notes/` directory
+- **Actions Taken**:
+  - Moved the following files to `.cursor/rules`:
+    - `task_list.mdc`
+    - `project_overview.mdc`
+    - `webpack_migration.mdc`
+  - Updated documentation to reflect new locations
+  - Ensured documentation consistency
+
 ---
-*Note: This file will serve as an ongoing record of our discussions and decisions.*
+*Note: This file will serve as an ongoing record of our discussions and decisions.* 

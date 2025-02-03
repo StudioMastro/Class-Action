@@ -233,8 +233,9 @@ function Plugin() {
       return
     }
     
-    if (savedClasses.some(cls => cls.name === name.trim())) {
-      emit('SHOW_ERROR', 'A class with this name already exists')
+    // Verifica case-insensitive per i nomi delle classi
+    if (savedClasses.some(cls => cls.name.toLowerCase() === name.trim().toLowerCase())) {
+      emit('SHOW_ERROR', 'A class with this name already exists (names are case-insensitive)')
       return
     }
 
@@ -242,6 +243,7 @@ function Plugin() {
     setActiveMenu(null) // Chiude il dropdown dopo il salvataggio
   }
 
+  // Ricerca case-insensitive
   const filteredClasses = savedClasses.filter((cls: SavedClass) =>
     cls.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -316,15 +318,15 @@ function Plugin() {
       return
     }
     
-    // Verifica se il nuovo nome è già utilizzato (escludendo il nome attuale)
+    // Verifica case-insensitive se il nuovo nome è già utilizzato (escludendo il nome attuale)
     const existingClass = savedClasses.find(cls => 
       cls.name.toLowerCase() === trimmedName.toLowerCase() && 
-      cls.name !== classToRename.name
+      cls.name.toLowerCase() !== classToRename.name.toLowerCase()
     )
     
     if (existingClass) {
       console.log('Found duplicate in UI:', existingClass)
-      emit('SHOW_ERROR', 'A class with this name already exists')
+      emit('SHOW_ERROR', 'A class with this name already exists (names are case-insensitive)')
       return
     }
 

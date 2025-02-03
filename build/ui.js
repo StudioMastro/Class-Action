@@ -514,9 +514,9 @@
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/e2068114-5995-4a82-87ab-561935586901/base.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/65aaba58-9bd7-426d-9e73-7e94da280470/base.js
   var init_base = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/e2068114-5995-4a82-87ab-561935586901/base.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/65aaba58-9bd7-426d-9e73-7e94da280470/base.js"() {
       if (document.getElementById("1b9108f9bd") === null) {
         const element = document.createElement("style");
         element.id = "1b9108f9bd";
@@ -649,9 +649,9 @@ svg {
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/bbfa82b9-0850-4d4e-a3f9-acc33f85716a/output.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/cdf53a8a-8f3c-4ef6-8bd2-7c142e5d38ab/output.js
   var init_output = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/bbfa82b9-0850-4d4e-a3f9-acc33f85716a/output.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/cdf53a8a-8f3c-4ef6-8bd2-7c142e5d38ab/output.js"() {
       if (document.getElementById("7da87ebefd") === null) {
         const element = document.createElement("style");
         element.id = "7da87ebefd";
@@ -1265,12 +1265,12 @@ button {
   right: 2rem;
 }
 
-.top-full {
-  top: 100%;
-}
-
 .top-1\\/2 {
   top: 50%;
+}
+
+.top-full {
+  top: 100%;
 }
 
 .z-10 {
@@ -1329,6 +1329,14 @@ button {
   display: grid;
 }
 
+.h-0 {
+  height: 0px;
+}
+
+.h-10 {
+  height: 2.5rem;
+}
+
 .h-4 {
   height: 1rem;
 }
@@ -1359,14 +1367,6 @@ button {
 
 .h-screen {
   height: 100vh;
-}
-
-.h-0 {
-  height: 0px;
-}
-
-.h-10 {
-  height: 2.5rem;
 }
 
 .max-h-\\[60vh\\] {
@@ -1697,6 +1697,10 @@ button {
   padding-left: 2rem;
 }
 
+.pr-10 {
+  padding-right: 2.5rem;
+}
+
 .pr-8 {
   padding-right: 2rem;
 }
@@ -1707,10 +1711,6 @@ button {
 
 .pt-4 {
   padding-top: 1rem;
-}
-
-.pr-10 {
-  padding-right: 2.5rem;
 }
 
 .text-left {
@@ -1853,11 +1853,6 @@ button {
   color: var(--figma-color-text-tertiary);
 }
 
-.text-white {
-  --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
-}
-
 .text-gray-400 {
   --tw-text-opacity: 1;
   color: rgb(156 163 175 / var(--tw-text-opacity, 1));
@@ -1868,8 +1863,9 @@ button {
   color: rgb(75 85 99 / var(--tw-text-opacity, 1));
 }
 
-.opacity-50 {
-  opacity: 0.5;
+.text-white {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
 .opacity-0 {
@@ -1878,6 +1874,10 @@ button {
 
 .opacity-100 {
   opacity: 1;
+}
+
+.opacity-50 {
+  opacity: 0.5;
 }
 
 .shadow {
@@ -1935,14 +1935,14 @@ button {
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
-.transition-colors {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+.transition-all {
+  transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
 
-.transition-all {
-  transition-property: all;
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
@@ -2006,14 +2006,14 @@ button {
   color: var(--figma-color-text);
 }
 
-.hover\\:text-white:hover {
-  --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
-}
-
 .hover\\:text-gray-600:hover {
   --tw-text-opacity: 1;
   color: rgb(75 85 99 / var(--tw-text-opacity, 1));
+}
+
+.hover\\:text-white:hover {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
 .focus\\:border-\\[var\\(--figma-color-border-brand-strong\\)\\]:focus {
@@ -2688,8 +2688,8 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
         emit("SHOW_ERROR", "Class name cannot be empty");
         return;
       }
-      if (savedClasses.some((cls) => cls.name === name.trim())) {
-        emit("SHOW_ERROR", "A class with this name already exists");
+      if (savedClasses.some((cls) => cls.name.toLowerCase() === name.trim().toLowerCase())) {
+        emit("SHOW_ERROR", "A class with this name already exists (names are case-insensitive)");
         return;
       }
       await emit("SAVE_CLASS", { name: name.trim() });
@@ -2753,11 +2753,11 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
         return;
       }
       const existingClass = savedClasses.find(
-        (cls) => cls.name.toLowerCase() === trimmedName.toLowerCase() && cls.name !== classToRename.name
+        (cls) => cls.name.toLowerCase() === trimmedName.toLowerCase() && cls.name.toLowerCase() !== classToRename.name.toLowerCase()
       );
       if (existingClass) {
         console.log("Found duplicate in UI:", existingClass);
-        emit("SHOW_ERROR", "A class with this name already exists");
+        emit("SHOW_ERROR", "A class with this name already exists (names are case-insensitive)");
         return;
       }
       console.log("Emitting RENAME_CLASS event");
