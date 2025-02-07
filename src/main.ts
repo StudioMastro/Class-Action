@@ -7,22 +7,60 @@ const STORAGE_KEY = 'savedClasses'
 // Costanti per i timeout delle notifiche
 const NOTIFICATION_TIMEOUT = {
   SUCCESS: 2000,
-  ERROR: 3000
+  ERROR: 3000,
+  MINIMUM_INTERVAL: 500  // Intervallo minimo tra le notifiche
 }
 
-// Funzione centralizzata per gestire le notifiche
 let currentNotification: NotificationHandler | null = null
+let lastNotificationTime = 0
+
+// Funzione centralizzata per gestire le notifiche
 function showNotification(message: string, options: { error?: boolean, timeout?: number } = {}) {
-  // Chiudi la notifica precedente se esiste
+  const now = Date.now()
+  const timeSinceLastNotification = now - lastNotificationTime
+  
+  // Se c'è una notifica attiva, cancellala
   if (currentNotification) {
     currentNotification.cancel()
   }
   
-  // Mostra la nuova notifica
+  // Aspetta un po' se l'ultima notifica è troppo recente
+  if (timeSinceLastNotification < NOTIFICATION_TIMEOUT.MINIMUM_INTERVAL) {
+    setTimeout(() => {
+      showNotificationImmediate(message, options)
+    }, NOTIFICATION_TIMEOUT.MINIMUM_INTERVAL - timeSinceLastNotification)
+    return
+  }
+  
+  showNotificationImmediate(message, options)
+}
+
+// Funzione interna per mostrare la notifica immediatamente
+function showNotificationImmediate(message: string, options: { error?: boolean, timeout?: number } = {}) {
   currentNotification = figma.notify(message, {
     timeout: options.error ? NOTIFICATION_TIMEOUT.ERROR : NOTIFICATION_TIMEOUT.SUCCESS,
     ...options
   })
+  lastNotificationTime = Date.now()
+}
+
+// Helper function to convert style ID to color value
+async function getStyleColor(styleId: string): Promise<string> {
+  try {
+    const style = await figma.getStyleByIdAsync(styleId)
+    if (!style || !('paints' in style)) return styleId
+
+    const paint = style.paints[0]
+    if (paint.type === 'SOLID') {
+      const { r, g, b } = paint.color
+      const opacity = 'opacity' in paint ? paint.opacity : 1
+      return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${opacity})`
+    }
+    return styleId
+  } catch (error) {
+    console.error('Error getting style color:', error)
+    return styleId
+  }
 }
 
 export default function () {
@@ -867,6 +905,58 @@ export default function () {
     }
   }
 
+  // Handler per il rename della classe
+  on('RENAME_CLASS', async ({ oldName, newName }) => {
+    try {
+      console.log('Attempting to rename class:', oldName, 'to:', newName)
+      
+      // Validazione del nuovo nome
+      if (!newName || newName.trim() === '') {
+        throw new Error('New class name cannot be empty')
+      }
+      if (newName.length > 64) {
+        throw new Error('New class name is too long. Maximum 64 characters allowed.')
+      }
+      
+      // Carica le classi salvate
+      const savedClasses = await loadSavedClasses()
+      
+      // Verifica se il nuovo nome è già in uso (case-insensitive)
+      if (savedClasses.some((cls: SavedClass) => 
+        cls.name.toLowerCase() === newName.toLowerCase() && 
+        cls.name.toLowerCase() !== oldName.toLowerCase()
+      )) {
+        throw new Error('A class with this name already exists')
+      }
+      
+      // Trova l'indice della classe da rinominare
+      const classIndex = savedClasses.findIndex((cls: SavedClass) => cls.name === oldName)
+      if (classIndex === -1) {
+        throw new Error('Original class not found')
+      }
+      
+      // Crea una nuova classe con il nuovo nome
+      const updatedClass = {
+        ...savedClasses[classIndex],
+        name: newName.trim()
+      }
+      
+      // Aggiorna l'array delle classi
+      savedClasses[classIndex] = updatedClass
+      
+      // Salva le modifiche
+      await saveToStorage(savedClasses)
+      
+      // Notifica l'UI del successo
+      emit('CLASS_RENAMED', { oldName, newName: updatedClass.name })
+      emit('CLASSES_LOADED', savedClasses)
+      showNotification(`Class "${oldName}" renamed to "${updatedClass.name}" successfully`)
+    } catch (error) {
+      console.error('Error renaming class:', error)
+      showNotification(error instanceof Error ? error.message : 'Failed to rename class', { error: true })
+    }
+  })
+
   // Event handlers
   on('SAVE_CLASS', handleSaveClass)
   on('APPLY_CLASS', handleApplyClass)
@@ -885,6 +975,20 @@ export default function () {
   on('SHOW_NOTIFICATION', (message: string) => {
     showNotification(message)
   })
+  on('RESOLVE_STYLE_COLORS', async (msg) => {
+    const resolvedColors: {[key: string]: string} = {}
+    
+    for (const [property, styleId] of Object.entries(msg.styleIds)) {
+      if (typeof styleId === 'string' && styleId.startsWith('S:')) {
+        resolvedColors[property] = await getStyleColor(styleId)
+      }
+    }
+    
+    figma.ui.postMessage({
+      type: 'RESOLVED_STYLE_COLORS',
+      resolvedColors
+    })
+  })
 
   // Listen for selection changes
   figma.on('selectionchange', () => {
@@ -893,4 +997,7 @@ export default function () {
 
   // Initialize
   showUI(options)
+
+  // Initialize selection check
+  checkSelection()
 } 

@@ -1,9 +1,10 @@
 /** @jsx h */
 import { h, VNode } from 'preact'
 import { Text } from './common/Text'
-import { emit } from '@create-figma-plugin/utilities'
+import { emit, on } from '@create-figma-plugin/utilities'
 import type { SavedClass } from '../types'
 import { Button, IconButton } from './common'
+import { useEffect, useState } from 'preact/hooks'
 
 // Props per il Modal base
 interface ModalProps {
@@ -167,6 +168,44 @@ export function ConfirmDialog({
 export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsModalProps) {
   if (!isOpen || !classData) return null
 
+  const [resolvedColors, setResolvedColors] = useState<{[key: string]: string}>({})
+
+  useEffect(() => {
+    // Reset resolved colors when modal opens with new class data
+    setResolvedColors({})
+
+    // Collect style IDs that need to be resolved
+    const styleIds: {[key: string]: string} = {}
+    
+    if (classData.styleReferences?.fillStyleId) {
+      const fillStyleId = String(classData.styleReferences.fillStyleId)
+      if (fillStyleId.startsWith('S:')) {
+        styleIds.backgroundColor = fillStyleId
+      }
+    }
+
+    if (classData.styleReferences?.strokeStyleId) {
+      const strokeStyleId = String(classData.styleReferences.strokeStyleId)
+      if (strokeStyleId.startsWith('S:')) {
+        styleIds.borderColor = strokeStyleId
+      }
+    }
+
+    // Only request color resolution if we have style IDs to resolve
+    if (Object.keys(styleIds).length > 0) {
+      // Listen for resolved colors
+      const removeListener = on('RESOLVED_STYLE_COLORS', (msg) => {
+        setResolvedColors(msg.resolvedColors)
+      })
+
+      // Request color resolution
+      emit('RESOLVE_STYLE_COLORS', { styleIds })
+
+      // Cleanup listener when component unmounts or modal closes
+      return () => removeListener()
+    }
+  }, [classData])
+
   const allProperties: { [key: string]: unknown } = {
     // Layout properties
     width: classData.width,
@@ -209,7 +248,7 @@ export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsMo
         styleProps.backgroundColor = classData.styles.fills[0]
       } else if (classData.styleReferences?.fillStyleId) {
         const fillStyleId = String(classData.styleReferences.fillStyleId)
-        styleProps.backgroundColor = `[style-id: ${fillStyleId}]`
+        styleProps.backgroundColor = resolvedColors.backgroundColor || `[style-id: ${fillStyleId}]`
       }
 
       // Gestione del border-color
@@ -217,7 +256,7 @@ export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsMo
         styleProps.borderColor = classData.styles.strokes[0]
       } else if (classData.styleReferences?.strokeStyleId) {
         const strokeStyleId = String(classData.styleReferences.strokeStyleId)
-        styleProps.borderColor = `[style-id: ${strokeStyleId}]`
+        styleProps.borderColor = resolvedColors.borderColor || `[style-id: ${strokeStyleId}]`
       }
 
       // Gestione del box-shadow

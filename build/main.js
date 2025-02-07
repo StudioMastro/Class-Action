@@ -172,12 +172,40 @@ __export(main_exports, {
   default: () => main_default
 });
 function showNotification(message, options = {}) {
+  const now = Date.now();
+  const timeSinceLastNotification = now - lastNotificationTime;
   if (currentNotification) {
     currentNotification.cancel();
   }
+  if (timeSinceLastNotification < NOTIFICATION_TIMEOUT.MINIMUM_INTERVAL) {
+    setTimeout(() => {
+      showNotificationImmediate(message, options);
+    }, NOTIFICATION_TIMEOUT.MINIMUM_INTERVAL - timeSinceLastNotification);
+    return;
+  }
+  showNotificationImmediate(message, options);
+}
+function showNotificationImmediate(message, options = {}) {
   currentNotification = figma.notify(message, __spreadValues({
     timeout: options.error ? NOTIFICATION_TIMEOUT.ERROR : NOTIFICATION_TIMEOUT.SUCCESS
   }, options));
+  lastNotificationTime = Date.now();
+}
+async function getStyleColor(styleId) {
+  try {
+    const style = await figma.getStyleByIdAsync(styleId);
+    if (!style || !("paints" in style)) return styleId;
+    const paint = style.paints[0];
+    if (paint.type === "SOLID") {
+      const { r, g, b } = paint.color;
+      const opacity = "opacity" in paint ? paint.opacity : 1;
+      return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${opacity})`;
+    }
+    return styleId;
+  } catch (error) {
+    console.error("Error getting style color:", error);
+    return styleId;
+  }
 }
 function main_default() {
   const options = { width: 320, height: 480 };
@@ -868,6 +896,38 @@ function main_default() {
       showNotification("Failed to analyze frames", { error: true });
     }
   }
+  on("RENAME_CLASS", async ({ oldName, newName }) => {
+    try {
+      console.log("Attempting to rename class:", oldName, "to:", newName);
+      if (!newName || newName.trim() === "") {
+        throw new Error("New class name cannot be empty");
+      }
+      if (newName.length > 64) {
+        throw new Error("New class name is too long. Maximum 64 characters allowed.");
+      }
+      const savedClasses = await loadSavedClasses();
+      if (savedClasses.some(
+        (cls) => cls.name.toLowerCase() === newName.toLowerCase() && cls.name.toLowerCase() !== oldName.toLowerCase()
+      )) {
+        throw new Error("A class with this name already exists");
+      }
+      const classIndex = savedClasses.findIndex((cls) => cls.name === oldName);
+      if (classIndex === -1) {
+        throw new Error("Original class not found");
+      }
+      const updatedClass = __spreadProps(__spreadValues({}, savedClasses[classIndex]), {
+        name: newName.trim()
+      });
+      savedClasses[classIndex] = updatedClass;
+      await saveToStorage(savedClasses);
+      emit("CLASS_RENAMED", { oldName, newName: updatedClass.name });
+      emit("CLASSES_LOADED", savedClasses);
+      showNotification(`Class "${oldName}" renamed to "${updatedClass.name}" successfully`);
+    } catch (error) {
+      console.error("Error renaming class:", error);
+      showNotification(error instanceof Error ? error.message : "Failed to rename class", { error: true });
+    }
+  });
   on("SAVE_CLASS", handleSaveClass);
   on("APPLY_CLASS", handleApplyClass);
   on("APPLY_ALL_MATCHING_CLASSES", handleApplyAllMatchingClasses);
@@ -885,12 +945,25 @@ function main_default() {
   on("SHOW_NOTIFICATION", (message) => {
     showNotification(message);
   });
+  on("RESOLVE_STYLE_COLORS", async (msg) => {
+    const resolvedColors = {};
+    for (const [property, styleId] of Object.entries(msg.styleIds)) {
+      if (typeof styleId === "string" && styleId.startsWith("S:")) {
+        resolvedColors[property] = await getStyleColor(styleId);
+      }
+    }
+    figma.ui.postMessage({
+      type: "RESOLVED_STYLE_COLORS",
+      resolvedColors
+    });
+  });
   figma.on("selectionchange", () => {
     checkSelection();
   });
   showUI(options);
+  checkSelection();
 }
-var STORAGE_KEY, NOTIFICATION_TIMEOUT, currentNotification;
+var STORAGE_KEY, NOTIFICATION_TIMEOUT, currentNotification, lastNotificationTime;
 var init_main = __esm({
   "src/main.ts"() {
     "use strict";
@@ -899,9 +972,12 @@ var init_main = __esm({
     STORAGE_KEY = "savedClasses";
     NOTIFICATION_TIMEOUT = {
       SUCCESS: 2e3,
-      ERROR: 3e3
+      ERROR: 3e3,
+      MINIMUM_INTERVAL: 500
+      // Intervallo minimo tra le notifiche
     };
     currentNotification = null;
+    lastNotificationTime = 0;
   }
 });
 

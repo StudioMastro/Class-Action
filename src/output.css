@@ -588,6 +588,10 @@ button {
   inset: 0px;
 }
 
+.bottom-full {
+  bottom: 100%;
+}
+
 .left-2 {
   left: 0.5rem;
 }
@@ -622,6 +626,10 @@ button {
 
 .z-50 {
   z-index: 50;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem;
 }
 
 .mb-2 {

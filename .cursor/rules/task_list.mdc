@@ -12,41 +12,90 @@ globs: src/**/*
     - [x] Style reference validation
     - [ ] Advanced validation rules
     - [ ] Comprehensive error messages
+    - [ ] Case-insensitive validation
+    - [ ] Real-time validation feedback
+    - [ ] Custom validation rules for specific properties
 
 -   [ ] Improve User Experience (**Status:** In Progress, **Notes:** Enhance UI feedback and interactions)
     - [x] Basic class operations
     - [x] Search functionality
     - [x] Error notifications
     - [x] CSS-like property display
+    - [x] Documentation organization
     - [ ] Class previews
     - [ ] Drag and drop support
+    - [ ] Dark mode support
+    - [ ] Keyboard shortcuts
+    - [ ] Undo/Redo functionality
+    - [ ] Interactive property editor
+    - [ ] Live preview of changes
 
--   [ ] Advanced Class Management (**Status:** To Do, **Notes:** Add advanced class features)
+-   [ ] Advanced Class Management (**Status:** In Progress, **Notes:** Add advanced class features)
     - [x] Basic class versioning
     - [x] Class updates
     - [x] Style reference display
+    - [x] Documentation structure
     - [ ] Class inheritance
     - [ ] Class categories/tags
+    - [ ] Class composition (mixing multiple classes)
+    - [ ] Class variants (responsive, state-based)
+    - [ ] Class dependencies tracking
+    - [ ] Class usage analytics
 
 ## Medium Priority
 
--   [ ] Improve Class Import/Export (**Status:** To Do, **Notes:** Make sharing system more robust)
+-   [ ] Improve Class Import/Export (**Status:** In Progress, **Notes:** Make sharing system more robust)
     - [x] Basic JSON export/import
+    - [x] Documentation migration
     - [ ] Advanced validation
     - [ ] Conflict resolution
     - [ ] Batch operations
+    - [ ] Version control integration
+    - [ ] Team library synchronization
+    - [ ] Cloud storage integration
+    - [ ] Export to CSS/SCSS
 
 -   [ ] Implement Batch Operations (**Status:** To Do, **Notes:** Operations on multiple frames)
     - [ ] Multi-frame selection
     - [ ] Bulk updates
     - [ ] Batch processing
+    - [ ] Smart selection tools
+    - [ ] Batch class application
+    - [ ] Batch class removal
+    - [ ] Selection history
 
 -   [ ] Add Template System (**Status:** To Do, **Notes:** Predefined class templates)
     - [ ] Default templates
     - [ ] Custom templates
     - [ ] Template management
+    - [ ] Template categories
+    - [ ] Template versioning
+    - [ ] Template sharing
+    - [ ] Template preview
+
+-   [ ] Performance Optimization (**Status:** To Do, **Notes:** Improve plugin performance)
+    - [ ] Class application optimization
+    - [ ] Search performance improvement
+    - [ ] Caching system
+    - [ ] Lazy loading for large files
+    - [ ] Memory usage optimization
+    - [ ] Background processing
+
+-   [ ] Collaboration Features (**Status:** To Do, **Notes:** Enhance team workflow)
+    - [ ] Team libraries
+    - [ ] Class sharing
+    - [ ] Comments and annotations
+    - [ ] Change history
+    - [ ] Role-based access
+    - [ ] Real-time collaboration
 
 ## Completed
+
+-   [x] Documentation Migration
+    - [x] Unified documentation in `.cursor/rules`
+    - [x] Updated project structure
+    - [x] Removed duplicate files
+    - [x] Standardized documentation location
 
 -   [x] Auto Layout Support
     - [x] Layout mode handling
@@ -73,3 +122,11 @@ globs: src/**/*
     - [x] Error notifications
     - [x] CSS-like property display
     - [x] Operation feedback
+
+-   [x] Build System Optimization
+    - [x] Migrated to Create Figma Plugin
+    - [x] Configured esbuild
+    - [x] Integrated Tailwind CSS
+    - [x] Updated PostCSS configuration to ES Modules
+    - [x] Optimized build pipeline
+    - [x] Documented build process changes

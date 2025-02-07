@@ -514,9 +514,9 @@
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/65aaba58-9bd7-426d-9e73-7e94da280470/base.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/cd6d90dd-cdfd-4322-8fb7-30bdcd0aef7f/base.js
   var init_base = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/65aaba58-9bd7-426d-9e73-7e94da280470/base.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/cd6d90dd-cdfd-4322-8fb7-30bdcd0aef7f/base.js"() {
       if (document.getElementById("1b9108f9bd") === null) {
         const element = document.createElement("style");
         element.id = "1b9108f9bd";
@@ -649,9 +649,9 @@ svg {
     }
   });
 
-  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/cdf53a8a-8f3c-4ef6-8bd2-7c142e5d38ab/output.js
+  // ../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/eb0ab831-f93c-4c66-a09a-cec76cffb129/output.js
   var init_output = __esm({
-    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/cdf53a8a-8f3c-4ef6-8bd2-7c142e5d38ab/output.js"() {
+    "../../../../private/var/folders/ts/fmpm0j6d07sgg0yz71ypxsf80000gn/T/eb0ab831-f93c-4c66-a09a-cec76cffb129/output.js"() {
       if (document.getElementById("7da87ebefd") === null) {
         const element = document.createElement("style");
         element.id = "7da87ebefd";
@@ -1245,6 +1245,10 @@ button {
   inset: 0px;
 }
 
+.bottom-full {
+  bottom: 100%;
+}
+
 .left-2 {
   left: 0.5rem;
 }
@@ -1279,6 +1283,10 @@ button {
 
 .z-50 {
   z-index: 50;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem;
 }
 
 .mb-2 {
@@ -2321,6 +2329,31 @@ button {
   }
   function ClassDetailsModal({ isOpen, onClose, classData }) {
     if (!isOpen || !classData) return null;
+    const [resolvedColors, setResolvedColors] = h2({});
+    y2(() => {
+      var _a, _b;
+      setResolvedColors({});
+      const styleIds = {};
+      if ((_a = classData.styleReferences) == null ? void 0 : _a.fillStyleId) {
+        const fillStyleId = String(classData.styleReferences.fillStyleId);
+        if (fillStyleId.startsWith("S:")) {
+          styleIds.backgroundColor = fillStyleId;
+        }
+      }
+      if ((_b = classData.styleReferences) == null ? void 0 : _b.strokeStyleId) {
+        const strokeStyleId = String(classData.styleReferences.strokeStyleId);
+        if (strokeStyleId.startsWith("S:")) {
+          styleIds.borderColor = strokeStyleId;
+        }
+      }
+      if (Object.keys(styleIds).length > 0) {
+        const removeListener = on("RESOLVED_STYLE_COLORS", (msg) => {
+          setResolvedColors(msg.resolvedColors);
+        });
+        emit("RESOLVE_STYLE_COLORS", { styleIds });
+        return () => removeListener();
+      }
+    }, [classData]);
     const allProperties = __spreadValues(__spreadValues(__spreadValues({
       // Layout properties
       width: classData.width,
@@ -2356,13 +2389,13 @@ button {
         styleProps.backgroundColor = classData.styles.fills[0];
       } else if ((_b = classData.styleReferences) == null ? void 0 : _b.fillStyleId) {
         const fillStyleId = String(classData.styleReferences.fillStyleId);
-        styleProps.backgroundColor = `[style-id: ${fillStyleId}]`;
+        styleProps.backgroundColor = resolvedColors.backgroundColor || `[style-id: ${fillStyleId}]`;
       }
       if (((_c = classData.styles) == null ? void 0 : _c.strokes) && Array.isArray(classData.styles.strokes) && classData.styles.strokes.length > 0) {
         styleProps.borderColor = classData.styles.strokes[0];
       } else if ((_d = classData.styleReferences) == null ? void 0 : _d.strokeStyleId) {
         const strokeStyleId = String(classData.styleReferences.strokeStyleId);
-        styleProps.borderColor = `[style-id: ${strokeStyleId}]`;
+        styleProps.borderColor = resolvedColors.borderColor || `[style-id: ${strokeStyleId}]`;
       }
       if (((_e = classData.styles) == null ? void 0 : _e.effects) && Array.isArray(classData.styles.effects) && classData.styles.effects.length > 0) {
         styleProps.boxShadow = classData.styles.effects[0];
@@ -2401,6 +2434,7 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
       init_Text();
       init_lib();
       init_common();
+      init_hooks_module();
       CloseIcon = () => /* @__PURE__ */ g("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none" }, /* @__PURE__ */ g("path", { d: "M18 6L6 18M6 6L18 18", stroke: "currentColor", "stroke-width": "1.5", "stroke-linecap": "round", "stroke-linejoin": "round" }));
     }
   });
@@ -2586,6 +2620,25 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
     const [applyAllAnalysis, setApplyAllAnalysis] = h2(null);
     const [showSearch, setShowSearch] = h2(false);
     const dropdownRef = A2(null);
+    const [dropdownPosition, setDropdownPosition] = h2("bottom");
+    const calculateDropdownPosition = q2((buttonElement) => {
+      const buttonRect = buttonElement.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const spaceBelow = windowHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+      if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+        setDropdownPosition("top");
+      } else {
+        setDropdownPosition("bottom");
+      }
+    }, []);
+    const handleMenuClick = (e3, menuName) => {
+      e3.stopPropagation();
+      if (e3.currentTarget instanceof HTMLElement) {
+        calculateDropdownPosition(e3.currentTarget);
+      }
+      setActiveMenu(activeMenu === menuName ? null : menuName);
+    };
     y2(() => {
       function handleClickOutside(event) {
         if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -2864,6 +2917,9 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
         DropdownItem,
         {
           onClick: () => {
+            if (showSearch) {
+              setSearchQuery("");
+            }
             setShowSearch(!showSearch);
             setActiveMenu(null);
           },
@@ -2919,7 +2975,10 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
     )), /* @__PURE__ */ g(
       IconButton,
       {
-        onClick: () => setShowSearch(false),
+        onClick: () => {
+          setSearchQuery("");
+          setShowSearch(false);
+        },
         variant: "secondary",
         size: "medium"
       },
@@ -2942,10 +3001,7 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
       ), /* @__PURE__ */ g(
         IconButton,
         {
-          onClick: (e3) => {
-            e3.stopPropagation();
-            setActiveMenu(activeMenu === savedClass.name ? null : savedClass.name);
-          },
+          onClick: (e3) => handleMenuClick(e3, savedClass.name),
           variant: "secondary",
           size: "medium"
         },
@@ -2955,7 +3011,7 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
         "div",
         {
           ref: dropdownRef,
-          className: "absolute right-0 top-full p-1 mt-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg",
+          className: `absolute right-0 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${dropdownPosition === "top" ? "bottom-full mb-1" : "top-full mt-1"}`,
           style: {
             backgroundColor: "var(--figma-color-bg)",
             border: "1px solid var(--figma-color-border)"

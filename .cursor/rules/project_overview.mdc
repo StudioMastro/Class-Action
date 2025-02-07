@@ -79,7 +79,7 @@ plugin-root/
 - `tsconfig.json`: TypeScript configuration
 - `package.json`: Dependencies and scripts
 - `tailwind.config.js`: Tailwind CSS configuration
-- `postcss.config.js`: PostCSS configuration
+- `postcss.config.mjs`: PostCSS configuration (ES Module format)
 
 ### Directory Structure Guidelines
 

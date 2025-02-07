@@ -1,6 +1,6 @@
 /** @jsx h */
 import { h } from 'preact'
-import { useState, useEffect, useRef } from 'preact/hooks'
+import { useState, useEffect, useRef, useCallback } from 'preact/hooks'
 import {
   render
 } from '@create-figma-plugin/ui'
@@ -99,6 +99,33 @@ function Plugin() {
 
   // Aggiungiamo un ref per il dropdown
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Aggiungiamo uno state per la posizione del dropdown
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom')
+  
+  // Funzione per calcolare la posizione del dropdown
+  const calculateDropdownPosition = useCallback((buttonElement: HTMLElement) => {
+    const buttonRect = buttonElement.getBoundingClientRect()
+    const windowHeight = window.innerHeight
+    const spaceBelow = windowHeight - buttonRect.bottom
+    const spaceAbove = buttonRect.top
+    
+    // Se lo spazio sotto è minore di 200px (altezza stimata del dropdown) e c'è più spazio sopra
+    if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+      setDropdownPosition('top')
+    } else {
+      setDropdownPosition('bottom')
+    }
+  }, [])
+
+  // Modifichiamo il gestore del click per il menu delle azioni
+  const handleMenuClick = (e: MouseEvent, menuName: string) => {
+    e.stopPropagation()
+    if (e.currentTarget instanceof HTMLElement) {
+      calculateDropdownPosition(e.currentTarget)
+    }
+    setActiveMenu(activeMenu === menuName ? null : menuName)
+  }
 
   // Gestore click fuori dal dropdown
   useEffect(() => {
@@ -463,6 +490,10 @@ function Plugin() {
                 <div className="flex flex-col gap-1">
                   <DropdownItem 
                     onClick={() => {
+                      if (showSearch) {
+                        // Reset search when hiding the search field
+                        setSearchQuery('')
+                      }
                       setShowSearch(!showSearch)
                       setActiveMenu(null)
                     }}
@@ -531,7 +562,10 @@ function Plugin() {
               />
             </div>
             <IconButton 
-              onClick={() => setShowSearch(false)}
+              onClick={() => {
+                setSearchQuery('')  // Reset search query
+                setShowSearch(false)
+              }}
               variant="secondary"
               size="medium"
             >
@@ -561,10 +595,7 @@ function Plugin() {
                     Apply
                   </Button>
                   <IconButton 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setActiveMenu(activeMenu === savedClass.name ? null : savedClass.name)
-                    }}
+                    onClick={(e) => handleMenuClick(e, savedClass.name)}
                     variant="secondary"
                     size="medium"
                   >
@@ -577,7 +608,11 @@ function Plugin() {
               {activeMenu === savedClass.name && (
                 <div 
                   ref={dropdownRef}
-                  className="absolute right-0 top-full p-1 mt-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg"
+                  className={`absolute right-0 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${
+                    dropdownPosition === 'top' 
+                      ? 'bottom-full mb-1' 
+                      : 'top-full mt-1'
+                  }`}
                   style={{ 
                     backgroundColor: 'var(--figma-color-bg)',
                     border: '1px solid var(--figma-color-border)'

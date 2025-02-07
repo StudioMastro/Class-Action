@@ -19,6 +19,7 @@ declare const styles: {
   readonly "border-[var(--figma-color-border)]": string;
   readonly "border-b": string;
   readonly "border-none": string;
+  readonly "bottom-full": string;
   readonly "cursor-not-allowed": string;
   readonly "dark:bg-[#2C2C2C]": string;
   readonly "dark:border-[#444444]": string;
@@ -93,6 +94,7 @@ declare const styles: {
   readonly "left-2": string;
   readonly "max-h-[60vh]": string;
   readonly "max-h-[70vh]": string;
+  readonly "mb-1": string;
   readonly "mb-2": string;
   readonly "mb-4": string;
   readonly "min-w-[120px]": string;
