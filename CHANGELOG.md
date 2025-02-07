@@ -5,6 +5,21 @@ Tutte le modifiche notevoli a questo progetto saranno documentate in questo file
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-02-06
+
+### Changed
+- Migrated PostCSS configuration to ES Module format (`postcss.config.mjs`)
+- Updated build system configuration for better module compatibility
+- Improved documentation organization and structure
+
+### Added
+- Added comprehensive build system documentation
+- Enhanced project structure documentation in `.cursor/rules`
+
+### Fixed
+- Resolved ESLint configuration issues with PostCSS files
+- Fixed TypeScript configuration to include all necessary files
+
 ## [0.2.1] - 2025-01-19
 
 ### Fixed

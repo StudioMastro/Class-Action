@@ -49,6 +49,27 @@ Class Action is a powerful Figma plugin that revolutionizes how designers manage
 - Exception: User interface can be multilingual based on target market
 - Note: The `.cursor/rules/` directory serves as the single source of truth for project documentation and AI assistant support
 
+### Changelog Management
+- Update `CHANGELOG.md` after implementing any significant feature or fix
+- Follow [Keep a Changelog](https://keepachangelog.com) format strictly
+- Categories to use:
+  - `Added` for new features
+  - `Changed` for changes in existing functionality
+  - `Deprecated` for soon-to-be removed features
+  - `Removed` for now removed features
+  - `Fixed` for any bug fixes
+  - `Security` for vulnerability fixes
+- Version numbers follow [Semantic Versioning](https://semver.org)
+  - MAJOR version for incompatible API changes
+  - MINOR version for backwards-compatible functionality
+  - PATCH version for backwards-compatible bug fixes
+- Each version entry must include:
+  - Version number in format [X.Y.Z]
+  - Release date in YYYY-MM-DD format
+  - List of changes grouped by category
+- Keep entries clear, concise, and user-focused
+- Link to relevant issue numbers when applicable
+
 ## Project Structure
 
 ```
