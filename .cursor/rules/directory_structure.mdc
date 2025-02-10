@@ -1,7 +1,3 @@
----
-description: This document provides a structured view of the project's organization, highlighting key directories and files. Only relevant source files are shown (excluding build artifacts, dependencies, and version control files).
-globs: 
----
 # Directory Structure
 
 ## Overview
@@ -29,4 +25,4 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-02-03 11:02:45
+- Last updated: 2025-02-10 22:56:35

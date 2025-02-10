@@ -1,86 +1,95 @@
 ---
-description: Core configuration for AI assistant behavior, defining interaction protocols, safety requirements, and project directives. Essential for maintaining consistent AI assistance across the entire codebase.
+description: Core configuration for AI assistant behavior, defining interaction protocols, safety requirements, and project directives
 globs: 
 ---
-{
-    "rules": {
-        "context_initialization": {
-            "description": "Starting point for each interaction",
-            "steps": [
-                "ALWAYS read `.notes/project_overview.md` and `.notes/task_list.md`",
-                "Check `.notes/meeting_notes.md` for recent decisions",
-                "Review relevant TypeScript files before making changes",
-                "Verify current branch and git status"
-            ]
-        },
-        "operational_protocol": {
-            "description": "How to approach tasks",
-            "before_action": [
-                "Create a MECE task breakdown",
-                "Verify impact on existing functionality",
-                "Check for dependencies"
-            ],
-            "code_changes": [
-                "Read relevant code sections before editing",
-                "Preserve existing functionality",
-                "Maintain type safety",
-                "Follow Figma plugin best practices",
-                "Ensure UI/UX consistency"
-            ]
-        },
-        "safety_requirements": [
-            "NEVER break type safety",
-            "ALWAYS maintain proper error handling",
-            "ALWAYS document new code",
-            "NEVER expose sensitive information",
-            "ALWAYS validate user input",
-            "ALWAYS follow Figma's security guidelines"
-        ],
-        "priorities": [
-            {
-                "source": ".notes/",
-                "weight": 1.0
-            },
-            {
-                "source": "src/",
-                "weight": 0.9
-            },
-            {
-                "source": "tests/",
-                "weight": 0.8
-            }
-        ],
-        "modes": {
-            "base": {
-                "description": "For routine tasks",
-                "features": [
-                    "Basic code changes",
-                    "Documentation updates",
-                    "Simple refactoring"
-                ]
-            },
-            "enhanced": {
-                "description": "For complex problems",
-                "features": [
-                    "Architecture changes",
-                    "Performance optimization",
-                    "Security improvements",
-                    "Complex refactoring"
-                ]
-            }
-        },
-        "project_directives": {
-            "name": "class_action",
-            "ai_first": true,
-            "language": "en",
-            "code_style": {
-                "typescript": "strict",
-                "formatting": "prettier"
-            },
-            "documentation": {
-                "language": "en",
-                "format": "markdown"
-            }
-        }
-    }
-} 
+# AI Assistant Configuration
+
+## Context Initialization
+- Read project documentation before any operation
+- Review relevant code sections before suggesting changes
+- Check recent meeting notes for context
+- Verify current project state and requirements
+
+## Code Generation Standards
+- Generate TypeScript code with strict type safety
+- Follow project-specific naming conventions
+- Implement proper error handling
+- Include comprehensive documentation
+- Add appropriate test coverage
+
+## File Organization
+- Place documentation in `.cursor/rules/`
+- Use Notepads for dynamic documentation
+- Follow established project structure
+- Maintain clear file separation
+- Use appropriate file extensions
+
+## Safety Requirements
+- Never break type safety
+- Always maintain proper error handling
+- Never expose sensitive information
+- Always validate user input
+- Follow Figma's security guidelines
+
+## Project-Specific Rules
+- Language: English only
+- Code Style: Strict TypeScript
+- Formatting: Prettier
+- Documentation: Markdown/MDC
+- Testing: Jest + React Testing Library
+
+## AI Interaction Guidelines
+- Provide clear, concise responses
+- Include code examples when relevant
+- Reference documentation appropriately
+- Use proper technical terminology
+- Follow conversation context
+
+## Development Workflow
+- Review code before modifications
+- Create atomic, focused changes
+- Update documentation as needed
+- Add appropriate tests
+- Update CHANGELOG.md
+
+## Error Handling
+- Provide clear error messages
+- Include debugging context
+- Suggest potential solutions
+- Reference relevant documentation
+- Log appropriate information
+
+## Performance Considerations
+- Optimize code for Figma plugin environment
+- Consider memory usage
+- Minimize UI redraws
+- Batch operations when possible
+- Cache expensive computations
+
+## Documentation Standards
+- Use clear, technical language
+- Include code examples
+- Reference related files with @ syntax
+- Keep documentation up-to-date
+- Follow established templates
+
+## Security Guidelines
+- Follow Figma plugin security best practices
+- Validate all inputs
+- Sanitize data appropriately
+- Handle sensitive data securely
+- Implement proper access controls
+
+## Version Control
+- Write clear commit messages
+- Follow semantic versioning
+- Update CHANGELOG.md
+- Document breaking changes
+- Tag releases appropriately
+
+## References
+- [Figma Plugin Development Guide](mdc:https:/www.figma.com/plugin-docs)
+- [Create Figma Plugin Documentation](mdc:https:/yuanqing.github.io/create-figma-plugin)
+- [TypeScript Documentation](mdc:https:/www.typescriptlang.org/docs)
+- [React Documentation](mdc:https:/react.dev)
+- [Jest Documentation](mdc:https:/jestjs.io/docs/getting-started)
