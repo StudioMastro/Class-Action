@@ -1,0 +1,62 @@
+---
+description: Core guidelines for Figma plugin development and API usage
+globs: 
+---
+
+# Figma Plugin Development Standards
+
+## Plugin Architecture
+- Separate UI and plugin logic
+- Use TypeScript for type safety
+- Follow event-driven communication
+- Implement proper error handling
+- Use Create Figma Plugin utilities
+
+## Figma API Usage
+- Batch API operations for performance
+- Handle API rate limits gracefully
+- Implement proper error recovery
+- Cache API results when possible
+- Use proper type annotations
+
+## Data Management
+- Validate all user inputs
+- Handle large data sets efficiently
+- Implement proper data persistence
+- Use proper serialization
+- Handle data migration gracefully
+
+## Error Handling
+- Use Figma's notification system
+- Provide clear error messages
+- Implement proper error recovery
+- Log errors for debugging
+- Handle edge cases gracefully
+
+## Performance
+- Minimize plugin startup time
+- Optimize memory usage
+- Batch UI updates
+- Cache expensive operations
+- Handle large files efficiently
+
+## Security
+- Validate all inputs
+- Sanitize data before storage
+- Handle sensitive data properly
+- Follow Figma's security guidelines
+- Implement proper access controls
+
+## Plugin Communication
+- Use typed messages
+- Handle message failures
+- Implement proper timeouts
+- Validate message data
+- Use proper event handling
+
+## Documentation
+- Document API usage
+- Include code examples
+- Document known limitations
+- Specify version compatibility
+- Include troubleshooting guides 
