@@ -7,6 +7,11 @@ out/
 .next/
 src/styles.css.d.ts
 src/output.css.d.ts
+src/input.css.d.ts
+src/styles/**/*.d.ts
+src/styles/**/*.css.d.ts
+src/output.css
+src/input.css
 dist/
 *.tsbuildinfo
 output.css
