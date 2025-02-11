@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-02-11
+
+### Added
+- Input validation for class names to prevent CSS notation conflicts
+- Improved error messages for class name validation
+- Centralized validation logic for class names
+- Consistent validation across save and rename operations
+
+### Changed
+- Enhanced class name handling to prevent dots (.) in names
+- Updated UI feedback messages for better clarity
+- Improved error handling in class management operations
+- Standardized validation patterns across the application
+
+### Fixed
+- Prevented potential CSS notation conflicts in class names
+- Fixed duplicate class name detection (case-insensitive)
+- Improved validation feedback in rename operations
+
 ## [0.2.9] - 2025-02-10
 
 ### Added
