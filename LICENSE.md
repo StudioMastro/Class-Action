@@ -1,6 +1,6 @@
 # Class Action Plugin License Agreement
 
-Copyright (c) 2024 Alessandro Mastrogiacomo. All rights reserved.
+Copyright (c) 2025 Alessandro Mastrogiacomo. All rights reserved.
 
 ## Terms and Conditions
 

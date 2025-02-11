@@ -1,16 +1,21 @@
 # Build e Output
-dist/*
-!dist/code.js
-!dist/ui.bundle.js
+build/
 code.js
+ui.js
+main.js
 out/
 .next/
+src/styles.css.d.ts
+dist/
+*.tsbuildinfo
+output.css
 
 # Dependencies
 node_modules/
 .pnp.*
 .yarn/
 .npm
+package-lock.json
 
 # Debug e Log
 *.log
@@ -18,6 +23,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.debug/
 
 # IDE e Editor
 .vscode/
@@ -25,8 +31,28 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+.cursor/*
+!.cursor/rules/
+!.cursor/scripts/
+.cursorignore
 
 # Sistema e Environment
 .DS_Store
 Thumbs.db
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache
+.cache/
+.eslintcache
+.stylelintcache
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Figma specific
+manifest.json

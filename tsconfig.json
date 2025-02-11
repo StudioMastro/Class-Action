@@ -1,19 +1,14 @@
 {
+  "extends": "@create-figma-plugin/tsconfig",
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["ES2017", "DOM"],
-    "typeRoots": ["./node_modules/@figma", "./node_modules/@types"],
-    "moduleResolution": "node",
-    "strict": true,
-    "skipLibCheck": true,
-    "outDir": ".",
-    "rootDir": "./src"
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@figma"
+    ],
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment",
+    "skipLibCheck": true
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "postcss.config.mjs", "postcss.config.js", "tailwind.config.js"]
 }

@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+---
+
 # Directory Structure
 
 ## Overview
@@ -7,25 +12,22 @@ Only relevant source files are shown (excluding build artifacts, dependencies, a
 ## Project Components
 
 ```
-- **.notes/** - Project documentation and notes
-    - directory_structure.md
-    - meeting_notes.md
-    - project_overview.md
-    - **scripts/**
-        - task_list.md
+- **.cursor/** - Cursor IDE configuration and project rules
+    - **rules/**
     - CHANGELOG.md
     - CONTRIBUTING.md
     - LICENSE.md
     - README.md
     - ROADMAP.md
-    - code.js
     - manifest.json
     - package-lock.json
     - package.json
+    - postcss.config.js
+    - tailwind.config.js
     - tsconfig.json
 ```
 
 ## Notes
 - Directories marked with ** are folders
 - Some directories might be hidden for clarity
-- Last updated: 2025-01-13 21:35:50
+- Last updated: 2025-02-10 22:56:35

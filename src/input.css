@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '@create-figma-plugin/ui/lib/css/base.css';
+@import './styles/geist.css';
+@import './styles/fonts.css';
+
+/* Override create-figma-plugin default fonts */
+@layer base {
+  :root {
+    font-family: 'Geist', sans-serif !important;
+  }
+  
+  code, pre {
+    font-family: 'Geist Mono', monospace !important;
+  }
+
+  /* Ensure buttons use Geist */
+  button {
+    font-family: 'Geist', sans-serif !important;
+  }
+}
