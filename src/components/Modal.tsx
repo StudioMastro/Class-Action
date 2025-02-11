@@ -282,11 +282,11 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
 
     return (
       <div className="mb-4">
-        <div className="bg-[#1e1e1e] rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-[#333]">
+        <div className="bg-[var(--figma-color-bg-secondary)] rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--figma-color-border)]">
             <div className="flex items-center gap-2">
-              <span className="text-[#f39c12] text-xs uppercase">css</span>
-              <span className="text-[#666] text-xs">Styles</span>
+              <span className="text-[var(--figma-color-text-brand)] text-xs uppercase">css</span>
+              <span className="text-[var(--figma-color-text-secondary)] text-xs">Styles</span>
             </div>
             <Button
               onClick={() => copyToClipboard(cssCode)}
@@ -299,20 +299,20 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
 
           {/* Code content */}
           <div className="p-4 font-mono text-xs">
-            <div className="text-[#e6e6e6]">
-              <span className="text-[#9b703f]">.</span>
-              <span className="text-[#cc7832]">{classData.name}</span>
-              <span className="text-[#9b703f]"> {`{`}</span>
+            <div className="text-[var(--figma-color-text)]">
+              <span className="text-[var(--figma-color-text-secondary)]">.</span>
+              <span className="text-[var(--figma-color-text-brand)]">{classData.name}</span>
+              <span className="text-[var(--figma-color-text-secondary)]"> {`{`}</span>
             </div>
             {definedProperties.map(([key, value]) => (
               <div key={key} className="ml-4">
-                <span className="text-[#6a8759]">{toKebabCase(key)}</span>
-                <span className="text-[#9b703f]">:</span>
-                <span className="text-[#cc7832]"> {formatCSSValue(value)}</span>
-                <span className="text-[#9b703f]">;</span>
+                <span className="text-[var(--figma-color-text-component)]">{toKebabCase(key)}</span>
+                <span className="text-[var(--figma-color-text-secondary)]">:</span>
+                <span className="text-[var(--figma-color-text-brand)]"> {formatCSSValue(value)}</span>
+                <span className="text-[var(--figma-color-text-secondary)]">;</span>
               </div>
             ))}
-            <div className="text-[#9b703f]">{`}`}</div>
+            <div className="text-[var(--figma-color-text-secondary)]">{`}`}</div>
           </div>
         </div>
       </div>

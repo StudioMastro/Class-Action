@@ -202,9 +202,37 @@ function Plugin() {
     }
   }, [])
 
-  const handleSaveClass = async (name: string) => {
+  // Funzione di utilità per la validazione del nome della classe
+  const validateClassName = (name: string): { isValid: boolean; error?: string } => {
+    // Validazione base per nome vuoto
     if (!name.trim()) {
-      emit('SHOW_ERROR', 'Class name cannot be empty')
+      return { isValid: false, error: 'Class name cannot be empty' }
+    }
+    
+    // Validazione per il punto
+    if (name.includes('.')) {
+      return { 
+        isValid: false, 
+        error: 'Class name cannot contain dots (.) - they will be automatically added in CSS notation' 
+      }
+    }
+    
+    // Validazione caratteri speciali
+    const validNameRegex = /^[a-zA-Z0-9-_]+$/
+    if (!validNameRegex.test(name.trim())) {
+      return { 
+        isValid: false, 
+        error: 'Class name can only contain letters, numbers, hyphens (-) and underscores (_)' 
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  const handleSaveClass = async (name: string) => {
+    const validation = validateClassName(name)
+    if (!validation.isValid) {
+      emit('SHOW_ERROR', validation.error)
       return
     }
     
@@ -281,9 +309,10 @@ function Plugin() {
     const trimmedName = newName.trim()
     console.log('Attempting to rename in UI:', classToRename.name, 'to:', trimmedName)
     
-    // Validazione nome vuoto
-    if (!trimmedName) {
-      emit('SHOW_ERROR', 'Class name cannot be empty')
+    // Validazione del nuovo nome
+    const validation = validateClassName(trimmedName)
+    if (!validation.isValid) {
+      emit('SHOW_ERROR', validation.error)
       return
     }
 
