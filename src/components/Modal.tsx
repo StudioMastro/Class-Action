@@ -5,6 +5,7 @@ import { emit, on } from '@create-figma-plugin/utilities'
 import type { SavedClass } from '../types'
 import { Button, IconButton } from './common'
 import { useEffect, useState } from 'preact/hooks'
+import { Icon, Close } from './common/icons'
 
 // Props per il Modal base
 interface ModalProps {
@@ -87,12 +88,6 @@ function copyToClipboard(text: string): void {
   }
 }
 
-const CloseIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-)
-
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) return null
 
@@ -112,7 +107,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             variant="secondary"
             size="small"
           >
-            <CloseIcon />
+            <Icon icon={Close} size="sm" />
           </IconButton>
         </div>
         <div className="p-4">

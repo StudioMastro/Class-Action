@@ -12,69 +12,17 @@ import { DropdownItem } from './components/common/DropdownItem'
 import { SearchInput } from './components/SearchInput'
 import { TextInput } from './components/TextInput'
 import type { SavedClass, ImportResult } from './types'
-
-// Icone personalizzate
-const InfoIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M8 14.5C11.5899 14.5 14.5 11.5899 14.5 8C14.5 4.41015 11.5899 1.5 8 1.5C4.41015 1.5 1.5 4.41015 1.5 8C1.5 11.5899 4.41015 14.5 8 14.5Z" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M8 7.5V11.5" stroke="currentColor" stroke-width="1.5"/>
-    <circle cx="8" cy="5" r="1" fill="currentColor"/>
-  </svg>
-)
-
-const UpdateIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M13.5 8C13.5 11.0376 11.0376 13.5 8 13.5C4.96243 13.5 2.5 11.0376 2.5 8C2.5 4.96243 4.96243 2.5 8 2.5" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M8 5L10.5 2.5L8 0" stroke="currentColor" stroke-width="1.5"/>
-  </svg>
-)
-
-const RenameIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M11.5 2.5L13.5 4.5M8 13H14M2 11L10.5 2.5L12.5 4.5L4 13H2V11Z" stroke="currentColor" stroke-width="1.5"/>
-  </svg>
-)
-
-const TrashIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M2.5 4.5H13.5" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M12.5 4.5L11.9359 12.6575C11.8889 13.3819 11.2845 14 10.5575 14H5.44248C4.71553 14 4.11112 13.3819 4.06413 12.6575L3.5 4.5" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M5.5 4.5V3C5.5 2.17157 6.17157 1.5 7 1.5H9C9.82843 1.5 10.5 2.17157 10.5 3V4.5" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M6.5 7V11" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M9.5 7V11" stroke="currentColor" stroke-width="1.5"/>
-  </svg>
-)
-
-const EllipsisIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M8 9C8.55228 9 9 8.55228 9 8C9 7.44772 8.55228 7 8 7C7.44772 7 7 7.44772 7 8C7 8.55228 7.44772 9 8 9Z" fill="currentColor"/>
-    <path d="M3 9C3.55228 9 4 8.55228 4 8C4 7.44772 3.55228 7 3 7C2.44772 7 2 7.44772 2 8C2 8.55228 2.44772 9 3 9Z" fill="currentColor"/>
-    <path d="M13 9C13.5523 9 14 8.55228 14 8C14 7.44772 13.5523 7 13 7C12.4477 7 12 7.44772 12 8C12 8.55228 12.4477 9 13 9Z" fill="currentColor"/>
-  </svg>
-)
-
-const ImportIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M8 2V11M8 11L5 8M8 11L11 8" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M3 13H13" stroke="currentColor" stroke-width="1.5"/>
-  </svg>
-)
-
-const ExportIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M8 11V2M8 2L5 5M8 2L11 5" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M3 13H13" stroke="currentColor" stroke-width="1.5"/>
-  </svg>
-)
-
-// Aggiungo l'icona per Apply All
-const ApplyAllIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M2 4L8 7L14 4L8 1L2 4Z" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M2 8L8 11L14 8" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M2 12L8 15L14 12" stroke="currentColor" stroke-width="1.5"/>
-  </svg>
-)
+import { 
+  Search, 
+  Download as Export, 
+  Upload as Import, 
+  Layers as ApplyAll,
+  Info,
+  Edit as Rename,
+  Trash,
+  Ellipsis,
+  Refresh as Update
+} from './components/common/icons'
 
 function Plugin() {
   const [isInitialized, setIsInitialized] = useState(false)
@@ -474,7 +422,7 @@ function Plugin() {
               variant="secondary"
               size="medium"
             >
-              <EllipsisIcon />
+              <Ellipsis size={16} />
             </IconButton>
 
             {/* Actions Dropdown */}
@@ -491,18 +439,13 @@ function Plugin() {
                   <DropdownItem 
                     onClick={() => {
                       if (showSearch) {
-                        // Reset search when hiding the search field
                         setSearchQuery('')
                       }
                       setShowSearch(!showSearch)
                       setActiveMenu(null)
                     }}
                     variant="secondary"
-                    icon={
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M7.333 12.667A5.333 5.333 0 1 0 7.333 2a5.333 5.333 0 0 0 0 10.667zM14 14l-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                    }
+                    icon={<Search size={16} />}
                   >
                     Search
                   </DropdownItem>
@@ -513,7 +456,7 @@ function Plugin() {
                       setActiveMenu(null)
                     }}
                     variant="secondary"
-                    icon={<ImportIcon />}
+                    icon={<Import size={16} />}
                   >
                     Import
                   </DropdownItem>
@@ -524,7 +467,7 @@ function Plugin() {
                       setActiveMenu(null)
                     }}
                     variant="secondary"
-                    icon={<ExportIcon />}
+                    icon={<Export size={16} />}
                   >
                     Export
                   </DropdownItem>
@@ -535,7 +478,7 @@ function Plugin() {
                       setActiveMenu(null)
                     }}
                     variant="secondary"
-                    icon={<ApplyAllIcon />}
+                    icon={<ApplyAll size={16} />}
                   >
                     Apply All
                   </DropdownItem>
@@ -599,7 +542,7 @@ function Plugin() {
                     variant="secondary"
                     size="medium"
                   >
-                    <EllipsisIcon />
+                    <Ellipsis size={16} />
                   </IconButton>
                 </div>
               </div>
@@ -622,7 +565,7 @@ function Plugin() {
                     <DropdownItem 
                       onClick={() => handleViewDetails(savedClass)}
                       variant="secondary"
-                      icon={<InfoIcon />}
+                      icon={<Info size={16} />}
                     >
                       Info
                     </DropdownItem>
@@ -630,7 +573,7 @@ function Plugin() {
                     <DropdownItem 
                       onClick={() => handleRename(savedClass)}
                       variant="secondary"
-                      icon={<RenameIcon />}
+                      icon={<Rename size={16} />}
                     >
                       Rename
                     </DropdownItem>
@@ -638,7 +581,7 @@ function Plugin() {
                     <DropdownItem 
                       onClick={() => handleUpdate(savedClass)}
                       variant="secondary"
-                      icon={<UpdateIcon />}
+                      icon={<Update size={16} />}
                     >
                       Update
                     </DropdownItem>
@@ -646,7 +589,7 @@ function Plugin() {
                     <DropdownItem
                       onClick={() => handleDeleteClick(savedClass)}
                       variant="danger"
-                      icon={<TrashIcon />}
+                      icon={<Trash size={16} />}
                     >
                       Delete
                     </DropdownItem>

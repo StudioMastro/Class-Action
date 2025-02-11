@@ -26,6 +26,7 @@ declare const styles: {
   readonly "disabled:cursor-not-allowed": string;
   readonly "disabled:opacity-50": string;
   readonly "duration-150": string;
+  readonly "duration-200": string;
   readonly "duration-300": string;
   readonly "ease-in-out": string;
   readonly "figma-dark": string;
@@ -82,6 +83,7 @@ declare const styles: {
   readonly "hover:text-[var(--figma-color-text)]": string;
   readonly "hover:text-gray-600": string;
   readonly "hover:text-white": string;
+  readonly "inline-block": string;
   readonly "inline-flex": string;
   readonly "inset-0": string;
   readonly "items-center": string;

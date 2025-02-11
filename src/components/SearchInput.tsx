@@ -2,18 +2,7 @@
 import { h } from 'preact'
 import { useCallback } from 'preact/hooks'
 import { inputBaseStyles } from './common/styles'
-
-const SearchIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M7.333 12.667A5.333 5.333 0 1 0 7.333 2a5.333 5.333 0 0 0 0 10.667zM14 14l-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-)
-
-const ClearIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-)
+import { Search, Close } from './common/icons'
 
 interface SearchInputProps {
   value: string
@@ -51,7 +40,7 @@ export function SearchInput({
     <div className={`relative flex items-center ${className}`}>
       {icon && iconPosition === 'left' && (
         <div className="absolute left-2 text-[var(--figma-color-text-tertiary)]">
-          <SearchIcon />
+          <Search size={16} />
         </div>
       )}
       
@@ -72,7 +61,7 @@ export function SearchInput({
 
       {icon && iconPosition === 'right' && (
         <div className="absolute right-2 text-[var(--figma-color-text-tertiary)]">
-          <SearchIcon />
+          <Search size={16} />
         </div>
       )}
 
@@ -90,7 +79,7 @@ export function SearchInput({
           `}
           type="button"
         >
-          <ClearIcon />
+          <Close size={16} />
         </button>
       )}
     </div>

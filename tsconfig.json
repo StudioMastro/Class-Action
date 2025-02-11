@@ -4,7 +4,11 @@
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules/@figma"
-    ]
+    ],
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment",
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "postcss.config.mjs", "postcss.config.js", "tailwind.config.js"]
 }

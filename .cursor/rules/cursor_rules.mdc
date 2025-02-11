@@ -2,6 +2,7 @@
 description: Core configuration for AI assistant behavior, defining interaction protocols, safety requirements, and project directives
 globs: 
 ---
+
 # AI Assistant Configuration
 
 ## Context Initialization

@@ -31,7 +31,9 @@ yarn-error.log*
 *.swp
 *.swo
 *~
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/scripts/
 .cursorignore
 
 # Sistema e Environment
