@@ -6,6 +6,7 @@ main.js
 out/
 .next/
 src/styles.css.d.ts
+src/output.css.d.ts
 dist/
 *.tsbuildinfo
 output.css
