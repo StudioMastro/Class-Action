@@ -1,0 +1,44 @@
+---
+description: Guidelines for State Management and Modularization in the Figma Plugin Project
+globs: 
+---
+
+# State Management and Modularization Guidelines
+
+## Overview
+This document outlines best practices for managing state and organizing code in a modular fashion within the Figma Plugin Project. The goal is to maintain a scalable, maintainable, and efficient codebase, particularly in the context of React components and plugin logic.
+
+## State Management
+- Use React hooks (such as useState, useReducer, useContext) appropriately to manage local and global state.
+- Keep state as minimal as possible and derive state when feasible, reducing redundancy.
+- Centralize global state using context, Redux, or other state management libraries where applicable.
+- Clear separation between UI state and business logic is essential.
+- Maintain immutability in state updates to avoid side effects.
+
+## Modularization
+- Follow the Single Responsibility Principle: each module or component should address one well-defined functionality.
+- Organize code into logical modules, such as separate directories for components, hooks, utilities, and services.
+- Leverage code splitting and lazy loading to improve performance.
+- Use clear and consistent naming conventions that follow the project style guidelines.
+- Refactor shared logic into reusable hooks or helper functions.
+
+## Integration with React Components
+- Embed state management patterns within React components, ensuring a clean separation of concerns.
+- For complex components, separate presentation from container logic where feasible.
+- Use TypeScript to enforce type safety across modules and state structures.
+
+## Best Practices
+- Write comprehensive unit tests for state management logic and modular functions.
+- Document each module with clear usage examples and expected behaviors.
+- Ensure that state updates are predictable and side effects are handled properly.
+- Maintain a consistent folder structure to enhance code readability and team collaboration.
+
+## Tools and Recommended Libraries
+- **State Management Libraries:** React Context, Redux, Zustand, or similar.
+- **Code Splitting:** React.lazy and Suspense for dynamic imports.
+- **Type Safety:** TypeScript in strict mode.
+
+## References
+- [React Documentation - State and Lifecycle](mdc:https:/reactjs.org/docs/state-and-lifecycle.html)
+- [Redux Documentation](mdc:https:/redux.js.org/introduction/getting-started)
+- [Advanced React Patterns](mdc:https:/reactpatterns.com) 

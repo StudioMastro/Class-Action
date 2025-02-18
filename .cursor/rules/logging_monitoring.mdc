@@ -1,0 +1,38 @@
+---
+description: Guidelines for Logging and Monitoring in the Figma Plugin Project
+globs: 
+---
+
+# Logging and Monitoring Guidelines
+
+## Overview
+This document provides guidelines for implementing logging and monitoring within the Figma Plugin Project in production environments. The objective is to capture errors and performance issues in a standardized way and to monitor system health proactively.
+
+## Logging Best Practices
+- Utilize a standardized logging format (e.g., JSON) to facilitate parsing and searching.
+- Include essential information in every log entry, such as:
+  - Timestamp
+  - Log level (DEBUG, INFO, WARN, ERROR)
+  - Message content with context (e.g., user ID, session ID, function name)
+- Employ logging libraries (e.g., Winston, Bunyan) that support environment-specific configurations.
+- Ensure logs do not expose sensitive information.
+
+## Monitoring and Error Reporting
+- Integrate with centralized monitoring tools (e.g., Sentry, LogRocket) for real-time error tracking.
+- Monitor critical performance metrics such as response times, memory usage, and resource consumption.
+- Set up alerts for critical errors and system degradation.
+- Regularly review logs and monitoring dashboards to identify and address recurring issues.
+
+## Integration with CI/CD
+- Validate logging configurations during the testing and build stages of the CI/CD pipeline.
+- Confirm that all deployed environments generate and capture the expected log entries and monitoring events.
+
+## Recommended Tools
+- **Logging Libraries:** Winston, Bunyan, or similar
+- **Monitoring Tools:** Sentry, LogRocket, or equivalent services
+- **Performance Monitoring:** New Relic, Datadog, or similar
+
+## References
+- [Sentry Documentation](mdc:https:/docs.sentry.io)
+- [Winston Logging Library](mdc:https:/github.com/winstonjs/winston)
+- [LogRocket Documentation](mdc:https:/docs.logrocket.com) 

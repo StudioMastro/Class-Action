@@ -33,7 +33,7 @@ globs:
 - Follow Figma's security guidelines
 
 ## Project-Specific Rules
-- Language: English only
+- Language: English only (All code, documentation, and inline comments must be written in English)
 - Code Style: Strict TypeScript
 - Formatting: Prettier
 - Documentation: Markdown/MDC

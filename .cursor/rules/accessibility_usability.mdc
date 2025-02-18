@@ -1,0 +1,40 @@
+---
+description: Guidelines for Accessibility and Usability in the Figma Plugin Project
+globs: 
+---
+
+# Accessibility and Usability Guidelines
+
+## Overview
+This document provides guidelines for ensuring that the Figma Plugin Project meets accessibility standards and delivers a user-friendly experience. The objective is to ensure that the plugin interface is accessible for all users, including those with disabilities, and follows industry best practices for usability.
+
+## Accessibility Guidelines
+- Follow WCAG 2.1 guidelines as a baseline for accessibility.
+- Ensure all user interface components have appropriate ARIA attributes.
+- Maintain sufficient color contrast between text and background elements.
+- Support keyboard navigation and proper focus management.
+- Implement accessible forms and inputs with descriptive labels.
+- Use automated accessibility testing tools (e.g., Axe, Lighthouse) and perform manual reviews.
+
+## Usability Guidelines
+- Design an intuitive and straightforward user interface.
+- Maintain consistent design patterns and interaction flows across the plugin.
+- Provide clear feedback for user actions.
+- Optimize performance to minimize delays and enhance the user experience.
+- Document interactive components with clear usage instructions.
+- Collect and incorporate user feedback to continuously improve usability.
+
+## Tools and Best Practices
+- **Accessibility Testing Tools:** Axe, Lighthouse, or similar.
+- **Design Systems:** Adhere to Figma's design system and component guidelines.
+- **User Testing:** Conduct usability tests with a diverse group of users.
+- **Feedback Mechanisms:** Implement in-app feedback options to gather user insights.
+
+## Integration with CI/CD
+- Include automated accessibility checks as part of the CI/CD pipeline.
+- Validate that all builds meet the outlined accessibility requirements.
+
+## References
+- [WCAG 2.1 Guidelines](mdc:https:/www.w3.org/TR/WCAG21)
+- [Axe Accessibility Testing](mdc:https:/www.deque.com/axe)
+- [Lighthouse](mdc:https:/developers.google.com/web/tools/lighthouse) 

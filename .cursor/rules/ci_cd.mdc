@@ -1,0 +1,44 @@
+---
+description: CI/CD Pipeline Guidelines for the Figma Plugin Project
+globs: 
+---
+
+# CI/CD Pipeline Guidelines
+
+## Overview
+Questo documento illustra le linee guida per la configurazione della pipeline di Continuous Integration e Continuous Deployment (CI/CD) per il progetto Figma Plugin. L'obiettivo è automatizzare l'esecuzione dei test, il controllo della qualità del codice, la build e il deployment per garantire rilasci di alta qualità.
+
+## Workflow Triggers
+- I commit sui branch di sviluppo attivano l'esecuzione automatica dei test e dei controlli statici.
+- La creazione di una pull request attiva test di integrazione e verifiche del codice.
+- Il merge nel branch principale innesca le fasi di build e deployment.
+
+## Pipeline Stages
+### 1. Testing Stage
+- Esecuzione di test unitari con Jest e React Testing Library.
+- Esecuzione di test di integrazione per validare le interazioni tra componenti e le comunicazioni con l'API Figma.
+- Controlli di linting (ESLint, Prettier) e type checking (TypeScript in modalità strict).
+
+### 2. Build Stage
+- Compilazione del progetto assicurando la sicurezza dei tipi e l'ottimizzazione del bundle.
+- Verifica della copertura dei test: minimo 80% per nuovo codice e 100% per funzionalità critiche.
+
+### 3. Deployment Stage
+- Deployment automatico in ambiente staging al superamento di tutti i controlli.
+- Deployment manuale in produzione dopo una revisione finale.
+
+## Tools e Configurazioni
+- **CI Platform:** Ad esempio GitHub Actions, GitLab CI o altra piattaforma equivalente.
+- **Testing Framework:** Jest con React Testing Library.
+- **Linters e Formatters:** ESLint e Prettier.
+- **Type Checking:** TypeScript in modalità strict.
+
+## Monitoraggio e Rollback
+- Notifiche automatiche su errori di test, build o deployment.
+- Generazione di report dettagliati e log per ogni esecuzione della pipeline.
+- Procedure definite per il rollback in caso di problemi nel deployment.
+
+## Riferimenti
+- [Jest Documentation](mdc:https:/jestjs.io/docs/getting-started)
+- [React Testing Library](mdc:https:/testing-library.com/docs/react-testing-library/intro)
+- [GitHub Actions Documentation](mdc:https:/docs.github.com/en/actions) 

@@ -3,6 +3,8 @@ description: Guidelines for React component development in the Figma plugin
 globs: 
 ---
 
+> Note: For common rules regarding error handling, performance, input validation, and naming conventions, please refer to [cursor_rules.mdc](mdc:cursor_rules.mdc). The rules defined here are specific to React component development.
+
 # React Component Standards
 
 ## Component Structure

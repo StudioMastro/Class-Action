@@ -3,6 +3,8 @@ description: Core guidelines for Figma plugin development and API usage
 globs: 
 ---
 
+> Nota: Per le regole comuni relative a error handling, performance, validazione degli input e naming conventions, si rimanda a [cursor_rules.mdc](mdc:cursor_rules.mdc). Le regole qui definite sono specifiche per il contesto del Figma Plugin.
+
 # Figma Plugin Development Standards
 
 ## Plugin Architecture
@@ -26,12 +28,9 @@ globs:
 - Use proper serialization
 - Handle data migration gracefully
 
-## Error Handling
-- Use Figma's notification system
-- Provide clear error messages
-- Implement proper error recovery
-- Log errors for debugging
-- Handle edge cases gracefully
+## Error Handling (Specific to Figma)
+- Use Figma's notification system for error notifications.
+> Nota: Per le regole comuni di error handling, si rimanda a [cursor_rules.mdc](mdc:cursor_rules.mdc).
 
 ## Performance
 - Minimize plugin startup time

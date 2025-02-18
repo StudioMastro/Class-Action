@@ -1,0 +1,60 @@
+---
+description: Build Process Guidelines for the Figma Plugin Project
+globs: 
+---
+
+# Build Process Guidelines
+
+## Overview
+This document outlines the build process for the Figma Plugin Project. It covers the steps required to compile, bundle, and prepare the plugin for deployment, leveraging @Create Figma Plugin. It also includes guidelines on integrating Tailwind CSS and Preact where applicable.
+
+## Build Tools and Configurations
+- **Bundler/Compiler:** Use the build tools provided by @Create Figma Plugin (e.g., esbuild or rollup) for fast and efficient transpilation and bundling.
+- **Language:** Ensure all code is written in TypeScript in strict mode.
+- **CSS Framework:** Integrate Tailwind CSS for styling, ensuring proper configuration for purging unused styles in production.
+- **UI Library:** Use Preact where needed for lightweight UI components, ensuring proper aliasing if required.
+
+## Create Figma Plugin Integration
+- Follow the guidelines from @Create Figma Plugin to set up the initial project structure.
+- Ensure the plugin manifest is properly generated and validated as per Figma requirements.
+- Configure environment-specific settings (development, staging, production) in the build process.
+
+## Tailwind CSS Integration
+- Configure Tailwind CSS by importing its base, components, and utilities into your main stylesheet.
+- Use PurgeCSS (or Tailwind's built-in purge feature) to remove unused styles in production builds.
+- Extract commonly used utility combinations into reusable components when necessary, to enhance maintainability.
+
+## Preact Integration
+- If using Preact, ensure that the JSX pragma is correctly set up (via Babel or TypeScript configuration) to use Preact's `h` and `Fragment`.
+- Verify proper module aliasing if React is used elsewhere in the project, ensuring consistency with Preact.
+- Optimize the bundle by leveraging code-splitting and lazy loading (using React.lazy and Suspense when applicable).
+
+## Build Steps
+1. **Transpilation:** Convert TypeScript code to JavaScript using a compiler (tsc or through the bundler). Ensure that strict type checking is enabled.
+2. **Bundling:** Bundle the code using the chosen build tool. Ensure that external dependencies are correctly managed and that the final bundle is optimized for size and performance.
+3. **Minification:** Apply minification and dead code elimination for production builds.
+4. **Asset Management:** Copy static assets (images, fonts, etc.) to the appropriate output directories.
+5. **Manifest Generation:** Automatically generate or validate the Figma Plugin manifest.
+6. **Testing the Build:** Run automated tests (unit, integration) as part of the build pipeline to validate the output.
+7. **Verification:** Inspect the final build output to ensure compliance with Figma's plugin requirements.
+
+## CI/CD Integration
+- Integrate the build process into the CI/CD pipeline (refer to the CI/CD guidelines) to automate testing and deployment.
+- Ensure that the build stage verifies type safety, code quality (linting, formatting), and bundle size limits.
+
+## Additional Considerations from Figma Official Documentation
+
+- **Plugin Linter:** Figma provides a set of TypeScript ESLint rules to automatically catch and fix issues in plugin code. The recommended configuration can be found in the official plugin docs and should be integrated in your package.json to extend base ESLint rules.
+
+- **TypeScript Compilation:** Since Figma plugins run in the browser, they require a JavaScript output. Ensure that TypeScript is properly transpiled to JavaScript, and that the manifest's "main" field points to the compiled JavaScript file.
+
+- **Dynamic Page Loading:** For plugins that support Figma's dynamic page loading feature, additional manifest configuration is needed. Make sure to set the "documentAccess" property to "dynamic-page" in your manifest if applicable.
+
+- **Advanced Manifest Customization:** Utilize custom build configuration files (e.g., build-figma-plugin.manifest.js) to modify the manifest output before deployment. This allows for fine-tuned adjustments in line with Figma's requirements.
+
+- **References:** For more details, consult the [Figma Plugin Quickstart Guide](mdc:https:/www.figma.com/plugin-docs/plugin-quickstart-guide) and the [Figma Plugin API Typings](mdc:https:/www.figma.com/plugin-docs/api/typings).
+
+## References
+- [Create Figma Plugin Documentation](mdc:https:/www.figma.com/plugin-docs)
+- [Tailwind CSS - Utility-First](mdc:https:/tailwindcss.com/docs/utility-first)
+- [Preact Documentation](mdc:https:/preactjs.com/guide/v10/getting-started) 

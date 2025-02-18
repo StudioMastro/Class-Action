@@ -3,6 +3,8 @@ description: Comprehensive guide for testing practices and code quality standard
 globs: 
 ---
 
+> Note: For common rules regarding error handling, performance, input validation, and naming conventions, please refer to [cursor_rules.mdc](mdc:cursor_rules.mdc). The rules defined here are specific to testing and code quality guidelines.
+
 # Testing Standards and Code Quality Guidelines
 
 ## Test Structure
