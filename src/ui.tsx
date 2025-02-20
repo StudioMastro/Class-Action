@@ -729,6 +729,7 @@ function Plugin() {
                     <DropdownItem
                       onClick={() => handleDeleteClick(savedClass)}
                       icon={<Trash size={16} />}
+                      variant="danger"
                     >
                       Delete
                     </DropdownItem>

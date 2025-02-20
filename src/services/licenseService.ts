@@ -35,11 +35,12 @@ export class LicenseService {
 
       if (!response.ok) {
         if (data.error?.includes('activation limit')) {
-          // Se la licenza ha raggiunto il limite di attivazioni, proviamo a validarla direttamente
+          // Se la licenza ha raggiunto il limite di attivazioni, restituiamo un errore specifico
           return {
-            success: true,
+            success: false,
+            error: 'License has reached its activation limit',
             license: {
-              status: 'active',
+              status: 'inactive',
               key:
                 options.body && typeof options.body === 'string'
                   ? JSON.parse(options.body).license_key

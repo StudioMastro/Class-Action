@@ -17,18 +17,24 @@ This document outlines the technical implementation details of the licensing and
 - License status management
 - UI components for license input and status display
 - Error handling for license operations
-
-### In Progress 🔄
 - LemonSqueezy API integration
 - License activation flow
-- Automated key generation
+- License deactivation flow
+- Automatic state recovery
+- User notifications and feedback
+- Class limit enforcement after deactivation
+
+### In Progress 🔄
 - Usage tracking implementation
+- Analytics integration
+- Performance monitoring
 
 ### Pending Features ⏳
 - Remote validation endpoint
-- License renewal system
+- License renewal notifications
 - Trial system implementation
-- Analytics integration
+- Offline validation support
+- License transfer system
 
 ## Technical Architecture
 
