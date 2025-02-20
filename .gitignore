@@ -47,9 +47,11 @@ yarn-error.log*
 Thumbs.db
 .env*
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 
 # Cache
 .cache/
@@ -62,3 +64,14 @@ coverage/
 
 # Figma specific
 manifest.json
+
+# Credenziali e Chiavi
+*.pem
+*.key
+*.cert
+*.crt
+*.csr
+*.p12
+*.pfx
+*.env
+*.env.*

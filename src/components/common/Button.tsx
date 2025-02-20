@@ -1,5 +1,5 @@
 /** @jsx h */
-import { h } from 'preact'
+import { h, ComponentChildren } from 'preact'
 import { JSX } from 'preact'
 
 export interface ButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
@@ -7,7 +7,8 @@ export interface ButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
   size?: 'small' | 'medium' | 'large'
   fullWidth?: boolean
   disabled?: boolean
-  children: JSX.Element | JSX.Element[] | string
+  children: ComponentChildren
+  type?: 'button' | 'submit' | 'reset'
 }
 
 export function Button({ 
@@ -17,6 +18,7 @@ export function Button({
   disabled = false,
   children,
   className = '',
+  type = 'button',
   ...props
 }: ButtonProps) {
   const baseClasses = 'inline-flex items-center justify-center transition-colors font-medium'
@@ -52,6 +54,7 @@ export function Button({
 
   return (
     <button 
+      type={type}
       className={classes}
       disabled={disabled}
       {...props}
@@ -59,4 +62,6 @@ export function Button({
       {children}
     </button>
   )
-} 
+}
+
+export default Button 
