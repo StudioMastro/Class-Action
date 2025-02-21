@@ -45,7 +45,9 @@ yarn-error.log*
 # Sistema e Environment
 .DS_Store
 Thumbs.db
-.env*
+.env
+.env.*
+!.env.example
 .env.local
 .env.development
 .env.development.local

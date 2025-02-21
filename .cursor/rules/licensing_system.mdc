@@ -17,24 +17,55 @@ This document outlines the technical implementation details of the licensing and
 - License status management
 - UI components for license input and status display
 - Error handling for license operations
-- LemonSqueezy API integration
-- License activation flow
-- License deactivation flow
-- Automatic state recovery
-- User notifications and feedback
-- Class limit enforcement after deactivation
 
 ### In Progress 🔄
+- LemonSqueezy API integration
+- License activation flow
+- Automated key generation
 - Usage tracking implementation
-- Analytics integration
-- Performance monitoring
 
 ### Pending Features ⏳
 - Remote validation endpoint
-- License renewal notifications
+- License renewal system
 - Trial system implementation
-- Offline validation support
-- License transfer system
+- Analytics integration
+
+## Production Release Checklist
+
+### LemonSqueezy Setup
+- [ ] Create production store in LemonSqueezy dashboard
+- [ ] Configure subscription product with correct pricing
+- [ ] Set up license key settings (activation limits, expiration)
+- [ ] Generate production API keys
+- [ ] Configure webhook endpoints (if needed)
+- [ ] Test production checkout flow
+
+### Environment Configuration
+- [ ] Create `.env.production` with:
+  ```env
+  LEMONSQUEEZY_API_KEY=prod_key
+  LEMONSQUEEZY_STORE_ID=prod_store_id
+  LEMONSQUEEZY_PRODUCT_ID=prod_product_id
+  LEMONSQUEEZY_CHECKOUT_URL=prod_checkout_url
+  ```
+- [ ] Verify all production variables are correctly loaded
+- [ ] Ensure development credentials are not leaked
+- [ ] Test environment switching logic
+
+### Security Verification
+- [ ] Audit credential handling
+- [ ] Verify secure storage of license keys
+- [ ] Test license validation security
+- [ ] Review error handling for sensitive data
+- [ ] Check for exposed credentials in build
+
+### Production Testing
+- [ ] Complete end-to-end license activation flow
+- [ ] Verify license deactivation process
+- [ ] Test premium feature access control
+- [ ] Validate subscription management
+- [ ] Check error handling and recovery
+- [ ] Test upgrade/downgrade flows
 
 ## Technical Architecture
 
