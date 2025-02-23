@@ -4,99 +4,217 @@ import type {
   SavedClassResult,
   AppearanceProperties,
   ClassExportFormat,
-  SuccessResult,
-  ErrorResult,
   FrameProperties,
 } from './types/index';
-import type { LicenseStatus } from './types/license';
+import type { LicenseStatus, LicenseError } from './types/license';
 import { validateClassData, generateChecksum } from './utils/validation';
-import { LicenseService, licenseService } from './services/licenseService';
+import { storageService } from './services/storageService';
+import { licenseService } from './services/licenseService';
 
-const STORAGE_KEY = 'savedClasses';
-const LICENSE_STORAGE_KEY = 'licenseStatus';
-
-// Costanti per i timeout delle notifiche
-const NOTIFICATION_TIMEOUT = {
-  SUCCESS: 2000,
-  ERROR: 3000,
-  MINIMUM_INTERVAL: 500, // Intervallo minimo tra le notifiche
-};
-
+// Notification handler
 let currentNotification: NotificationHandler | null = null;
-let lastNotificationTime = 0;
 
-// Funzione centralizzata per gestire le notifiche
 function showNotification(message: string, options: { error?: boolean; timeout?: number } = {}) {
-  const now = Date.now();
-  const timeSinceLastNotification = now - lastNotificationTime;
-
-  // Se c'è una notifica attiva, cancellala
+  // Cancel any existing notification
   if (currentNotification) {
     currentNotification.cancel();
   }
-
-  // Aspetta un po' se l'ultima notifica è troppo recente
-  if (timeSinceLastNotification < NOTIFICATION_TIMEOUT.MINIMUM_INTERVAL) {
-    setTimeout(() => {
-      showNotificationImmediate(message, options);
-    }, NOTIFICATION_TIMEOUT.MINIMUM_INTERVAL - timeSinceLastNotification);
-    return;
-  }
-
-  showNotificationImmediate(message, options);
-}
-
-// Funzione interna per mostrare la notifica immediatamente
-function showNotificationImmediate(
-  message: string,
-  options: { error?: boolean; timeout?: number } = {},
-) {
-  currentNotification = figma.notify(message, {
-    timeout: options.error ? NOTIFICATION_TIMEOUT.ERROR : NOTIFICATION_TIMEOUT.SUCCESS,
-    ...options,
-  });
-  lastNotificationTime = Date.now();
-}
-
-// Helper function to convert style ID to color value
-async function getStyleColor(styleId: string): Promise<string> {
-  try {
-    const style = await figma.getStyleByIdAsync(styleId);
-    if (!style || !('paints' in style)) return styleId;
-
-    const paint = style.paints[0];
-    if (paint.type === 'SOLID') {
-      const { r, g, b } = paint.color;
-      const opacity = 'opacity' in paint ? paint.opacity : 1;
-      return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${opacity})`;
-    }
-    return styleId;
-  } catch (error) {
-    console.error('Error getting style color:', error);
-    return styleId;
-  }
+  // Show new notification
+  currentNotification = figma.notify(message, options);
+  return currentNotification;
 }
 
 export default function () {
-  const options = { width: 320, height: 480 };
+  // Initialize the UI with fixed dimensions
+  showUI({ width: 320, height: 480 });
+
+  let isInitialized = false;
+  let isProcessingLicense = false;
+
+  // Register all event handlers
+  on('UI_READY', async function () {
+    console.log('UI is ready, initializing plugin...');
+    if (!isInitialized) {
+      await initialize();
+      isInitialized = true;
+    }
+  });
+
+  // Aggiungiamo gli handler per gli eventi di licenza
+  on('ACTIVATION_STARTED', () => {
+    console.log('[License] Activation process started');
+    emit('LICENSE_STATUS_CHANGED', {
+      tier: 'free',
+      isValid: false,
+      features: [],
+      status: 'processing',
+    });
+  });
+
+  on('ACTIVATE_LICENSE', async (licenseKey: string) => {
+    if (isProcessingLicense) {
+      console.log('[License] Another license operation is in progress');
+      return;
+    }
+
+    try {
+      isProcessingLicense = true;
+      console.log('[License] Starting license validation for:', licenseKey);
+
+      const activationResult = await licenseService.activateLicense(licenseKey);
+      console.log('[License] Activation result:', activationResult);
+
+      emit('LICENSE_STATUS_CHANGED', {
+        ...activationResult,
+        status: activationResult.error ? 'error' : 'idle',
+      });
+    } catch (error: unknown) {
+      console.error('[License] Activation error:', error);
+
+      // Modifichiamo il tipo APIError per riflettere i valori validi per code
+      type APIError = {
+        code?: LicenseError['code']; // Questo assicura che code sia uno dei valori validi
+        message?: string;
+        actions?: string[];
+        managementUrl?: string;
+      };
+
+      // Verifichiamo il tipo dell'errore e creiamo l'oggetto licenseError
+      const licenseError: LicenseError = {
+        code: ((error as APIError)?.code as LicenseError['code']) || 'API_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to activate license',
+        actions: (error as APIError)?.actions || ['Please try again later'],
+        managementUrl: (error as APIError)?.managementUrl,
+      };
+
+      emit('LICENSE_STATUS_CHANGED', {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'error',
+        error: licenseError,
+      });
+    } finally {
+      isProcessingLicense = false;
+    }
+  });
+
+  // Listen for selection changes
+  figma.on('selectionchange', () => {
+    if (isInitialized) {
+      checkSelection();
+    }
+  });
+
+  // Semplifichiamo l'inizializzazione
+  async function initialize() {
+    try {
+      console.log('[Initialize] Starting plugin initialization...');
+
+      // Emettiamo subito uno stato freemium valido
+      const freemiumStatus: LicenseStatus = {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'idle',
+      };
+      emit('LICENSE_STATUS_CHANGED', freemiumStatus);
+
+      // Carica le classi salvate
+      console.log('[Initialize] Loading saved classes...');
+      const classesResult = await loadSavedClasses();
+      console.log('[Initialize] Classes loaded:', classesResult.length);
+
+      // Controlla la selezione iniziale
+      console.log('[Initialize] Checking initial selection...');
+      await checkSelection();
+
+      console.log('[Initialize] Plugin initialized successfully');
+      return true;
+    } catch (error) {
+      console.error('[Initialize] Error during initialization:', error);
+      showNotification('Failed to initialize plugin', { error: true });
+      return false;
+    }
+  }
+
+  // Semplifichiamo la gestione della licenza per lo sviluppo
+  async function checkLicenseStatus(): Promise<LicenseStatus> {
+    try {
+      console.log('[CheckLicenseStatus] Validating license status...');
+      const storedKey = await figma.clientStorage.getAsync('licenseKey');
+
+      if (!storedKey) {
+        console.log('[CheckLicenseStatus] No stored license key found');
+        return {
+          tier: 'free',
+          isValid: false,
+          features: [],
+          status: 'idle',
+        };
+      }
+
+      console.log('[CheckLicenseStatus] Found stored key, validating...');
+      const status = await licenseService.validateLicense(storedKey);
+      console.log('[CheckLicenseStatus] Validation result:', status);
+
+      emit('LICENSE_STATUS_CHANGED', status);
+      return status;
+    } catch (error) {
+      console.error('[CheckLicenseStatus] Error:', error);
+      const freemiumStatus: LicenseStatus = {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'error',
+        error: {
+          code: 'API_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to check license status',
+          actions: ['Please try again later'],
+        },
+      };
+      emit('LICENSE_STATUS_CHANGED', freemiumStatus);
+      return freemiumStatus;
+    }
+  }
+
+  // Register all event handlers
+  on('SAVE_CLASS', handleSaveClass);
+  on('APPLY_CLASS', handleApplyClass);
+  on('DELETE_CLASS', handleDeleteClass);
+  on('UPDATE_CLASS', handleUpdateClass);
+  on('EXPORT_CLASSES', handleExportClasses);
+  on('IMPORT_CLASSES', handleImportClasses);
+  on('APPLY_ALL_MATCHING_CLASSES', handleApplyAllMatchingClasses);
+  on('ANALYZE_APPLY_ALL', handleAnalyzeApplyAll);
+  on('CHECK_SELECTION', checkSelection);
+  on('LOAD_CLASSES', loadSavedClasses);
+  on('CHECK_LICENSE_STATUS', checkLicenseStatus);
+  on('SHOW_ERROR', (error: string | { message: string }) => {
+    const errorMessage = typeof error === 'string' ? error : error.message;
+    showNotification(errorMessage, { error: true });
+  });
+  on('SHOW_NOTIFICATION', (message: string) => {
+    showNotification(message);
+  });
 
   // Check if current selection is a frame
-  function checkSelection() {
-    const selection = figma.currentPage.selection;
-    const hasFrames = selection.length > 0 && selection.every((node) => node.type === 'FRAME');
-    emit('SELECTION_CHANGED', hasFrames);
-    return hasFrames;
+  async function checkSelection() {
+    const hasSelectedFrame = figma.currentPage.selection.some((node) => node.type === 'FRAME');
+    emit('SELECTION_CHANGED', hasSelectedFrame);
   }
 
   // Load saved classes on startup
-  async function loadSavedClasses() {
+  async function loadSavedClasses(): Promise<SavedClass[]> {
     try {
-      const savedClasses = (await figma.clientStorage.getAsync(STORAGE_KEY)) || [];
+      console.log('Loading saved classes...');
+      const savedClasses = await storageService.getSavedClasses();
+      console.log('Loaded classes:', savedClasses);
       emit('CLASSES_LOADED', savedClasses);
       return savedClasses;
     } catch (error) {
-      console.error('Error loading classes:', error);
-      showNotification('Failed to load saved classes', { error: true });
+      console.error('Error loading saved classes:', error);
+      emit('SHOW_ERROR', 'Failed to load saved classes');
       return [];
     }
   }
@@ -104,13 +222,13 @@ export default function () {
   // Save classes to storage
   async function saveToStorage(classes: SavedClass[], shouldNotify = false) {
     try {
-      await figma.clientStorage.setAsync(STORAGE_KEY, classes);
+      await storageService.saveClasses(classes);
       if (shouldNotify) {
         showNotification('Classes saved successfully');
       }
     } catch (error) {
       console.error('Error saving classes:', error);
-      showNotification('Failed to save classes', { error: true });
+      emit('SHOW_ERROR', 'Failed to save classes');
     }
   }
 
@@ -327,30 +445,25 @@ export default function () {
     try {
       const frame = figma.currentPage.selection[0] as FrameNode;
       if (!frame || frame.type !== 'FRAME') {
-        showNotification('Please select a frame first', { error: true });
-        const errorResult: ErrorResult = { success: false, error: 'Please select a frame first' };
-        return errorResult;
+        throw new Error('No frame selected');
       }
 
       const frameProperties = await extractFrameProperties(frame);
-      const classData: SavedClass = { ...frameProperties, name: event.name, createdAt: Date.now() };
+      const newClass: SavedClass = {
+        name: event.name,
+        createdAt: Date.now(),
+        ...frameProperties,
+      };
 
-      const savedClasses = (await figma.clientStorage.getAsync(STORAGE_KEY)) || [];
-      await figma.clientStorage.setAsync(STORAGE_KEY, [...savedClasses, classData]);
-
+      await storageService.addClass(newClass);
+      emit('CLASS_SAVED', newClass);
       showNotification('Class saved successfully');
-      emit('CLASS_SAVED', classData);
-
-      const successResult: SuccessResult<SavedClass> = { success: true, data: classData };
-      return successResult;
+      return { success: true, data: newClass };
     } catch (error) {
       console.error('Error saving class:', error);
-      showNotification('Failed to save class', { error: true });
-      const errorResult: ErrorResult = {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to save class',
-      };
-      return errorResult;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save class';
+      emit('SHOW_ERROR', errorMessage);
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -502,7 +615,7 @@ export default function () {
                     /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/,
                   );
                   if (matches) {
-                    const [_, r, g, b, a = '1'] = matches;
+                    const [, r, g, b, a = '1'] = matches;
                     return {
                       type: 'SOLID',
                       color: { r: parseInt(r) / 255, g: parseInt(g) / 255, b: parseInt(b) / 255 },
@@ -534,7 +647,7 @@ export default function () {
                     /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/,
                   );
                   if (matches) {
-                    const [_, r, g, b, a = '1'] = matches;
+                    const [, r, g, b, a = '1'] = matches;
                     return {
                       type: 'SOLID',
                       color: { r: parseInt(r) / 255, g: parseInt(g) / 255, b: parseInt(b) / 255 },
@@ -566,7 +679,7 @@ export default function () {
                     /(-?\d+)px\s+(-?\d+)px\s+(-?\d+)px\s+rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/,
                   );
                   if (matches) {
-                    const [_, x, y, blur, r, g, b, a] = matches;
+                    const [, x, y, blur, r, g, b, a] = matches;
                     return {
                       type: 'DROP_SHADOW',
                       color: {
@@ -613,83 +726,30 @@ export default function () {
   }
 
   async function handleUpdateClass(classToUpdate: SavedClass): Promise<SavedClassResult | null> {
-    // Verifica specifica per la selezione singola nel caso di aggiornamento
-    const selection = figma.currentPage.selection;
-    if (selection.length === 0) {
-      showNotification('Please select a frame to update the class', { error: true });
-      return null;
-    }
-    if (selection.length > 1) {
-      showNotification(
-        'Please select only one frame to update the class. Multiple selection is not supported for class updates.',
-        { error: true },
-      );
-      return null;
-    }
-
-    const frame = selection[0];
-    if (frame.type !== 'FRAME') {
-      showNotification('Please select a frame to update the class', { error: true });
-      return null;
-    }
-
     try {
-      // Extract new properties from the selected frame
-      const frameProperties = await extractFrameProperties(frame);
-      console.log('Extracted new properties:', frameProperties);
-
-      // Load existing classes
-      const savedClasses = await loadSavedClasses();
-
-      // Update the class with new properties while keeping the same name and createdAt
-      const updatedClasses = savedClasses.map((cls: SavedClass) =>
-        cls.name === classToUpdate.name
-          ? { ...frameProperties, name: classToUpdate.name, createdAt: classToUpdate.createdAt }
-          : cls,
-      );
-
-      // Save to storage
-      await saveToStorage(updatedClasses);
-
-      // Emit event to update UI with more detailed information
+      await storageService.updateClass(classToUpdate);
       emit('CLASS_UPDATED', {
         name: classToUpdate.name,
-        properties: { ...frameProperties, createdAt: classToUpdate.createdAt },
-        updatedFrom: frame.name,
+        properties: classToUpdate,
       });
-
-      showNotification(
-        `Class "${classToUpdate.name}" updated successfully from frame "${frame.name}"`,
-      );
-      const updatedClass = {
-        ...frameProperties,
-        name: classToUpdate.name,
-        createdAt: classToUpdate.createdAt,
-      };
-      return { success: true, data: updatedClass };
+      showNotification('Class updated successfully');
+      return { success: true, data: classToUpdate };
     } catch (error) {
       console.error('Error updating class:', error);
-      showNotification('Failed to update class', { error: true });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update class',
-      };
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update class';
+      emit('SHOW_ERROR', errorMessage);
+      return { success: false, error: errorMessage };
     }
   }
 
   async function handleDeleteClass(classData: SavedClass) {
     try {
-      const savedClasses = await loadSavedClasses();
-      const updatedClasses = savedClasses.filter((cls: SavedClass) => cls.name !== classData.name);
-      await saveToStorage(updatedClasses);
-      showNotification('Class deleted successfully');
-      // Emit event to update UI
+      await storageService.deleteClass(classData.name);
       emit('CLASS_DELETED', classData.name);
-      return true;
+      showNotification('Class deleted successfully');
     } catch (error) {
       console.error('Error deleting class:', error);
-      showNotification('Failed to delete class', { error: true });
-      return false;
+      emit('SHOW_ERROR', 'Failed to delete class');
     }
   }
 
@@ -966,186 +1026,4 @@ export default function () {
       });
     }
   });
-
-  // Add license check handler
-  async function checkLicenseStatus() {
-    try {
-      // Try to get the stored license status
-      const storedStatus = await figma.clientStorage.getAsync(LICENSE_STORAGE_KEY);
-
-      // If no stored status, return default free tier
-      if (!storedStatus) {
-        const defaultStatus: LicenseStatus = {
-          tier: 'free',
-          isValid: false,
-          features: [],
-          licenseKey: undefined,
-        };
-        await figma.clientStorage.setAsync(LICENSE_STORAGE_KEY, defaultStatus);
-        emit('LICENSE_STATUS_CHANGED', defaultStatus);
-        return;
-      }
-
-      // Emit the stored status
-      emit('LICENSE_STATUS_CHANGED', storedStatus);
-    } catch (error) {
-      console.error('Error checking license status:', error);
-      emit('LICENSE_ERROR', 'Failed to check license status');
-    }
-  }
-
-  // Add license activation handler
-  on('ACTIVATE_LICENSE', async (licenseKey: string) => {
-    try {
-      const service = LicenseService.getInstance();
-      const result = await service.activateLicense(licenseKey);
-
-      if (result.isValid) {
-        // Save the license status
-        await figma.clientStorage.setAsync(LICENSE_STORAGE_KEY, result);
-        emit('LICENSE_STATUS_CHANGED', result);
-        showNotification('License activated successfully');
-      } else {
-        emit('LICENSE_ERROR', 'Invalid license key');
-      }
-    } catch (error) {
-      console.error('License activation error:', error);
-      emit('LICENSE_ERROR', error instanceof Error ? error.message : 'Failed to activate license');
-    }
-  });
-
-  // Add license deactivation handler
-  on('DEACTIVATE_LICENSE', async () => {
-    try {
-      // Recupera lo stato corrente della licenza
-      const currentStatus = (await figma.clientStorage.getAsync(
-        LICENSE_STORAGE_KEY,
-      )) as LicenseStatus;
-
-      // Log per debug
-      console.log('Current license status:', currentStatus);
-
-      // Se lo stato è corrotto (isValid true ma senza licenseKey)
-      if (currentStatus?.isValid && !currentStatus.licenseKey) {
-        // Forza il reset dello stato
-        const newStatus: LicenseStatus = {
-          tier: 'free',
-          isValid: false,
-          features: [],
-          licenseKey: undefined,
-        };
-        await figma.clientStorage.setAsync(LICENSE_STORAGE_KEY, newStatus);
-        emit('LICENSE_STATUS_CHANGED', newStatus);
-        showNotification('License status has been reset');
-        return;
-      }
-
-      if (!currentStatus?.isValid || !currentStatus.licenseKey) {
-        emit('LICENSE_ERROR', 'No active license found');
-        return;
-      }
-
-      // Deattiva la licenza
-      const result = await licenseService.deactivateLicense(currentStatus.licenseKey);
-      if (result) {
-        // Aggiorna lo stato della licenza
-        const newStatus: LicenseStatus = {
-          tier: 'free',
-          isValid: false,
-          features: [],
-          licenseKey: undefined,
-        };
-
-        // Salva il nuovo stato della licenza
-        await figma.clientStorage.setAsync(LICENSE_STORAGE_KEY, newStatus);
-
-        // Emetti il nuovo stato
-        emit('LICENSE_STATUS_CHANGED', newStatus);
-
-        // Notifica il successo
-        showNotification('License deactivated successfully');
-
-        // Carica le classi esistenti
-        const savedClasses = (await figma.clientStorage.getAsync(STORAGE_KEY)) as SavedClass[];
-
-        if (savedClasses && savedClasses.length > 5) {
-          // Sort classes by creation date (oldest first)
-          const sortedClasses = [...savedClasses].sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateA - dateB;
-          });
-
-          // Keep only the first 5 classes
-          const classesToKeep = sortedClasses.slice(0, 5);
-          const removedClasses = sortedClasses.slice(5);
-
-          // Salva le classi rimanenti
-          await figma.clientStorage.setAsync(STORAGE_KEY, classesToKeep);
-
-          // Notifica l'utente
-          showNotification(
-            `License deactivated. ${removedClasses.length} classes have been removed due to free plan limitations.`,
-            { timeout: 5000 },
-          );
-        } else {
-          showNotification('License deactivated successfully');
-        }
-
-        // Notifica la UI del cambio di stato
-        emit('LICENSE_STATUS_CHANGED', newStatus);
-        emit('CLASSES_LOADED', (await figma.clientStorage.getAsync(STORAGE_KEY)) || []);
-      } else {
-        emit('LICENSE_ERROR', 'Failed to deactivate license');
-      }
-    } catch (error) {
-      console.error('Error deactivating license:', error);
-      emit(
-        'LICENSE_ERROR',
-        error instanceof Error ? error.message : 'Failed to deactivate license',
-      );
-    }
-  });
-
-  // Register all event handlers
-  on('CHECK_LICENSE_STATUS', checkLicenseStatus);
-  on('SAVE_CLASS', handleSaveClass);
-  on('APPLY_CLASS', handleApplyClass);
-  on('APPLY_ALL_MATCHING_CLASSES', handleApplyAllMatchingClasses);
-  on('ANALYZE_APPLY_ALL', handleAnalyzeApplyAll);
-  on('UPDATE_CLASS', handleUpdateClass);
-  on('DELETE_CLASS', handleDeleteClass);
-  on('EXPORT_CLASSES', handleExportClasses);
-  on('IMPORT_CLASSES', handleImportClasses);
-  on('SAVE_TO_STORAGE', saveToStorage);
-  on('LOAD_CLASSES', loadSavedClasses);
-  on('CHECK_SELECTION', checkSelection);
-  on('SHOW_ERROR', (message: string) => {
-    showNotification(message, { error: true });
-  });
-  on('SHOW_NOTIFICATION', (message: string) => {
-    showNotification(message);
-  });
-  on('RESOLVE_STYLE_COLORS', async (msg) => {
-    const resolvedColors: { [key: string]: string } = {};
-
-    for (const [property, styleId] of Object.entries(msg.styleIds)) {
-      if (typeof styleId === 'string' && styleId.startsWith('S:')) {
-        resolvedColors[property] = await getStyleColor(styleId);
-      }
-    }
-
-    figma.ui.postMessage({ type: 'RESOLVED_STYLE_COLORS', resolvedColors });
-  });
-
-  // Listen for selection changes
-  figma.on('selectionchange', () => {
-    checkSelection();
-  });
-
-  // Initialize
-  showUI(options);
-
-  // Initialize selection check
-  checkSelection();
 }

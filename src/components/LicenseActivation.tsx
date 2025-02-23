@@ -1,119 +1,134 @@
 /** @jsx h */
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { Text } from './common/Text';
 import { Button } from './common/Button';
 import { TextInput } from './TextInput';
 import { Modal } from './Modal';
-import type { LicenseStatus } from '../types/license';
+import type { LicenseStatus, LicenseError } from '../types/license';
 
 interface LicenseActivationProps {
   currentStatus: LicenseStatus;
-  onActivate: (key: string) => Promise<void>;
-  onDeactivate: () => Promise<void>;
   isOpen: boolean;
   onClose: () => void;
+  error: LicenseError | null;
+  onActivate: (licenseKey: string) => void;
+  onDeactivate: () => void;
 }
 
 export function LicenseActivation({
   currentStatus,
-  onActivate,
-  onDeactivate,
   isOpen,
   onClose,
+  error,
+  onActivate,
+  onDeactivate,
 }: LicenseActivationProps) {
   const [licenseKey, setLicenseKey] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
 
+  // Combiniamo gli errori da entrambe le fonti
+  const activeError = error || currentStatus.error;
+
   const handleActivate = async () => {
-    if (!licenseKey.trim()) return;
+    if (!licenseKey.trim() || isActivating) return;
     setIsActivating(true);
-    try {
-      await onActivate(licenseKey.trim());
-      setLicenseKey('');
-      onClose();
-    } catch (error) {
-      console.error('License activation error:', error);
-    } finally {
-      setIsActivating(false);
-    }
+    onActivate(licenseKey.trim());
   };
 
   const handleDeactivate = async () => {
+    if (isDeactivating) return;
     setIsDeactivating(true);
-    try {
-      await onDeactivate();
-    } catch (error) {
-      console.error('License deactivation error:', error);
-    } finally {
+    onDeactivate();
+  };
+
+  // Reset dello stato quando il modale viene chiuso
+  useEffect(() => {
+    if (!isOpen) {
+      setLicenseKey('');
+      setIsActivating(false);
       setIsDeactivating(false);
     }
-  };
+  }, [isOpen]);
+
+  // Gestione dei cambiamenti di stato della licenza
+  useEffect(() => {
+    if (currentStatus.status === 'error') {
+      setIsActivating(false);
+      setIsDeactivating(false);
+    } else if (currentStatus.isValid) {
+      setIsActivating(false);
+      setIsDeactivating(false);
+      onClose();
+    }
+  }, [currentStatus, onClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="License Management">
       <div className="flex flex-col gap-4">
-        {/* Status Display */}
-        <div
-          className="flex items-center gap-2 p-3 rounded"
-          style={{
-            backgroundColor: currentStatus.isValid
-              ? 'var(--figma-color-bg-success)'
-              : 'var(--figma-color-bg-secondary)',
-          }}
-        >
-          <Text size="sm">
-            Status: {currentStatus.isValid ? 'Premium Active' : 'Free Plan'}
-            {currentStatus.expiresAt &&
-              ` (Expires: ${new Date(currentStatus.expiresAt).toLocaleDateString()})`}
-          </Text>
+        {/* Status Display - sempre visibile */}
+        <div className="flex items-center gap-2 p-3 rounded bg-[var(--figma-color-bg-secondary)]">
+          <Text size="sm">{currentStatus.isValid ? 'Premium Active' : 'Free Plan'}</Text>
         </div>
 
-        {/* License Key Input */}
-        {!currentStatus.isValid && (
-          <div className="flex flex-col gap-3">
-            <Text size="sm">Enter your license key to activate Premium features:</Text>
+        {/* License Input e Actions */}
+        {currentStatus.isValid ? (
+          <Button
+            onClick={handleDeactivate}
+            disabled={isDeactivating}
+            variant="danger"
+            size="medium"
+          >
+            {isDeactivating ? 'Deactivating...' : 'Deactivate License'}
+          </Button>
+        ) : (
+          <div className="flex flex-col gap-2">
             <TextInput
               value={licenseKey}
               onChange={setLicenseKey}
-              placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-              className="w-full"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleActivate();
-                }
-              }}
+              placeholder="Enter license key..."
+              disabled={isActivating}
             />
-          </div>
-        )}
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-2 mt-2">
-          <Button onClick={onClose} variant="secondary" size="medium">
-            Cancel
-          </Button>
+            {/* Error Display - sotto l'input */}
+            {activeError && (
+              <div className="p-3 rounded bg-[var(--figma-color-bg-danger)]">
+                <Text size="sm" className="text-[var(--figma-color-text-onbrand)]">
+                  {activeError.message}
+                </Text>
+                {activeError.actions && activeError.actions.length > 0 && (
+                  <ul className="mt-2 text-sm list-disc list-inside">
+                    {activeError.actions.map((action, index) => (
+                      <li key={index} className="text-[var(--figma-color-text-onbrand)]">
+                        {action}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {activeError.managementUrl && (
+                  <Button
+                    onClick={() => window.open(activeError.managementUrl, '_blank')}
+                    variant="secondary"
+                    size="small"
+                    className="mt-2"
+                  >
+                    Manage License
+                  </Button>
+                )}
+              </div>
+            )}
 
-          {currentStatus.isValid ? (
-            <Button
-              onClick={handleDeactivate}
-              disabled={isDeactivating}
-              variant="danger"
-              size="medium"
-            >
-              {isDeactivating ? 'Deactivating...' : 'Deactivate License'}
-            </Button>
-          ) : (
             <Button
               onClick={handleActivate}
               disabled={!licenseKey.trim() || isActivating}
               variant="primary"
               size="medium"
             >
-              {isActivating ? 'Activating...' : 'Activate'}
+              {isActivating ? 'Processing...' : 'Activate License'}
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </Modal>
   );

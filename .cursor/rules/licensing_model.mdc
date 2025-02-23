@@ -10,6 +10,26 @@ globs:
 ## Overview
 This document outlines the business model and feature structure for the Figma Plugin's licensing system. It defines the tier structure, feature availability, and business rules. The model follows a freemium approach with two tiers: Free and Premium.
 
+## Implementation Status
+
+### Completed Features ✓
+- License activation and validation system
+- Premium vs Free tier differentiation
+- Error handling and user feedback
+- License management UI with clear status indicators
+- Proper error messaging for activation failures
+- Integration with LemonSqueezy API
+- License deactivation workflow
+- Premium feature gating
+
+### UI/UX Implementation ✓
+- Clear status display in license management modal
+- Intuitive license key input
+- Loading states during activation
+- Detailed error messages with actionable steps
+- Direct link to license management portal
+- Premium feature indicators and upgrade prompts
+
 ## Tier Structure
 
 ### 1. FREE (Freemium)
@@ -49,6 +69,58 @@ Full functionality for professional users:
 - Includes all updates
 - Priority support
 - Early access program
+
+### Error Handling System ✓
+typescript
+const errorMessages = {
+activationLimit: {
+message: "This license is already active on another device.",
+actions: [
+"Visit your LemonSqueezy dashboard to manage your license activations",
+"You can deactivate the license from other devices",
+"Or purchase an additional license for this device"
+],
+managementUrl: "https://app.lemonsqueezy.com/my-orders"
+}
+};
+
+## Feature Flag System ✓
+
+typescript
+interface FeatureFlags {
+maxClasses: number;
+allowImportExport: boolean;
+allowApplyAll: boolean;
+allowAdvancedSearch: boolean;
+allowAutoBackup: boolean;
+}
+const tierFeatures: Record<'free' | 'premium', FeatureFlags> = {
+free: {
+maxClasses: 5,
+allowImportExport: false,
+allowApplyAll: false,
+allowAdvancedSearch: false,
+allowAutoBackup: false
+},
+premium: {
+maxClasses: Infinity,
+allowImportExport: true,
+allowApplyAll: true,
+allowAdvancedSearch: true,
+allowAutoBackup: true
+}
+};
+
+## User Messages ✓
+
+typescript
+const upgradeMessages = {
+classLimit: "You've reached the free plan limit of 5 classes. Upgrade to Premium for unlimited classes!",
+applyAll: "Apply All is a Premium feature that saves you time by applying classes to multiple frames at once.",
+importExport: "Backup and share your classes with Import/Export. Available in Premium.",
+advancedSearch: "Unlock advanced search capabilities with Premium.",
+autoBackup: "Never lose your work with automatic backups. Available in Premium."
+};
 
 #### Promotional Strategy
 - **Launch Offer**: Special introductory price (e.g., €19 for the first year)
@@ -187,9 +259,10 @@ interface UsageMetrics {
 - Clear upgrade messaging
 - Feature comparison table
 
+
 ## Future Considerations
 
-### Potential Enterprise Features (Future)
+### Potential Enterprise Features
 - Team collaboration
 - Cloud synchronization
 - Advanced analytics
@@ -203,5 +276,4 @@ interface UsageMetrics {
 
 ## References
 - [Figma Plugin Monetization Guidelines](mdc:https:/www.figma.com/plugin-docs/monetization)
-- [SaaS Pricing Models](mdc:https:/www.priceintelligently.com/blog/saas-pricing-strategy)
-- [Freemium Best Practices](mdc:https:/www.openview.vc/blog/freemium-model) 
+- [LemonSqueezy Documentation](mdc:https:/docs.lemonsqueezy.com/)

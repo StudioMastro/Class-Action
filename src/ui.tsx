@@ -10,7 +10,7 @@ import { DropdownItem } from './components/DropdownItem';
 import { SearchInput } from './components/SearchInput';
 import { TextInput } from './components/TextInput';
 import type { SavedClass, ImportResult } from './types';
-import type { LicenseStatus } from './types/license';
+import type { LicenseStatus, LicenseError } from './types/license';
 import { LEMONSQUEEZY_CONFIG } from './config/lemonSqueezy';
 import {
   Search,
@@ -33,7 +33,6 @@ function Plugin() {
   const [savedClasses, setSavedClasses] = useState<SavedClass[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [_editingClass, _setEditingClass] = useState<SavedClass | null>(null);
   const [hasSelectedFrame, setHasSelectedFrame] = useState(false);
   const [newClassName, setNewClassName] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -55,11 +54,13 @@ function Plugin() {
     tier: 'free',
     isValid: false,
     features: [],
+    status: 'idle',
   });
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [currentPremiumFeature, setCurrentPremiumFeature] = useState('');
   const [isDeactivationModalOpen, setIsDeactivationModalOpen] = useState(false);
   const [showLicenseActivation, setShowLicenseActivation] = useState(false);
+  const [licenseError, setLicenseError] = useState<LicenseError | null>(null);
 
   // Aggiungiamo un ref per il dropdown
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -105,8 +106,12 @@ function Plugin() {
 
   useEffect(() => {
     let mounted = true;
+    let isFirstCheck = true; // Flag per il primo controllo
 
-    // Registra gli handlers
+    // Signal that UI is ready
+    emit('UI_READY');
+
+    // Register handlers
     const unsubscribeClasses = on('CLASSES_LOADED', (classes: SavedClass[]) => {
       if (!mounted) return;
       setSavedClasses(classes);
@@ -153,12 +158,9 @@ function Plugin() {
       },
     );
 
-    const unsubscribeClassesAppliedAll = on(
-      'CLASSES_APPLIED_ALL',
-      (_result: { success: boolean; error?: string }) => {
-        // Non facciamo nulla qui, le notifiche vengono gestite da main.ts
-      },
-    );
+    const unsubscribeClassesAppliedAll = on('CLASSES_APPLIED_ALL', () => {
+      // Non facciamo nulla qui, le notifiche vengono gestite da main.ts
+    });
 
     const unsubscribeImportResult = on('IMPORT_RESULT', (result: ImportResult) => {
       if (result.success) {
@@ -206,15 +208,69 @@ function Plugin() {
       },
     );
 
-    // Aggiungiamo l'handler per la licenza
-    const unsubscribeLicenseStatus = on('LICENSE_STATUS_CHANGED', (status: LicenseStatus) => {
+    // Gestore unificato per gli eventi di licenza
+    const handleLicenseStatusChange = (status: LicenseStatus) => {
       if (!mounted) return;
-      setLicenseStatus(status);
-    });
 
-    const unsubscribeLicenseError = on('LICENSE_ERROR', (error: string) => {
+      console.log('License status changed:', status);
+
+      // Mantieni lo stato precedente per confronto
+      const prevStatus = licenseStatus;
+
+      // Aggiorna lo stato
+      setLicenseStatus(status);
+
+      // Non mostrare notifiche durante il primo check (inizializzazione)
+      if (isFirstCheck) {
+        isFirstCheck = false;
+        return;
+      }
+
+      // Gestione notifiche per attivazione/deattivazione
+      if (status.isValid && !prevStatus.isValid) {
+        setShowLicenseActivation(false);
+        setLicenseError(null);
+        emit('SHOW_NOTIFICATION', 'License activated successfully!');
+      } else if (!status.isValid && prevStatus.isValid && status.status === 'idle') {
+        // Notifica deattivazione solo se era precedentemente valida
+        emit('SHOW_NOTIFICATION', 'License deactivated successfully');
+      }
+    };
+
+    const handleLicenseError = (error: LicenseError) => {
       if (!mounted) return;
-      emit('SHOW_ERROR', `License error: ${error}`);
+
+      console.error('License error:', error);
+      setLicenseError(error);
+
+      // Aggiorna lo stato della licenza con l'errore
+      setLicenseStatus((prev) => ({
+        ...prev,
+        status: 'error',
+        error,
+      }));
+
+      // Tutti gli errori vengono gestiti nel modale, non come notifiche
+    };
+
+    // Registra i listener
+    const removeStatusListener = on('LICENSE_STATUS_CHANGED', handleLicenseStatusChange);
+    const removeErrorListener = on('LICENSE_ERROR', handleLicenseError);
+    const removeActivationStartedListener = on('ACTIVATION_STARTED', () => {
+      if (!mounted) return;
+      setLicenseStatus((prev) => ({
+        ...prev,
+        status: 'processing',
+        error: undefined,
+      }));
+    });
+    const removeDeactivationStartedListener = on('DEACTIVATION_STARTED', () => {
+      if (!mounted) return;
+      setLicenseStatus((prev) => ({
+        ...prev,
+        status: 'processing',
+        error: undefined,
+      }));
     });
 
     // Verifica iniziale della licenza
@@ -240,8 +296,10 @@ function Plugin() {
       unsubscribeImportResult();
       unsubscribeAnalysisResult();
       unsubscribeSaveDialog(); // Aggiungiamo la pulizia del listener
-      unsubscribeLicenseStatus();
-      unsubscribeLicenseError();
+      removeStatusListener();
+      removeErrorListener();
+      removeActivationStartedListener();
+      removeDeactivationStartedListener();
     };
   }, []);
 
@@ -457,18 +515,25 @@ function Plugin() {
     setIsPremiumModalOpen(true);
   };
 
-  const handleDeactivateLicense = async () => {
-    setIsDeactivationModalOpen(true);
+  const handleDeactivateLicense = () => {
+    setLicenseError(null);
+    setLicenseStatus((prev) => ({
+      ...prev,
+      status: 'processing',
+      error: undefined,
+    }));
+    emit('DEACTIVATE_LICENSE');
+    setIsDeactivationModalOpen(false);
   };
 
-  const handleConfirmDeactivation = async () => {
-    try {
-      await emit('DEACTIVATE_LICENSE');
-      setIsDeactivationModalOpen(false);
-    } catch (error) {
-      console.error('License deactivation error:', error);
-      emit('SHOW_ERROR', 'Failed to deactivate license');
-    }
+  const handleLicenseActivation = (key: string) => {
+    setLicenseError(null);
+    setLicenseStatus((prev) => ({
+      ...prev,
+      status: 'processing',
+      error: undefined,
+    }));
+    emit('ACTIVATE_LICENSE', key);
   };
 
   if (!isInitialized) {
@@ -530,6 +595,15 @@ function Plugin() {
             onUpgradeClick={() => handlePremiumFeatureClick('Unlimited Classes')}
             onActivateClick={() => setShowLicenseActivation(true)}
           />
+        )}
+
+        {/* Show Premium Status when license is valid */}
+        {licenseStatus.isValid && (
+          <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-[var(--figma-color-bg-success)] rounded">
+            <Text size="xs" className="text-[var(--figma-color-text-onbrand)]">
+              Premium Active - Unlimited Classes
+            </Text>
+          </div>
         )}
       </div>
 
@@ -840,16 +914,13 @@ function Plugin() {
       {/* License Management Section */}
       <LicenseActivation
         isOpen={showLicenseActivation}
-        onClose={() => setShowLicenseActivation(false)}
-        currentStatus={licenseStatus}
-        onActivate={async (key) => {
-          try {
-            await emit('ACTIVATE_LICENSE', key);
-            setShowLicenseActivation(false);
-          } catch (error) {
-            console.error('License activation error:', error);
-          }
+        onClose={() => {
+          setShowLicenseActivation(false);
+          setLicenseError(null);
         }}
+        currentStatus={licenseStatus}
+        error={licenseError}
+        onActivate={handleLicenseActivation}
         onDeactivate={handleDeactivateLicense}
       />
 
@@ -857,7 +928,7 @@ function Plugin() {
       <LicenseDeactivationModal
         isOpen={isDeactivationModalOpen}
         onClose={() => setIsDeactivationModalOpen(false)}
-        onConfirm={handleConfirmDeactivation}
+        onConfirm={handleDeactivateLicense}
         hasExcessClasses={savedClasses.length > 5}
         totalClasses={savedClasses.length}
       />

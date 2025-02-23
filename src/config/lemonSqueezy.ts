@@ -53,4 +53,10 @@ export interface LemonSqueezyResponse {
     activation_limit: number;
     activations_count: number;
   };
+  instance?: {
+    identifier: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+  };
 }

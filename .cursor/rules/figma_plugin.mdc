@@ -57,3 +57,27 @@ globs:
 - Document known limitations
 - Specify version compatibility
 - Include troubleshooting guides 
+
+interface LicenseError {
+  code: 'ACTIVATION_LIMIT_REACHED' | 'INVALID_LICENSE' | 'NETWORK_ERROR' | 'API_ERROR';
+  message: string;
+  actions?: string[];
+  managementUrl?: string;
+}
+
+interface LicenseStatus {
+  tier: 'free' | 'premium';
+  isValid: boolean;
+  features: string[];
+  status: 'idle' | 'processing' | 'error';
+  error?: LicenseError;
+}
+
+interface LicenseActivationProps {
+  currentStatus: LicenseStatus;
+  isOpen: boolean;
+  onClose: () => void;
+  error: LicenseError | null;
+  onActivate: (licenseKey: string) => void;
+  onDeactivate: () => void;
+} 
