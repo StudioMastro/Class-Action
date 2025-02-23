@@ -70,58 +70,6 @@ Full functionality for professional users:
 - Priority support
 - Early access program
 
-### Error Handling System ✓
-typescript
-const errorMessages = {
-activationLimit: {
-message: "This license is already active on another device.",
-actions: [
-"Visit your LemonSqueezy dashboard to manage your license activations",
-"You can deactivate the license from other devices",
-"Or purchase an additional license for this device"
-],
-managementUrl: "https://app.lemonsqueezy.com/my-orders"
-}
-};
-
-## Feature Flag System ✓
-
-typescript
-interface FeatureFlags {
-maxClasses: number;
-allowImportExport: boolean;
-allowApplyAll: boolean;
-allowAdvancedSearch: boolean;
-allowAutoBackup: boolean;
-}
-const tierFeatures: Record<'free' | 'premium', FeatureFlags> = {
-free: {
-maxClasses: 5,
-allowImportExport: false,
-allowApplyAll: false,
-allowAdvancedSearch: false,
-allowAutoBackup: false
-},
-premium: {
-maxClasses: Infinity,
-allowImportExport: true,
-allowApplyAll: true,
-allowAdvancedSearch: true,
-allowAutoBackup: true
-}
-};
-
-## User Messages ✓
-
-typescript
-const upgradeMessages = {
-classLimit: "You've reached the free plan limit of 5 classes. Upgrade to Premium for unlimited classes!",
-applyAll: "Apply All is a Premium feature that saves you time by applying classes to multiple frames at once.",
-importExport: "Backup and share your classes with Import/Export. Available in Premium.",
-advancedSearch: "Unlock advanced search capabilities with Premium.",
-autoBackup: "Never lose your work with automatic backups. Available in Premium."
-};
-
 #### Promotional Strategy
 - **Launch Offer**: Special introductory price (e.g., €19 for the first year)
 - **Seasonal Discounts**: Holiday season offers (20-30% off)
@@ -258,7 +206,6 @@ interface UsageMetrics {
 - Provide interactive previews
 - Clear upgrade messaging
 - Feature comparison table
-
 
 ## Future Considerations
 

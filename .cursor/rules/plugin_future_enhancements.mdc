@@ -15,9 +15,11 @@ This document outlines the next set of activities and feature enhancements for t
 - Search functionality
 - Class application to frames
 - Premium feature gating
-- License validation system
+- Complete license management system
 - UI components for premium features
 - Class limit enforcement
+- License activation/deactivation flow
+- LemonSqueezy integration
 
 ## Proposed Enhancements
 
@@ -72,23 +74,30 @@ This document outlines the next set of activities and feature enhancements for t
   - Backup system
 
 ### 4.1 Licensing System Enhancement
-- **Status:** Partially Implemented
+- **Status:** Mostly Implemented
 - **Completed Features:** ✓
   - Basic license validation
   - Premium feature gating
   - License status management
   - UI for license management
   - Error handling
-- **In Progress:** 🔄
   - LemonSqueezy integration
   - License activation flow
+  - License deactivation flow
+  - License status persistence
+  - Class limit enforcement
+  - Automatic state recovery
+  - User notifications and feedback
+- **In Progress:** 🔄
   - Usage tracking
+  - Analytics integration
 - **Planned:** ⏳
   - Trial system
-  - License renewal
-  - Analytics integration
+  - License renewal notifications
   - Team licensing
   - Bulk license management
+  - License transfer system
+  - Offline license validation
 
 ### 5. Enhanced Error Handling and Logging
 - **Status:** Partially Implemented
@@ -152,7 +161,6 @@ This document outlines the next set of activities and feature enhancements for t
 ## Development Priorities
 
 ### Production Release Checklist
-
 - **Environment Setup:**
   - [ ] Create `.env.production` file
   - [ ] Configure production credentials in LemonSqueezy dashboard
