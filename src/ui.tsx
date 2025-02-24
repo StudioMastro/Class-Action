@@ -536,6 +536,20 @@ function Plugin() {
     emit('ACTIVATE_LICENSE', key);
   };
 
+  // Aggiungiamo un handler per la chiusura della modale di attivazione
+  const handleLicenseActivationClose = () => {
+    setShowLicenseActivation(false);
+    setLicenseError(null);
+    // Reset anche lo stato della licenza se c'è un errore
+    if (licenseStatus.status === 'error') {
+      setLicenseStatus((prev) => ({
+        ...prev,
+        status: 'idle',
+        error: undefined,
+      }));
+    }
+  };
+
   if (!isInitialized) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -914,10 +928,7 @@ function Plugin() {
       {/* License Management Section */}
       <LicenseActivation
         isOpen={showLicenseActivation}
-        onClose={() => {
-          setShowLicenseActivation(false);
-          setLicenseError(null);
-        }}
+        onClose={handleLicenseActivationClose}
         currentStatus={licenseStatus}
         error={licenseError}
         onActivate={handleLicenseActivation}

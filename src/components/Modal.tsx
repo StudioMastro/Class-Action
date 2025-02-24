@@ -1,5 +1,5 @@
 /** @jsx h */
-import { h, VNode } from 'preact';
+import { h, Fragment, VNode } from 'preact';
 import { Text } from './common/Text';
 import { emit, on } from '@create-figma-plugin/utilities';
 import type { SavedClass } from '../types';
@@ -101,22 +101,34 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 w-[300px] bg-[var(--figma-color-bg)] rounded-lg shadow-lg">
-        <div className="flex items-center justify-between py-3 px-4 border-b border-[var(--figma-color-border)]">
-          <div>
-            <Text size="lg" weight="bold">
-              {title}
-            </Text>
+    <Fragment>
+      <style>
+        {`
+          :root {
+            overflow: hidden !important;
+          }
+        `}
+      </style>
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+        <div
+          className="relative z-10 w-[300px] max-h-[90vh] overflow-y-auto bg-[var(--figma-color-bg)] rounded-lg shadow-lg"
+          style={{ marginTop: '2vh', marginBottom: '2vh' }}
+        >
+          <div className="sticky top-0 z-20 flex items-center justify-between py-3 px-4 border-b border-[var(--figma-color-border)] bg-[var(--figma-color-bg)]">
+            <div>
+              <Text size="lg" weight="bold">
+                {title}
+              </Text>
+            </div>
+            <IconButton onClick={onClose} variant="secondary" size="small">
+              <Icon icon={Close} size="sm" />
+            </IconButton>
           </div>
-          <IconButton onClick={onClose} variant="secondary" size="small">
-            <Icon icon={Close} size="sm" />
-          </IconButton>
+          <div className="p-4">{children}</div>
         </div>
-        <div className="p-4">{children}</div>
       </div>
-    </div>
+    </Fragment>
   );
 }
 

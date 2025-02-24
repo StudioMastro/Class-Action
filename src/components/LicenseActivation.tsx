@@ -27,28 +27,24 @@ export function LicenseActivation({
   const [licenseKey, setLicenseKey] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
+  const [localError, setLocalError] = useState<LicenseError | null>(null);
 
   // Combiniamo gli errori da entrambe le fonti
-  const activeError = error || currentStatus.error;
+  const activeError = error || localError;
 
-  const handleActivate = async () => {
-    if (!licenseKey.trim() || isActivating) return;
-    setIsActivating(true);
-    onActivate(licenseKey.trim());
-  };
-
-  const handleDeactivate = async () => {
-    if (isDeactivating) return;
-    setIsDeactivating(true);
-    onDeactivate();
-  };
-
-  // Reset dello stato quando il modale viene chiuso
+  // Reset dello stato quando il modale viene chiuso o aperto
   useEffect(() => {
     if (!isOpen) {
+      // Reset completo degli stati quando la modale viene chiusa
       setLicenseKey('');
       setIsActivating(false);
       setIsDeactivating(false);
+      setLocalError(null);
+    } else {
+      // Reset degli stati quando la modale viene aperta
+      setIsActivating(false);
+      setIsDeactivating(false);
+      setLocalError(null);
     }
   }, [isOpen]);
 
@@ -57,15 +53,40 @@ export function LicenseActivation({
     if (currentStatus.status === 'error') {
       setIsActivating(false);
       setIsDeactivating(false);
+      setLocalError(currentStatus.error || null);
     } else if (currentStatus.isValid) {
       setIsActivating(false);
       setIsDeactivating(false);
+      setLocalError(null);
       onClose();
     }
   }, [currentStatus, onClose]);
 
+  const handleActivate = async () => {
+    if (!licenseKey.trim() || isActivating) return;
+    setIsActivating(true);
+    setLocalError(null); // Reset dell'errore locale prima dell'attivazione
+    onActivate(licenseKey.trim());
+  };
+
+  const handleDeactivate = async () => {
+    if (isDeactivating) return;
+    setIsDeactivating(true);
+    setLocalError(null); // Reset dell'errore locale prima della disattivazione
+    onDeactivate();
+  };
+
+  // Handler per la chiusura che resetta tutto
+  const handleClose = () => {
+    setLicenseKey('');
+    setIsActivating(false);
+    setIsDeactivating(false);
+    setLocalError(null);
+    onClose();
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="License Management">
+    <Modal isOpen={isOpen} onClose={handleClose} title="License Management">
       <div className="flex flex-col gap-4">
         {/* Status Display - sempre visibile */}
         <div className="flex items-center gap-2 p-3 rounded bg-[var(--figma-color-bg-secondary)]">
