@@ -9,7 +9,6 @@ module.exports = function (manifest) {
     networkAccess: {
       allowedDomains: [
         'https://api.lemonsqueezy.com/v1/',
-        'https://api-cors-anywhere.lemonsqueezy.com/v1/',
         'https://*.lemonsqueezy.com',
         'https://app.lemonsqueezy.com',
         'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c',
@@ -23,7 +22,6 @@ module.exports = function (manifest) {
         'http://localhost:8080',
         // API di LemonSqueezy per lo sviluppo
         'https://api.lemonsqueezy.com/v1/',
-        'https://api-cors-anywhere.lemonsqueezy.com/v1/',
         'https://*.lemonsqueezy.com',
         'https://app.lemonsqueezy.com',
         'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c',

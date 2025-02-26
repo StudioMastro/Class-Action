@@ -15,14 +15,14 @@ export const ENV_CONFIG: EnvironmentConfig = {
     typeof __NODE_ENV__ !== 'undefined' && __NODE_ENV__ === 'production' ? 'error' : 'debug',
 } as const;
 
-// LemonSqueezy API configuration with CORS proxy for Figma plugins
+// LemonSqueezy API configuration - utilizziamo gli endpoint diretti
 export const LEMONSQUEEZY_CONFIG: LemonSqueezyConfig = {
-  // Use the CORS proxy URL for Figma plugins
-  API_ENDPOINT: 'https://api-cors-anywhere.lemonsqueezy.com/v1',
+  // Utilizziamo l'endpoint diretto invece del CORS proxy
+  API_ENDPOINT: 'https://api.lemonsqueezy.com/v1',
 
   // The correct license API endpoint for LemonSqueezy
   // The base URL should NOT include the final slash
-  LICENSE_API_ENDPOINT: 'https://api-cors-anywhere.lemonsqueezy.com/v1/licenses',
+  LICENSE_API_ENDPOINT: 'https://api.lemonsqueezy.com/v1/licenses',
 
   API_KEY: typeof __LEMONSQUEEZY_API_KEY__ !== 'undefined' ? __LEMONSQUEEZY_API_KEY__ : '',
   STORE_ID: typeof __LEMONSQUEEZY_STORE_ID__ !== 'undefined' ? __LEMONSQUEEZY_STORE_ID__ : '',

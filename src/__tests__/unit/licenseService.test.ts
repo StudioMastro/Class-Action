@@ -386,12 +386,10 @@ describe('LemonSqueezy Integration', () => {
   });
 
   describe('API URL handling', () => {
-    it('should use the CORS proxy URL for Lemon Squeezy API', () => {
-      // Verify that the configuration uses the CORS proxy URL
-      expect(LEMONSQUEEZY_CONFIG.API_ENDPOINT).toContain('api-cors-anywhere.lemonsqueezy.com');
-      expect(LEMONSQUEEZY_CONFIG.LICENSE_API_ENDPOINT).toContain(
-        'api-cors-anywhere.lemonsqueezy.com',
-      );
+    it('should use the direct URL for Lemon Squeezy API', () => {
+      // Verify that the configuration uses the direct URL
+      expect(LEMONSQUEEZY_CONFIG.API_ENDPOINT).toContain('api.lemonsqueezy.com');
+      expect(LEMONSQUEEZY_CONFIG.LICENSE_API_ENDPOINT).toContain('api.lemonsqueezy.com');
     });
   });
 

@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Default values for development
+// Nota: Il plugin ora utilizza gli endpoint diretti di LemonSqueezy invece del proxy CORS
 const defaultConfig = {
   NODE_ENV: 'development',
   LEMONSQUEEZY_API_KEY: 'test_key',

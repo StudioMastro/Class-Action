@@ -6,11 +6,24 @@ import type {
   ClassExportFormat,
   FrameProperties,
 } from './types/index';
-import type { LicenseStatus } from './types/lemonSqueezy';
+import type { LicenseStatus } from './types/license';
 import { validateClassData, generateChecksum } from './utils/validation';
 import { storageService } from './services/storageService';
 import { licenseService } from './services/licenseService';
-import { runAllTests } from './test-lemonsqueezy';
+// Importiamo i test di LemonSqueezy usando una funzione wrapper
+function runDiagnosticTests() {
+  try {
+    // Utilizziamo require per importare il modulo JavaScript
+    const testModule = require('./__tests__/diagnostics/test-lemonsqueezy.js');
+    return testModule.runAllTests();
+  } catch (error) {
+    console.error("Errore durante l'importazione dei test diagnostici:", error);
+    return {
+      connectivity: { success: false, message: "Errore durante l'importazione dei test" },
+      format: { success: false, message: "Errore durante l'importazione dei test" },
+    };
+  }
+}
 
 // Notification handler
 let currentNotification: NotificationHandler | null = null;
@@ -88,14 +101,14 @@ export default function () {
   on('RUN_DIAGNOSTIC_TESTS', async () => {
     try {
       console.log('Esecuzione dei test diagnostici su richiesta...');
-      const testResults = await runAllTests(isUiReadyForApi);
+      const testResults = await runDiagnosticTests();
       console.log('Risultati dei test diagnostici:', testResults);
 
       // Invia i risultati all'UI
       emit('DIAGNOSTIC_TEST_RESULTS', testResults);
 
       // Mostra una notifica con il risultato
-      if (testResults.connectivityTest.success && testResults.formatTest.success) {
+      if (testResults.connectivity.success && testResults.format.success) {
         showNotification('Test diagnostici completati con successo!');
       } else {
         showNotification(

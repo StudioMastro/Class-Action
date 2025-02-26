@@ -7,7 +7,7 @@ alwaysApply: true
 
 > Note: The main AI assistant rules are now defined in the root `.cursorrules` file.
 > This document serves as extended documentation and guidelines.
-> For license-related information, please refer to `LICENSING.md` in the project root.
+> For license-related information, please refer to `.cursor/docs/LICENSING.mdc`.
 
 ## Extended Documentation
 

@@ -24,6 +24,6 @@
     "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
     "types": ["node", "jest", "@figma/plugin-typings"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.config.ts"],
-  "exclude": ["node_modules", "build", "dist"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "jest.config.ts"],
+  "exclude": ["node_modules", "build", "dist", "src/__tests__/diagnostics/*.js"]
 }
