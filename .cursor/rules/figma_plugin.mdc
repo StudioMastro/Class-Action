@@ -1,18 +1,18 @@
 ---
 description: Core guidelines for Figma plugin development and API usage
-globs: 
+globs: src/plugin/**/*.ts, src/plugin/**/*.tsx, manifest.json, build-figma-plugin.*.js
+alwaysApply: false
 ---
-
-> Note: For common rules regarding error handling, performance, input validation, and naming conventions, please refer to [cursor_rules.mdc](mdc:cursor_rules.mdc). The rules defined here are specific to the Figma Plugin context.
-
 # Figma Plugin Development Standards
+
+> Note: For common development standards and build process information, please refer to @rules/cursor_rules.mdc and @rules/build_process.mdc.
 
 ## Plugin Architecture
 - Separate UI and plugin logic
 - Use TypeScript for type safety
 - Follow event-driven communication
 - Implement proper error handling
-- Use Create Figma Plugin utilities
+- Use @create-figma-plugin/build utilities
 
 ## Figma API Usage
 - Batch API operations for performance
@@ -29,13 +29,17 @@ globs:
 - Handle data migration gracefully
 
 ## Error Handling (Specific to Figma)
-- Use Figma's notification system for error notifications.
-> Nota: Per le regole comuni di error handling, si rimanda a [cursor_rules.mdc](mdc:cursor_rules.mdc).
+- Use Figma's notification system for error notifications
+- Handle plugin-specific errors gracefully
+- Provide user-friendly error messages
+- Implement proper error recovery
 
 ## Performance (Specific to Figma)
 - Minimize plugin startup time
 - Handle large files efficiently
-> Nota: Per le linee guida comuni in tema di performance, si rimanda a [cursor_rules.mdc](mdc:cursor_rules.mdc).
+- Optimize UI updates
+- Implement proper caching
+- Use efficient data structures
 
 ## Security
 - Validate all inputs
@@ -45,39 +49,20 @@ globs:
 - Implement proper access controls
 
 ## Plugin Communication
-- Use typed messages
-- Handle message failures
+- Use typed messages between UI and plugin
+- Handle message failures gracefully
 - Implement proper timeouts
 - Validate message data
 - Use proper event handling
 
 ## Documentation
-- Document API usage
+- Document API usage patterns
 - Include code examples
 - Document known limitations
 - Specify version compatibility
-- Include troubleshooting guides 
+- Include troubleshooting guides
 
-interface LicenseError {
-  code: 'ACTIVATION_LIMIT_REACHED' | 'INVALID_LICENSE' | 'NETWORK_ERROR' | 'API_ERROR';
-  message: string;
-  actions?: string[];
-  managementUrl?: string;
-}
-
-interface LicenseStatus {
-  tier: 'free' | 'premium';
-  isValid: boolean;
-  features: string[];
-  status: 'idle' | 'processing' | 'error';
-  error?: LicenseError;
-}
-
-interface LicenseActivationProps {
-  currentStatus: LicenseStatus;
-  isOpen: boolean;
-  onClose: () => void;
-  error: LicenseError | null;
-  onActivate: (licenseKey: string) => void;
-  onDeactivate: () => void;
-} 
+## References
+- @docs/README.mdc - Project documentation overview
+- @rules/build_process.mdc - Build process guidelines
+- @rules/react_components.mdc - UI component guidelines

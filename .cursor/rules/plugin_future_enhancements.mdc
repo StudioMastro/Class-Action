@@ -1,12 +1,15 @@
 ---
-description: Future Enhancement Guidelines for the Figma Plugin Project
-globs: 
+description: Future Enhancement Guidelines and Roadmap for the Figma Plugin Project
+globs: src/**/*.ts, src/**/*.tsx, ROADMAP.md, CHANGELOG.md
+alwaysApply: true
 ---
-
 # Plugin Future Enhancements Guidelines
 
+> Note: This document outlines the planned enhancements and development roadmap.
+> For implementation details of specific features, refer to their respective documentation.
+
 ## Overview
-This document outlines the next set of activities and feature enhancements for the Figma Plugin Project. It tracks both completed features and planned improvements, providing a roadmap for future development.
+This document tracks completed features and planned improvements, providing a roadmap for future development.
 
 ## Implementation Status
 
@@ -14,12 +17,8 @@ This document outlines the next set of activities and feature enhancements for t
 - Basic CRUD operations for classes
 - Search functionality
 - Class application to frames
-- Premium feature gating
-- Complete license management system
-- UI components for premium features
-- Class limit enforcement
-- License activation/deactivation flow
-- LemonSqueezy integration
+- UI components
+- Complete state management system
 
 ## Proposed Enhancements
 
@@ -73,32 +72,6 @@ This document outlines the next set of activities and feature enhancements for t
   - Collaborative editing
   - Backup system
 
-### 4.1 Licensing System Enhancement
-- **Status:** Mostly Implemented
-- **Completed Features:** ✓
-  - Basic license validation
-  - Premium feature gating
-  - License status management
-  - UI for license management
-  - Error handling
-  - LemonSqueezy integration
-  - License activation flow
-  - License deactivation flow
-  - License status persistence
-  - Class limit enforcement
-  - Automatic state recovery
-  - User notifications and feedback
-- **In Progress:** 🔄
-  - Usage tracking
-  - Analytics integration
-- **Planned:** ⏳
-  - Trial system
-  - License renewal notifications
-  - Team licensing
-  - Bulk license management
-  - License transfer system
-  - Offline license validation
-
 ### 5. Enhanced Error Handling and Logging
 - **Status:** Partially Implemented
 - **Completed:** ✓
@@ -117,7 +90,7 @@ This document outlines the next set of activities and feature enhancements for t
 - **Completed:** ✓
   - Basic responsive design
   - Theme support
-  - Premium feature indicators
+  - Feature indicators
 - **Planned:**
   - Enhanced animations
   - Improved tooltips
@@ -160,45 +133,23 @@ This document outlines the next set of activities and feature enhancements for t
 
 ## Development Priorities
 
-### Production Release Checklist
-- **Environment Setup:**
-  - [ ] Create `.env.production` file
-  - [ ] Configure production credentials in LemonSqueezy dashboard
-  - [ ] Set up production API keys
-  - [ ] Configure production checkout URL
-  - [ ] Validate all production environment variables
-
-- **Testing:**
-  - [ ] Test license activation in production
-  - [ ] Verify checkout flow with real transactions
-  - [ ] Test license deactivation in production
-  - [ ] Validate premium features access
-  - [ ] Test error handling with production APIs
-
-- **Documentation:**
-  - [ ] Update README with production setup instructions
-  - [ ] Document deployment process
-  - [ ] Create user guide for license management
-  - [ ] Document troubleshooting steps
-  - [ ] Update API integration documentation
-
 ### Short Term (1-2 Months)
-1. Complete LemonSqueezy integration
-2. Implement trial system
-3. Enhance bulk operations
-4. Improve error handling
-5. Optimize performance
+1. Enhance bulk operations
+2. Improve error handling
+3. Optimize performance
+4. Implement class templates
+5. Add basic cloud sync
 
 ### Medium Term (3-6 Months)
 1. Implement advanced search
 2. Add revision history
 3. Enhance UI/UX
-4. Develop class templates
-5. Add smart suggestions
+4. Develop smart suggestions
+5. Improve collaboration tools
 
 ### Long Term (6+ Months)
-1. Cloud integration
-2. Collaboration features
+1. Full cloud integration
+2. Advanced collaboration features
 3. Advanced analytics
 4. Enterprise features
 5. AI enhancements
@@ -213,6 +164,7 @@ This document outlines the next set of activities and feature enhancements for t
 - Support multiple platforms
 
 ## References
-- [Figma Plugin API](mdc:https:/www.figma.com/plugin-docs/api/reference)
-- [React Performance](mdc:https:/reactjs.org/docs/optimizing-performance.html)
-- [TypeScript Guidelines](mdc:https:/www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html)
+- @docs/README.mdc - Project documentation overview
+- @rules/figma_plugin.mdc - Figma plugin specific guidelines
+- @rules/build_process.mdc - Build process guidelines
+- @rules/react_components.mdc - React component guidelines

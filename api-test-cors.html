@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Lemon Squeezy API CORS Test</title>
+        <style>
+                body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        line-height: 1.6;
+                }
+
+                button {
+                        background-color: #4CAF50;
+                        border: none;
+                        color: white;
+                        padding: 10px 20px;
+                        text-align: center;
+                        text-decoration: none;
+                        display: inline-block;
+                        font-size: 16px;
+                        margin: 4px 2px;
+                        cursor: pointer;
+                        border-radius: 4px;
+                }
+
+                input,
+                textarea {
+                        width: 100%;
+                        padding: 12px;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        box-sizing: border-box;
+                        margin-top: 6px;
+                        margin-bottom: 16px;
+                        resize: vertical;
+                }
+
+                pre {
+                        background-color: #f5f5f5;
+                        padding: 15px;
+                        border-radius: 4px;
+                        overflow-x: auto;
+                }
+
+                .error {
+                        color: red;
+                }
+
+                .success {
+                        color: green;
+                }
+
+                .tabs {
+                        display: flex;
+                        margin-bottom: 20px;
+                }
+
+                .tab {
+                        padding: 10px 20px;
+                        cursor: pointer;
+                        border: 1px solid #ccc;
+                        border-bottom: none;
+                        border-radius: 4px 4px 0 0;
+                        margin-right: 5px;
+                }
+
+                .tab.active {
+                        background-color: #f5f5f5;
+                        font-weight: bold;
+                }
+
+                .tab-content {
+                        display: none;
+                        border: 1px solid #ccc;
+                        padding: 20px;
+                        border-radius: 0 4px 4px 4px;
+                }
+
+                .tab-content.active {
+                        display: block;
+                }
+        </style>
+</head>
+
+<body>
+        <h1>Lemon Squeezy API CORS Test</h1>
+        <p>This page tests the Lemon Squeezy API with the CORS proxy for Figma plugins.</p>
+
+        <div class="tabs">
+                <div class="tab active" data-tab="config">Configuration</div>
+                <div class="tab" data-tab="validate">Validate License</div>
+                <div class="tab" data-tab="activate">Activate License</div>
+        </div>
+
+        <div id="config" class="tab-content active">
+                <h2>API Configuration</h2>
+                <div>
+                        <label for="apiKey">API Key:</label>
+                        <input type="text" id="apiKey" placeholder="Enter your Lemon Squeezy API key">
+                </div>
+                <div>
+                        <label for="storeId">Store ID:</label>
+                        <input type="text" id="storeId" placeholder="Enter your store ID">
+                </div>
+                <div>
+                        <label for="productId">Product ID:</label>
+                        <input type="text" id="productId" placeholder="Enter your product ID">
+                </div>
+                <div>
+                        <label for="useCorsProxy">Use CORS Proxy:</label>
+                        <input type="checkbox" id="useCorsProxy" checked>
+                        <span>Use the Lemon Squeezy CORS proxy for Figma plugins</span>
+                </div>
+                <button id="testConnectionBtn">Test Connection</button>
+        </div>
+
+        <div id="validate" class="tab-content">
+                <h2>License Validation</h2>
+                <div>
+                        <label for="licenseKey">License Key:</label>
+                        <input type="text" id="licenseKey" placeholder="Enter your license key">
+                </div>
+                <div>
+                        <label for="instanceId">Instance ID:</label>
+                        <input type="text" id="instanceId" value="test-device">
+                </div>
+                <button id="validateBtn">Validate License</button>
+        </div>
+
+        <div id="activate" class="tab-content">
+                <h2>License Activation</h2>
+                <div>
+                        <label for="activateLicenseKey">License Key:</label>
+                        <input type="text" id="activateLicenseKey" placeholder="Enter your license key">
+                </div>
+                <div>
+                        <label for="activateInstanceId">Instance ID:</label>
+                        <input type="text" id="activateInstanceId" value="test-device">
+                </div>
+                <div>
+                        <label for="instanceName">Instance Name:</label>
+                        <input type="text" id="instanceName" value="Test Device">
+                </div>
+                <button id="activateBtn">Activate License</button>
+        </div>
+
+        <div>
+                <h2>Results</h2>
+                <pre id="results">Results will appear here...</pre>
+        </div>
+
+        <script>
+                // Tab functionality
+                document.querySelectorAll('.tab').forEach(tab => {
+                        tab.addEventListener('click', () => {
+                                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                                tab.classList.add('active');
+                                document.getElementById(tab.dataset.tab).classList.add('active');
+                        });
+                });
+
+                // Helper function to convert URL to use CORS proxy if needed
+                function ensureCorsProxyUrl(url) {
+                        // If checkbox is not checked, return the original URL
+                        if (!document.getElementById('useCorsProxy').checked) {
+                                return url;
+                        }
+
+                        // If URL already uses the CORS proxy, return it as is
+                        if (url.includes('api-cors-anywhere.lemonsqueezy.com')) {
+                                return url;
+                        }
+
+                        // If URL is for Lemon Squeezy API but doesn't use the CORS proxy, add it
+                        if (url.includes('api.lemonsqueezy.com')) {
+                                return url.replace('api.lemonsqueezy.com', 'api-cors-anywhere.lemonsqueezy.com');
+                        }
+
+                        // Otherwise return the original URL
+                        return url;
+                }
+
+                // Test connection
+                document.getElementById('testConnectionBtn').addEventListener('click', async () => {
+                        const apiKey = document.getElementById('apiKey').value;
+
+                        if (!apiKey) {
+                                displayResult('Please enter an API key', true);
+                                return;
+                        }
+
+                        displayResult('Testing connection to Lemon Squeezy API...', false);
+
+                        try {
+                                const url = ensureCorsProxyUrl('https://api.lemonsqueezy.com/v1');
+
+                                const response = await fetch(url, {
+                                        method: 'GET',
+                                        headers: {
+                                                'Accept': 'application/vnd.api+json',
+                                                'Authorization': `Bearer ${apiKey}`
+                                        }
+                                });
+
+                                const data = await response.json();
+
+                                displayResult(`Connection test response: ${response.status} ${response.statusText}`, false);
+                                displayResult(JSON.stringify(data, null, 2), false);
+                        } catch (error) {
+                                displayResult(`Connection test failed: ${error.message}`, true);
+                                console.error('Full error:', error);
+                        }
+                });
+
+                // Validate license
+                document.getElementById('validateBtn').addEventListener('click', async () => {
+                        const apiKey = document.getElementById('apiKey').value;
+                        const storeId = document.getElementById('storeId').value;
+                        const productId = document.getElementById('productId').value;
+                        const licenseKey = document.getElementById('licenseKey').value;
+                        const instanceId = document.getElementById('instanceId').value;
+
+                        if (!apiKey || !licenseKey) {
+                                displayResult('Please enter an API key and license key', true);
+                                return;
+                        }
+
+                        displayResult('Validating license...', false);
+
+                        try {
+                                const url = ensureCorsProxyUrl('https://api.lemonsqueezy.com/v1/licenses/validate');
+
+                                const payload = {
+                                        license_key: licenseKey,
+                                        instance_identifier: instanceId,
+                                        store_id: storeId,
+                                        product_id: productId
+                                };
+
+                                const response = await fetch(url, {
+                                        method: 'POST',
+                                        headers: {
+                                                'Content-Type': 'application/vnd.api+json',
+                                                'Accept': 'application/vnd.api+json',
+                                                'Authorization': `Bearer ${apiKey}`
+                                        },
+                                        body: JSON.stringify(payload)
+                                });
+
+                                const data = await response.json();
+
+                                if (response.ok) {
+                                        displayResult('Validation successful!', false);
+                                        displayResult(JSON.stringify(data, null, 2), false);
+                                } else {
+                                        displayResult(`Validation failed with status: ${response.status}`, true);
+                                        displayResult(JSON.stringify(data, null, 2), true);
+                                }
+                        } catch (error) {
+                                displayResult(`Validation failed: ${error.message}`, true);
+                                console.error('Full error:', error);
+                        }
+                });
+
+                // Activate license
+                document.getElementById('activateBtn').addEventListener('click', async () => {
+                        const apiKey = document.getElementById('apiKey').value;
+                        const storeId = document.getElementById('storeId').value;
+                        const productId = document.getElementById('productId').value;
+                        const licenseKey = document.getElementById('activateLicenseKey').value;
+                        const instanceId = document.getElementById('activateInstanceId').value;
+                        const instanceName = document.getElementById('instanceName').value;
+
+                        if (!apiKey || !licenseKey) {
+                                displayResult('Please enter an API key and license key', true);
+                                return;
+                        }
+
+                        displayResult('Activating license...', false);
+
+                        try {
+                                const url = ensureCorsProxyUrl('https://api.lemonsqueezy.com/v1/licenses/activate');
+
+                                const payload = {
+                                        license_key: licenseKey,
+                                        instance_identifier: instanceId,
+                                        instance_name: instanceName,
+                                        store_id: storeId,
+                                        product_id: productId
+                                };
+
+                                const response = await fetch(url, {
+                                        method: 'POST',
+                                        headers: {
+                                                'Content-Type': 'application/vnd.api+json',
+                                                'Accept': 'application/vnd.api+json',
+                                                'Authorization': `Bearer ${apiKey}`
+                                        },
+                                        body: JSON.stringify(payload)
+                                });
+
+                                const data = await response.json();
+
+                                if (response.ok) {
+                                        displayResult('Activation successful!', false);
+                                        displayResult(JSON.stringify(data, null, 2), false);
+                                } else {
+                                        displayResult(`Activation failed with status: ${response.status}`, true);
+                                        displayResult(JSON.stringify(data, null, 2), true);
+                                }
+                        } catch (error) {
+                                displayResult(`Activation failed: ${error.message}`, true);
+                                console.error('Full error:', error);
+                        }
+                });
+
+                function displayResult(message, isError) {
+                        const resultsElement = document.getElementById('results');
+                        const currentContent = resultsElement.textContent;
+
+                        if (currentContent === 'Results will appear here...') {
+                                resultsElement.textContent = message;
+                        } else {
+                                resultsElement.textContent = `${currentContent}\n\n${message}`;
+                        }
+
+                        if (isError) {
+                                resultsElement.classList.add('error');
+                                resultsElement.classList.remove('success');
+                        } else {
+                                resultsElement.classList.add('success');
+                                resultsElement.classList.remove('error');
+                        }
+                }
+        </script>
+</body>
+
+</html>

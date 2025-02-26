@@ -144,4 +144,4 @@ export interface ClassExportFormat {
     totalClasses: number;
     exportedBy: string;
   };
-} 
+}

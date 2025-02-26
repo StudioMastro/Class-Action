@@ -6,10 +6,11 @@ import type {
   ClassExportFormat,
   FrameProperties,
 } from './types/index';
-import type { LicenseStatus, LicenseError } from './types/license';
+import type { LicenseStatus } from './types/lemonSqueezy';
 import { validateClassData, generateChecksum } from './utils/validation';
 import { storageService } from './services/storageService';
 import { licenseService } from './services/licenseService';
+import { runAllTests } from './test-lemonsqueezy';
 
 // Notification handler
 let currentNotification: NotificationHandler | null = null;
@@ -30,25 +31,82 @@ export default function () {
 
   let isInitialized = false;
   let isProcessingLicense = false;
+  // Flag per tracciare se l'UI è pronta a gestire le richieste API
+  let isUiReadyForApi = false;
 
   // Register all event handlers
   on('UI_READY', async function () {
     console.log('UI is ready, initializing plugin...');
     if (!isInitialized) {
-      await initialize();
-      isInitialized = true;
+      try {
+        // Initialize license state
+        licenseService.initializeState();
+
+        // Attendiamo che l'UI sia pronta a gestire le richieste API
+        // prima di eseguire i test di connettività
+        if (!isUiReadyForApi) {
+          console.log('Waiting for UI to be ready for API requests...');
+        }
+
+        // Il resto dell'inizializzazione continua normalmente
+        isInitialized = true;
+        await initialize();
+      } catch (error) {
+        console.error('Error during initialization:', error);
+        showNotification('Error initializing plugin. Please try again.', { error: true });
+      }
+    }
+  });
+
+  // Nuovo handler per quando l'UI è pronta a gestire le richieste API
+  on('UI_READY_FOR_API', async function () {
+    console.log('UI is ready for API requests');
+    isUiReadyForApi = true;
+
+    // Verifichiamo se c'è una validazione della licenza in sospeso
+    const storedKey = await figma.clientStorage.getAsync('licenseKey');
+    if (storedKey) {
+      console.log('[UI_READY_FOR_API] Found stored license key, running validation');
+      // Emettiamo un evento per far eseguire la validazione all'UI
+      emit('VALIDATE_LICENSE', storedKey);
     }
   });
 
   // Aggiungiamo gli handler per gli eventi di licenza
   on('ACTIVATION_STARTED', () => {
     console.log('[License] Activation process started');
-    emit('LICENSE_STATUS_CHANGED', {
-      tier: 'free',
-      isValid: false,
-      features: [],
-      status: 'processing',
-    });
+    // Non emettiamo qui lo stato di processing, lo faremo in ACTIVATE_LICENSE
+  });
+
+  // Test diagnostico dell'endpoint di attivazione viene eseguito solo quando l'UI è pronta
+  // Non eseguiamo il test qui direttamente per evitare errori CORS
+  // licenseService.testActivationEndpoint().catch((error) => {
+  //   console.error('Failed to run activation endpoint test:', error);
+  // });
+
+  // Aggiungiamo un handler per eseguire i test diagnostici su richiesta
+  on('RUN_DIAGNOSTIC_TESTS', async () => {
+    try {
+      console.log('Esecuzione dei test diagnostici su richiesta...');
+      const testResults = await runAllTests(isUiReadyForApi);
+      console.log('Risultati dei test diagnostici:', testResults);
+
+      // Invia i risultati all'UI
+      emit('DIAGNOSTIC_TEST_RESULTS', testResults);
+
+      // Mostra una notifica con il risultato
+      if (testResults.connectivityTest.success && testResults.formatTest.success) {
+        showNotification('Test diagnostici completati con successo!');
+      } else {
+        showNotification(
+          'Alcuni test diagnostici sono falliti. Controlla la console per i dettagli.',
+          { error: true },
+        );
+      }
+    } catch (error) {
+      console.error("Errore durante l'esecuzione dei test diagnostici:", error);
+      showNotification("Errore durante l'esecuzione dei test diagnostici.", { error: true });
+    }
   });
 
   on('ACTIVATE_LICENSE', async (licenseKey: string) => {
@@ -59,40 +117,114 @@ export default function () {
 
     try {
       isProcessingLicense = true;
-      console.log('[License] Starting license validation for:', licenseKey);
+      console.log('[License] Starting license activation for:', licenseKey);
 
-      const activationResult = await licenseService.activateLicense(licenseKey);
+      // Emettiamo lo stato di processing
+      emit('LICENSE_STATUS_CHANGED', {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'processing',
+      });
+
+      // Procediamo direttamente con l'attivazione
+      const activationResult = await licenseService.handleActivate(licenseKey, isUiReadyForApi);
       console.log('[License] Activation result:', activationResult);
 
-      emit('LICENSE_STATUS_CHANGED', {
-        ...activationResult,
-        status: activationResult.error ? 'error' : 'idle',
-      });
-    } catch (error: unknown) {
-      console.error('[License] Activation error:', error);
+      if (activationResult.isValid) {
+        console.log('[License] Activation successful, saving license...');
 
-      // Modifichiamo il tipo APIError per riflettere i valori validi per code
-      type APIError = {
-        code?: LicenseError['code']; // Questo assicura che code sia uno dei valori validi
-        message?: string;
-        actions?: string[];
-        managementUrl?: string;
-      };
+        // Salviamo la licenza
+        await figma.clientStorage.setAsync('licenseKey', licenseKey);
 
-      // Verifichiamo il tipo dell'errore e creiamo l'oggetto licenseError
-      const licenseError: LicenseError = {
-        code: ((error as APIError)?.code as LicenseError['code']) || 'API_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to activate license',
-        actions: (error as APIError)?.actions || ['Please try again later'],
-        managementUrl: (error as APIError)?.managementUrl,
-      };
+        // Emettiamo lo stato di successo
+        emit('LICENSE_STATUS_CHANGED', {
+          ...activationResult,
+          status: 'success', // Usiamo success invece di idle
+        });
 
+        // Mostriamo la notifica di successo
+        showNotification('License activated successfully!');
+        return;
+      }
+
+      // Se siamo qui, l'attivazione è fallita
+      console.log('[License] Activation failed:', activationResult.error);
+      emit('LICENSE_STATUS_CHANGED', activationResult);
+    } catch (error) {
+      console.error('[License] Error during activation:', error);
       emit('LICENSE_STATUS_CHANGED', {
         tier: 'free',
         isValid: false,
         features: [],
         status: 'error',
-        error: licenseError,
+        error:
+          error instanceof Error
+            ? {
+                code: 'API_ERROR',
+                message: error.message,
+                actions: ['Please try again later or contact support'],
+              }
+            : error,
+      });
+    } finally {
+      isProcessingLicense = false;
+    }
+  });
+
+  // Handler per la deattivazione della licenza
+  on('DEACTIVATE_LICENSE', async () => {
+    if (isProcessingLicense) {
+      console.log('[License] Another license operation is in progress');
+      return;
+    }
+
+    try {
+      isProcessingLicense = true;
+      console.log('[License] Starting license deactivation');
+
+      // Emettiamo l'evento di inizio deattivazione
+      emit('DEACTIVATION_STARTED');
+
+      // Emettiamo lo stato di processing
+      emit('LICENSE_STATUS_CHANGED', {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'processing',
+      });
+
+      // Eseguiamo la deattivazione
+      await licenseService.handleDeactivation();
+
+      // Rimuoviamo la licenza salvata
+      await figma.clientStorage.deleteAsync('licenseKey');
+
+      // Emettiamo lo stato di successo (torniamo a freemium)
+      emit('LICENSE_STATUS_CHANGED', {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'idle',
+      });
+
+      // Mostriamo la notifica di successo
+      showNotification('License deactivated successfully');
+    } catch (error) {
+      console.error('[License] Error during deactivation:', error);
+      emit('LICENSE_STATUS_CHANGED', {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'error',
+        error:
+          error instanceof Error
+            ? {
+                code: 'API_ERROR',
+                message: error.message,
+                actions: ['Please try again later or contact support'],
+              }
+            : error,
       });
     } finally {
       isProcessingLicense = false;
@@ -154,8 +286,21 @@ export default function () {
         };
       }
 
+      // Verifichiamo se l'UI è pronta a gestire le richieste API
+      if (!isUiReadyForApi) {
+        console.log('[CheckLicenseStatus] UI not ready for API requests, deferring validation');
+        // Restituiamo uno stato temporaneo
+        return {
+          tier: 'free',
+          isValid: false,
+          features: [],
+          status: 'idle',
+          pendingValidation: true, // Indichiamo che la validazione è in sospeso
+        };
+      }
+
       console.log('[CheckLicenseStatus] Found stored key, validating...');
-      const status = await licenseService.validateLicense(storedKey);
+      const status = await licenseService.handleValidate(storedKey, isUiReadyForApi);
       console.log('[CheckLicenseStatus] Validation result:', status);
 
       emit('LICENSE_STATUS_CHANGED', status);
@@ -1024,6 +1169,16 @@ export default function () {
       showNotification(error instanceof Error ? error.message : 'Failed to rename class', {
         error: true,
       });
+    }
+  });
+
+  on('VALIDATE_LICENSE', async (licenseKey: string) => {
+    try {
+      const status = await licenseService.handleValidate(licenseKey, isUiReadyForApi);
+      emit('LICENSE_STATUS_CHANGED', status);
+    } catch (error) {
+      console.error('Error validating license:', error);
+      emit('LICENSE_ERROR', error);
     }
   });
 }

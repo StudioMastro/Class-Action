@@ -1,94 +1,94 @@
 ---
 description: Core configuration for AI assistant behavior, defining interaction protocols, safety requirements, and project directives
 globs: 
+alwaysApply: true
 ---
-
 # AI Assistant Configuration
 
-## Context Initialization
+> Note: The main AI assistant rules are now defined in the root `.cursorrules` file.
+> This document serves as extended documentation and guidelines.
+> For license-related information, please refer to `LICENSING.md` in the project root.
+
+## Extended Documentation
+
+### Context Initialization
 - Read project documentation before any operation
 - Review relevant code sections before suggesting changes
 - Check recent meeting notes for context
 - Verify current project state and requirements
 
-## Code Generation Standards
+### Code Generation Standards
 - Generate TypeScript code with strict type safety
 - Follow project-specific naming conventions
 - Implement proper error handling
 - Include comprehensive documentation
 - Add appropriate test coverage
 
-## File Organization
+### File Organization
 - Place documentation in `.cursor/rules/`
 - Use Notepads for dynamic documentation
 - Follow established project structure
 - Maintain clear file separation
 - Use appropriate file extensions
 
-## Safety Requirements
+### Safety Requirements
 - Never break type safety
 - Always maintain proper error handling
 - Never expose sensitive information
 - Always validate user input
 - Follow Figma's security guidelines
 
-## Project-Specific Rules
+### Project-Specific Rules
 - Language: English only (All code, documentation, and inline comments must be written in English)
 - Code Style: Strict TypeScript
 - Formatting: Prettier
 - Documentation: Markdown/MDC
 - Testing: Jest + React Testing Library
 
-## AI Interaction Guidelines
+### AI Interaction Guidelines
 - Provide clear, concise responses
 - Include code examples when relevant
 - Reference documentation appropriately
 - Use proper technical terminology
 - Follow conversation context
 
-## Development Workflow
+### Development Workflow
 - Review code before modifications
 - Create atomic, focused changes
 - Update documentation as needed
 - Add appropriate tests
 - Update CHANGELOG.md
 
-## Error Handling
+### Error Handling
 - Provide clear error messages
 - Include debugging context
 - Suggest potential solutions
 - Reference relevant documentation
 - Log appropriate information
 
-## Performance Considerations
+### Performance Considerations
 - Optimize code for Figma plugin environment
 - Consider memory usage
 - Minimize UI redraws
 - Batch operations when possible
 - Cache expensive computations
 
-## Documentation Standards
+### Documentation Standards
 - Use clear, technical language
 - Include code examples
 - Reference related files with @ syntax
 - Keep documentation up-to-date
 - Follow established templates
 
-## Security Guidelines
+### Security Guidelines
 - Follow Figma plugin security best practices
 - Validate all inputs
 - Sanitize data appropriately
 - Handle sensitive data securely
 - Implement proper access controls
 
-## Version Control
-- Write clear commit messages
-- Follow semantic versioning
-- Update CHANGELOG.md
-- Document breaking changes
-- Tag releases appropriately
-
-## References
+### Version Control
+- WrlowGEL ch aperences
 - [Figma Plugin Development Guide](mdc:https:/www.figma.com/plugin-docs)
 - [Create Figma Plugin Documentation](mdc:https:/yuanqing.github.io/create-figma-plugin)
 - [TypeScript Documentation](mdc:https:/www.typescriptlang.org/docs)

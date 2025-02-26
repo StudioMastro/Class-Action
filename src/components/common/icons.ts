@@ -1,5 +1,5 @@
-export { Icon } from './Icon'
-export type { IconProps } from './Icon'
+export { Icon } from './Icon';
+export type { IconProps } from './Icon';
 
 // Re-export commonly used icons from lucide-react
 export {
@@ -16,7 +16,7 @@ export {
   Download,
   Upload,
   ExternalLink,
-  
+
   // Navigation
   ChevronLeft,
   ChevronRight,
@@ -26,19 +26,19 @@ export {
   ArrowRight,
   ArrowUp,
   ArrowDown,
-  
+
   // Status
   AlertCircle,
   AlertTriangle,
   CheckCircle,
   Info,
-  
+
   // Layout
   LayoutGrid,
   Layout,
   Columns,
   Rows,
-  
+
   // Misc
   Folder,
   File,
@@ -46,28 +46,28 @@ export {
   Code,
   Eye,
   EyeOff,
-  
+
   // Design
   Palette,
   Layers,
   Frame,
   Box,
   Type,
-  
+
   // Data
   Database,
   Save,
   RefreshCw as Refresh,
-  
+
   // Social/Sharing
   Share,
   Users,
   UserPlus,
-  
+
   // Toggle
   Sun,
   Moon,
-  
+
   // Figma specific
   Component,
   Grid,
@@ -76,5 +76,5 @@ export {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  AlignJustify
-} from 'lucide-react' 
+  AlignJustify,
+} from 'lucide-react';

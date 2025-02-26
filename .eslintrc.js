@@ -18,6 +18,15 @@ module.exports = {
       },
     },
     {
+      files: ['jest.config.ts'],
+      env: {
+        node: true,
+      },
+      parserOptions: {
+        project: null, // Disable TypeScript checking for jest.config.ts
+      },
+    },
+    {
       files: ['*.ts', '*.tsx'],
       parserOptions: {
         project: './tsconfig.json',

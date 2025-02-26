@@ -6,13 +6,14 @@ const config: JestConfigWithTsJest = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
+    '^.+\\.(ts|tsx)$': 'ts-jest',
   },
   globals: {
     'ts-jest': {
-      tsconfig: 'tsconfig.json'
-    }
-  }
+      tsconfig: 'tsconfig.json',
+    },
+  },
+  setupFiles: ['<rootDir>/jest.setup.js'],
 };
 
-export default config; 
+export default config;

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cursor_rules>
+  <context>
+    <description>Core configuration for AI assistant behavior in the Figma Plugin Project</description>
+    <project_type>figma_plugin</project_type>
+    <framework>react</framework>
+  </context>
+
+  <development_standards>
+    <code_style>
+      <language>TypeScript with strict mode enabled</language>
+      <style_guide>
+        - Use functional components with TypeScript interfaces
+        - Prefer named exports for components
+        - Use proper type annotations
+        - Avoid classes, prefer functional programming patterns
+      </style_guide>
+      <naming_conventions>
+        - Use lowercase with dashes for directories (e.g., components/auth-wizard)
+        - Use PascalCase for component names
+        - Use camelCase for variables and functions
+        - Use descriptive names with auxiliary verbs (e.g., isLoading, hasError)
+      </naming_conventions>
+    </code_style>
+
+    <file_organization>
+      <structure>
+        - Components: exported component, subcomponents, helpers, static content, types
+        - Separate UI and plugin logic
+        - Follow established project structure
+        - Place documentation in appropriate directories
+      </structure>
+    </file_organization>
+
+    <performance>
+      <guidelines>
+        - Minimize plugin startup time
+        - Handle large files efficiently
+        - Batch API operations
+        - Implement proper caching
+        - Optimize bundle size
+      </guidelines>
+    </performance>
+  </development_standards>
+
+  <figma_specific>
+    <api_usage>
+      - Batch API operations for performance
+      - Handle API rate limits gracefully
+      - Implement proper error recovery
+      - Cache API results when possible
+    </api_usage>
+
+    <plugin_communication>
+      - Use typed messages
+      - Handle message failures
+      - Implement proper timeouts
+      - Validate message data
+    </plugin_communication>
+  </figma_specific>
+
+  <safety_requirements>
+    <error_handling>
+      - Provide clear error messages
+      - Include debugging context
+      - Use Figma's notification system
+      - Log appropriate information
+    </error_handling>
+
+    <security>
+      - Follow Figma's security guidelines
+      - Validate all inputs
+      - Sanitize data appropriately
+      - Handle sensitive data securely
+    </security>
+  </safety_requirements>
+
+  <documentation>
+    <standards>
+      - Use clear, technical language
+      - Include code examples
+      - Keep documentation up-to-date
+      - Follow established templates
+    </standards>
+
+    <version_control>
+      - Write clear commit messages
+      - Follow semantic versioning
+      - Update CHANGELOG.md
+      - Document breaking changes
+    </version_control>
+  </documentation>
+
+  <references>
+    <docs>
+      - https://www.figma.com/plugin-docs
+      - https://yuanqing.github.io/create-figma-plugin
+      - https://www.typescriptlang.org/docs
+      - https://react.dev
+    </docs>
+  </references>
+</cursor_rules> 

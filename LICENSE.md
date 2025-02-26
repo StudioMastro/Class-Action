@@ -1,46 +1,57 @@
-# Class Action Plugin License Agreement
+# Class Action Plugin License
 
-Copyright (c) 2025 Alessandro Mastrogiacomo. All rights reserved.
+## Overview
 
-## Terms and Conditions
+Class Action is a Figma plugin that follows a freemium licensing model. This document outlines the general terms and conditions for using the plugin.
 
-1. **Definitions**
-   - "Plugin" refers to the Class Action Figma plugin
-   - "Author" refers to Alessandro Mastrogiacomo
-   - "User" refers to any individual or entity using the Plugin
+## License Tiers
 
-2. **Grant of License**
-   - The Author grants Users a non-exclusive, non-transferable license to use the Plugin
-   - This license permits commercial and non-commercial use of the Plugin
-   - The Plugin is licensed, not sold
+### Free Tier
 
-3. **Restrictions**
-   - Users may not modify, adapt, or create derivative works
-   - Users may not redistribute, sublicense, or share the Plugin
-   - Users may not reverse engineer, decompile, or disassemble the Plugin
-   - Users may not remove or alter any copyright notices
+- Basic functionality for evaluating the plugin
+- Limited to 5 saved classes
+- Basic search functionality
+- Single class operations
 
-4. **Intellectual Property**
-   - All intellectual property rights in the Plugin remain with the Author
-   - User feedback and suggestions may be used to improve the Plugin
-   - Contributors must sign a Contributor License Agreement
+### Premium Tier
 
-5. **Updates and Support**
-   - The Author may provide updates at their discretion
-   - Support is provided through official channels only
-   - The Author reserves the right to modify these terms
+- Full functionality for professional users
+- Unlimited classes
+- Advanced features including batch operations
+- Import/Export functionality
+- Priority support
+- Early access to new features
 
-6. **Warranty and Liability**
-   - The Plugin is provided "as is" without warranty
-   - The Author is not liable for any damages arising from use
-   - Users use the Plugin at their own risk
+## Terms of Use
 
-7. **Termination**
-   - This license automatically terminates if you violate any terms
-   - Upon termination, you must cease all use of the Plugin
+1. **License Keys**
 
-8. **General**
-   - This agreement is governed by Italian law
-   - If any provision is found invalid, the remainder stays in effect
+   - Premium features require a valid license key
+   - License keys are non-transferable
+   - One license key per user
 
-For questions about this license, contact: [contact email] 
+2. **Updates**
+
+   - Free updates for the duration of the license
+   - Access to all minor version updates
+   - Major version updates included in active subscriptions
+
+3. **Support**
+   - Basic support for all users
+   - Priority support for Premium users
+   - Bug fixes and security updates for all users
+
+## Privacy
+
+We respect your privacy. For detailed information about data collection and usage, please refer to our Privacy Policy.
+
+## Contact
+
+For licensing inquiries or support:
+
+- Email: support@classaction.plugin
+- Website: https://classaction.plugin/support
+
+---
+
+For detailed implementation documentation, please refer to the internal documentation.

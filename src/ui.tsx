@@ -10,7 +10,7 @@ import { DropdownItem } from './components/DropdownItem';
 import { SearchInput } from './components/SearchInput';
 import { TextInput } from './components/TextInput';
 import type { SavedClass, ImportResult } from './types';
-import type { LicenseStatus, LicenseError } from './types/license';
+import type { LicenseStatus, LemonSqueezyError as LicenseError } from './types/lemonSqueezy';
 import { LEMONSQUEEZY_CONFIG } from './config/lemonSqueezy';
 import {
   Search,
@@ -27,6 +27,7 @@ import { ClassCounter } from './components/ClassCounter';
 import { PremiumFeatureModal } from './components/PremiumFeatureModal';
 import { LicenseActivation } from './components/LicenseActivation';
 import { LicenseDeactivationModal } from './components/LicenseDeactivationModal';
+import { makeApiRequest } from './ui/services/apiService';
 
 function Plugin() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -61,6 +62,11 @@ function Plugin() {
   const [isDeactivationModalOpen, setIsDeactivationModalOpen] = useState(false);
   const [showLicenseActivation, setShowLicenseActivation] = useState(false);
   const [licenseError, setLicenseError] = useState<LicenseError | null>(null);
+  // Stato per i risultati dei test diagnostici
+  const [diagnosticResults, setDiagnosticResults] = useState<{
+    connectivityTest: { success: boolean; message: string };
+    formatTest: { success: boolean; message: string };
+  } | null>(null);
 
   // Aggiungiamo un ref per il dropdown
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -106,7 +112,10 @@ function Plugin() {
 
   useEffect(() => {
     let mounted = true;
-    let isFirstCheck = true; // Flag per il primo controllo
+    let isFirstCheck = true;
+
+    // Initialize API service
+    // initializeApiService();
 
     // Signal that UI is ready
     emit('UI_READY');
@@ -179,6 +188,27 @@ function Plugin() {
         setIsApplyAllModalOpen(true);
       },
     );
+
+    // Aggiungiamo il gestore per i risultati dei test diagnostici
+    const unsubscribeDiagnosticResults = on('DIAGNOSTIC_TEST_RESULTS', (results) => {
+      if (!mounted) return;
+      console.log('Risultati dei test diagnostici ricevuti:', results);
+      setDiagnosticResults(results);
+
+      // Mostra una notifica con i risultati
+      if (results.connectivityTest.success && results.formatTest.success) {
+        emit('SHOW_NOTIFICATION', 'Test diagnostici completati con successo!');
+      } else {
+        const failedTests = [];
+        if (!results.connectivityTest.success) {
+          failedTests.push(`Connettività: ${results.connectivityTest.message}`);
+        }
+        if (!results.formatTest.success) {
+          failedTests.push(`Formato: ${results.formatTest.message}`);
+        }
+        emit('SHOW_ERROR', `Test diagnostici falliti: ${failedTests.join(', ')}`);
+      }
+    });
 
     // Aggiungiamo l'event listener per SHOW_SAVE_DIALOG qui
     const unsubscribeSaveDialog = on(
@@ -300,6 +330,29 @@ function Plugin() {
       removeErrorListener();
       removeActivationStartedListener();
       removeDeactivationStartedListener();
+      unsubscribeDiagnosticResults(); // Aggiungiamo la pulizia del listener per i test diagnostici
+    };
+  }, []);
+
+  // Inizializza il gestore delle richieste API
+  useEffect(() => {
+    console.log('[UI] 🔌 Inizializzazione del gestore API UI');
+
+    // Gestisce le richieste API inviate dal main thread
+    const handleApiRequest = (request: { url: string; options: RequestInit }) => {
+      console.log('[UI] 📡 Ricevuta richiesta API dal main thread:', request);
+      makeApiRequest(request.url, request.options);
+      // La risposta viene già inviata al main thread dal servizio API
+    };
+
+    // Registra il gestore per le richieste API
+    on('API_REQUEST', handleApiRequest);
+
+    // Notifica il main thread che l'UI è pronta a gestire le richieste API
+    emit('UI_READY_FOR_API');
+
+    return () => {
+      // Cleanup
     };
   }, []);
 
@@ -943,6 +996,52 @@ function Plugin() {
         hasExcessClasses={savedClasses.length > 5}
         totalClasses={savedClasses.length}
       />
+
+      <button
+        onClick={async () => {
+          // Invia un messaggio al plugin per eseguire i test diagnostici
+          emit('RUN_DIAGNOSTIC_TESTS');
+        }}
+        className="diagnostic-button"
+      >
+        Esegui Test Diagnostici
+      </button>
+
+      {/* Visualizzazione dei risultati dei test diagnostici */}
+      {diagnosticResults && (
+        <div
+          className="mt-4 p-3 border rounded-md"
+          style={{ borderColor: 'var(--figma-color-border)' }}
+        >
+          <Text size="sm" weight="bold">
+            Risultati dei test diagnostici:
+          </Text>
+          <div className="mt-2">
+            <div className="flex items-center">
+              <span
+                className={
+                  diagnosticResults.connectivityTest.success ? 'text-green-500' : 'text-red-500'
+                }
+              >
+                {diagnosticResults.connectivityTest.success ? '✅' : '❌'}
+              </span>
+              <Text size="xs" className="ml-2">
+                Test di connettività: {diagnosticResults.connectivityTest.message}
+              </Text>
+            </div>
+            <div className="flex items-center mt-1">
+              <span
+                className={diagnosticResults.formatTest.success ? 'text-green-500' : 'text-red-500'}
+              >
+                {diagnosticResults.formatTest.success ? '✅' : '❌'}
+              </span>
+              <Text size="xs" className="ml-2">
+                Test del formato: {diagnosticResults.formatTest.message}
+              </Text>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
