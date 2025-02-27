@@ -15,25 +15,6 @@ import {
   StoredLicenseData,
 } from '../types/license';
 
-// Interfacce per i dati delle risposte API
-interface LemonSqueezyLicenseData {
-  activated?: boolean;
-  features?: string[];
-  activation_limit?: number;
-  activations_count?: number;
-  expires_at?: string;
-  key?: string;
-}
-
-interface LemonSqueezyInstanceData {
-  identifier?: string;
-}
-
-interface LemonSqueezyResponseData {
-  license?: LemonSqueezyLicenseData;
-  instance?: LemonSqueezyInstanceData;
-}
-
 export class LicenseService {
   private static instance: LicenseService;
   private readonly MAX_ATTEMPTS = 5;
@@ -427,6 +408,7 @@ export class LicenseService {
     }
 
     const activationResponse = response as Partial<LemonSqueezyActivationResponse>;
+    // Check for the correct structure: activated property
     return 'activated' in activationResponse;
   }
 
@@ -480,11 +462,42 @@ export class LicenseService {
       }
 
       if (this.isActivationResponse(response)) {
-        if (typeof response.data === 'object' && response.data !== null) {
-          const responseData = response.data as LemonSqueezyResponseData;
-          const licenseData = responseData.license;
+        try {
+          // Log the raw response structure for debugging
+          console.log(
+            '[LICENSE] 🔍 Raw activation response structure:',
+            JSON.stringify(response, null, 2),
+          );
 
-          if (!licenseData || !licenseData.activated) {
+          // Check if the activation was successful based on the 'activated' property
+          if (response.activated !== true) {
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'API_ERROR',
+                message: response.error || 'Failed to activate license',
+                actions: ['Check your license key', 'Contact support'],
+              },
+            };
+          }
+
+          // Extract license and instance data directly from the response
+          const licenseData = response.license_key;
+          const instanceData = response.instance;
+
+          // Log the extracted data for debugging
+          console.log('[LICENSE] 🔍 Extracted license data:', {
+            hasLicenseData: !!licenseData,
+            status: licenseData?.status,
+            key: licenseData?.key ? '***' : 'missing',
+            hasInstanceData: !!instanceData,
+            instanceId: instanceData?.id ? `${instanceData.id.substring(0, 4)}...` : 'missing',
+          });
+
+          if (!licenseData || licenseData.status !== 'active') {
             return {
               tier: 'free',
               isValid: false,
@@ -498,16 +511,30 @@ export class LicenseService {
             };
           }
 
+          // Return success status with available data
           return {
             tier: 'premium',
             isValid: true,
-            features: licenseData.features || ['all'],
+            features: ['all'], // LemonSqueezy doesn't provide features in the response, so we use 'all'
             status: 'success',
-            activationLimit: licenseData.activation_limit,
-            activationsCount: licenseData.activations_count,
-            expiresAt: licenseData.expires_at,
-            licenseKey: licenseData.key,
-            instanceId: responseData.instance?.identifier,
+            activationLimit: licenseData.activation_limit as number,
+            activationsCount: licenseData.activation_usage as number,
+            expiresAt: licenseData.expires_at as string | null,
+            licenseKey: licenseData.key as string,
+            instanceId: instanceData?.id as string,
+          };
+        } catch (error) {
+          console.error('[LICENSE] ❌ Error processing activation response:', error);
+          return {
+            tier: 'free',
+            isValid: false,
+            features: [],
+            status: 'error',
+            error: {
+              code: 'API_ERROR',
+              message: 'Error processing activation response',
+              actions: ['Try again later', 'Contact support'],
+            },
           };
         }
       }
@@ -626,24 +653,55 @@ export class LicenseService {
       // Attiva la licenza
       const activationResponse = await this.activateLicense(licenseKey, uiReady);
 
-      // Mappa la risposta allo stato della licenza
-      const status = this.mapResponseToLicenseStatus(activationResponse);
+      // Log the raw response for debugging
+      console.log(
+        '[LICENSE] 🔍 Raw activation response:',
+        JSON.stringify(activationResponse, null, 2),
+      );
 
-      console.log('[LICENSE] 📊 Mapped license status:', status);
+      // Check if the activation was successful
+      if (activationResponse.activated === true && activationResponse.license_key) {
+        const licenseData = activationResponse.license_key;
+        const instanceData = activationResponse.instance;
 
-      if (status.isValid) {
-        console.log('[LICENSE] ✅ License activated successfully, saving to storage');
-        await figma.clientStorage.setAsync(STORAGE_KEYS.LICENSE_KEY, licenseKey);
-        this.licenseKey = licenseKey;
-        this.instanceId = status.instanceId || null;
-        this.licenseStatusType = 'active';
-        this.licenseFeatures = status.features;
-        this.saveLicenseData();
+        console.log('[LICENSE] ✅ Valid activation response detected');
+
+        if (licenseData && licenseData.status === 'active') {
+          console.log('[LICENSE] ✅ License activated successfully, saving to storage');
+          await figma.clientStorage.setAsync(STORAGE_KEYS.LICENSE_KEY, licenseKey);
+          this.licenseKey = licenseKey;
+          this.instanceId = instanceData?.id || null;
+          this.licenseStatusType = 'active';
+          this.licenseFeatures = ['all']; // LemonSqueezy doesn't provide features in the response
+          this.saveLicenseData();
+
+          // Return success status
+          return {
+            tier: 'premium',
+            isValid: true,
+            features: this.licenseFeatures,
+            status: 'success',
+            activationLimit: licenseData.activation_limit as number,
+            activationsCount: licenseData.activation_usage as number,
+            expiresAt: licenseData.expires_at as string | null,
+            licenseKey: licenseData.key as string,
+            instanceId: this.instanceId as string | undefined,
+          };
+        }
       }
 
+      // If we get here, something went wrong with the activation
+      console.log('[LICENSE] ❌ Invalid activation response structure or license not activated');
       return {
-        ...status,
-        status: 'success',
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'error',
+        error: {
+          code: 'API_ERROR',
+          message: 'Failed to activate license. Invalid response from server.',
+          actions: ['Check your license key', 'Contact support'],
+        },
       };
     } catch (error) {
       console.error('[LICENSE] ❌ Error handling license activation:', error);

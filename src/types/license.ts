@@ -73,14 +73,35 @@ export type LemonSqueezyResponse =
  */
 export interface LemonSqueezyActivationResponse {
   activated: boolean;
-  error?: string;
-  instance?: {
-    id: string;
-    [key: string]: unknown;
-  };
-  license_key?: {
+  error: string | null;
+  license_key: {
     id: number;
     status: string;
+    key: string;
+    activation_limit: number;
+    activation_usage: number;
+    created_at: string;
+    expires_at: string | null;
+    test_mode: boolean;
+    [key: string]: unknown;
+  };
+  instance: {
+    id: string;
+    name: string;
+    created_at: string;
+    [key: string]: unknown;
+  };
+  meta: {
+    store_id: number;
+    order_id: number;
+    order_item_id: number;
+    product_id: number;
+    product_name: string;
+    variant_id: number;
+    variant_name: string;
+    customer_id: number;
+    customer_name: string;
+    customer_email: string;
     [key: string]: unknown;
   };
   [key: string]: unknown;

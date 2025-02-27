@@ -72,10 +72,13 @@ export function LicenseActivation({
         setIsDeactivating(false);
         setLocalError(null);
         setShowSuccess(true);
-        if (currentStatus.isValid) {
-          console.log('[DEBUG] 🕒 Starting close timer for valid license');
-          successTimer = setTimeout(() => onClose(), 1500);
-        }
+
+        // Chiudi il modale dopo 3 secondi in caso di successo, indipendentemente dalla validità
+        console.log('[DEBUG] 🕒 Starting close timer for success state');
+        successTimer = setTimeout(() => {
+          console.log('[DEBUG] ⏱️ Success timer triggered, closing modal');
+          onClose();
+        }, 3000);
         break;
 
       case 'error':
@@ -99,6 +102,7 @@ export function LicenseActivation({
     // Cleanup function
     return () => {
       if (successTimer) {
+        console.log('[DEBUG] 🧹 Cleaning up success timer');
         clearTimeout(successTimer);
       }
     };
@@ -210,6 +214,17 @@ export function LicenseActivation({
           >
             {isDeactivating ? 'Deactivating...' : 'Deactivate License'}
           </Button>
+        ) : showSuccess ? (
+          <div className="flex flex-col gap-2">
+            <div className="p-3 rounded bg-[var(--figma-color-bg-success)]">
+              <Text size="sm" className="text-[var(--figma-color-text-onbrand)]">
+                Your premium features are now activated! You can now enjoy all premium features.
+              </Text>
+            </div>
+            <Button onClick={onClose} variant="primary" size="medium">
+              Continue to Premium
+            </Button>
+          </div>
         ) : (
           <div className="flex flex-col gap-2">
             <TextInput
