@@ -28,30 +28,106 @@ export function PremiumFeatureModal({
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Text size="base">{featureName} is a Premium feature. Upgrade now to unlock:</Text>
-          <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-            <li>Unlimited saved classes</li>
-            <li>Import/Export functionality</li>
-            <li>Apply All feature for batch operations</li>
-            <li>Priority support</li>
-            <li>Early access to new features</li>
-          </ul>
+          <div className="mt-2 space-y-3">
+            <div className="flex items-center gap-2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-[var(--figma-color-text-success)]"
+              >
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              <Text weight="bold" className="text-sm leading-4">
+                Unlimited saved classes
+              </Text>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-[var(--figma-color-text-success)]"
+              >
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              <Text weight="bold" className="text-sm leading-4">
+                Import/Export functionality
+              </Text>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-[var(--figma-color-text-success)]"
+              >
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              <Text weight="bold" className="text-sm leading-4">
+                "Apply All" feature
+              </Text>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-[var(--figma-color-text-success)]"
+              >
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              <Text weight="bold" className="text-sm leading-4">
+                Priority support
+              </Text>
+            </div>
+          </div>
+
           <div
-            className="mt-4 p-3 rounded"
-            style={{ backgroundColor: 'var(--figma-color-bg-brand-tertiary)' }}
+            className="mt-4 p-4 rounded-md"
+            style={{ backgroundColor: 'var(--figma-color-bg-success-tertiary)' }}
           >
-            <Text size="sm" weight="bold">
-              Special Launch Offer!
-            </Text>
-            <Text size="sm">Get Premium for just €29/year (regular price €39/year)</Text>
+            <div className="flex flex-col gap-1">
+              <Text weight="bold" className="text-[var(--figma-color-text-success)]">
+                Special Launch Offer!
+              </Text>
+              <Text>
+                Get Premium for just <strong>€29/year</strong> (regular price <s>€39/year</s>)
+              </Text>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex justify-end gap-2 mt-2">
           <Button onClick={onClose} variant="secondary" size="medium">
             Maybe Later
           </Button>
           <Button onClick={handleUpgradeClick} variant="primary" size="medium">
-            Upgrade Now
+            Upgrade now
           </Button>
         </div>
       </div>

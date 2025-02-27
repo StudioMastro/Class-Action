@@ -146,6 +146,7 @@ export interface LicenseStatus {
   licenseKey?: string;
   instanceId?: string;
   pendingValidation?: boolean;
+  activationDate?: string | null;
 }
 
 /**

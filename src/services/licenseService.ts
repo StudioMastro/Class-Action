@@ -522,6 +522,7 @@ export class LicenseService {
             expiresAt: licenseData.expires_at as string | null,
             licenseKey: licenseData.key as string,
             instanceId: instanceData?.id as string,
+            activationDate: (instanceData?.created_at as string) || null,
           };
         } catch (error) {
           console.error('[LICENSE] ❌ Error processing activation response:', error);
@@ -686,6 +687,7 @@ export class LicenseService {
             expiresAt: licenseData.expires_at as string | null,
             licenseKey: licenseData.key as string,
             instanceId: this.instanceId as string | undefined,
+            activationDate: (instanceData?.created_at as string) || null,
           };
         }
       }

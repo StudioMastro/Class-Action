@@ -51,45 +51,43 @@ declare module '../services/logger' {
   };
 }
 
-// Dichiarazioni per i file di test JavaScript
-declare module './__tests__/diagnostics/test-lemonsqueezy.js' {
-  export function testConnectivity(): Promise<{ success: boolean; message: string }>;
-  export function testActivationRequestFormat(): { success: boolean; message: string };
-  export function runAllTests(): Promise<{
-    connectivity: { success: boolean; message: string };
-    format: { success: boolean; message: string };
-  }>;
-}
+declare module 'figma' {
+  interface PluginAPI {
+    readonly clientStorage: ClientStorageAPI;
+    readonly root: DocumentNode;
+    readonly currentPage: PageNode;
+    readonly mixed: symbol;
 
-declare module './__tests__/diagnostics/test-instances.js' {
-  export function testActivation(): Promise<string | null>;
-  export function testValidation(instanceId: string): Promise<boolean>;
-  export function testDeactivation(instanceId: string): Promise<boolean>;
-  export function runTests(): Promise<{
-    activation: boolean;
-    validation: boolean;
-    deactivation: boolean;
-  }>;
-}
+    closePlugin(message?: string): void;
+    notify(message: string, options?: NotificationOptions): NotificationHandler;
+    showUI(html: string, options?: ShowUIOptions): void;
+    createRectangle(): RectangleNode;
+    createLine(): LineNode;
+    createEllipse(): EllipseNode;
+    createPolygon(): PolygonNode;
+    createStar(): StarNode;
+    createVector(): VectorNode;
+    createText(): TextNode;
+    createFrame(): FrameNode;
+    createComponent(): ComponentNode;
+    createPage(): PageNode;
+    createSlice(): SliceNode;
+    createNodeFromSvg(svg: string): FrameNode;
 
-declare module './__tests__/diagnostics/test-connectivity.js' {
-  export function testEndpoint(url: string): Promise<{
-    url: string;
-    success: boolean;
-    status?: number;
-    message?: string;
-    error?: string;
-  }>;
-  export function runTests(): Promise<{
-    success: boolean;
-    reachableCount: number;
-    totalCount: number;
-    results: Array<{
-      url: string;
-      success: boolean;
-      status?: number;
-      message?: string;
-      error?: string;
-    }>;
-  }>;
+    createImage(data: Uint8Array): Image;
+    getNodeById(id: string): BaseNode | null;
+    getStyleById(id: string): BaseStyle | null;
+    currentPage: PageNode;
+    on(type: string, callback: (...args: unknown[]) => void): void;
+    once(type: string, callback: (...args: unknown[]) => void): void;
+    off(type: string, callback: (...args: unknown[]) => void): void;
+    offAll(): void;
+    setRelaunchData(data: { [command: string]: string }): void;
+    getNodeByName(name: string): SceneNode | null;
+  }
+
+  interface Console {
+    log(message?: unknown, ...optionalParams: unknown[]): void;
+    error(message?: unknown, ...optionalParams: unknown[]): void;
+  }
 }

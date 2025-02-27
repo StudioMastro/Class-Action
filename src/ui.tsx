@@ -18,6 +18,7 @@ import {
   Trash,
   Ellipsis,
   Refresh as Update,
+  Loader,
 } from './components/common/icons';
 import { ClassCounter } from './components/ClassCounter';
 import { PremiumFeatureModal } from './components/PremiumFeatureModal';
@@ -25,8 +26,31 @@ import { LicenseActivation } from './components/LicenseActivation';
 import { LicenseDeactivationModal } from './components/LicenseDeactivationModal';
 import { makeApiRequest } from './ui/services/apiService';
 
+// Definizione dei possibili stati di caricamento
+type LoadingState = {
+  initialized: boolean;
+  licenseChecked: boolean;
+  error: string | null;
+};
+
 function Plugin() {
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Stato di caricamento unificato
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    initialized: false,
+    licenseChecked: false,
+    error: null,
+  });
+
+  // Stato per tracciare se il plugin è stato appena montato
+  // Questo ci aiuta a garantire che l'overlay di caricamento rimanga visibile
+  // per un tempo minimo, anche se le verifiche vengono completate rapidamente
+  const [mountTime] = useState<number>(Date.now());
+  const minLoadingTimeMs = 1500; // Tempo minimo di visualizzazione dell'overlay (1.5 secondi)
+
+  // Stato per controllare la visibilità dell'overlay di caricamento
+  // Inizializzato a true per mostrare l'overlay immediatamente
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
+
   const [savedClasses, setSavedClasses] = useState<SavedClass[]>([]);
   const [selectedClass, setSelectedClass] = useState<SavedClass | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -34,11 +58,12 @@ function Plugin() {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isDeactivationModalOpen, setIsDeactivationModalOpen] = useState(false);
+  const [isPremiumFeatureModalOpen, setIsPremiumFeatureModalOpen] = useState(false);
+  const [premiumFeatureName, setPremiumFeatureName] = useState('');
   const [showLicenseActivation, setShowLicenseActivation] = useState(false);
   const [isApplyAllModalOpen, setIsApplyAllModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [licenseError, setLicenseError] = useState<LicenseError | null>(null);
-  const [justActivatedPremium, setJustActivatedPremium] = useState(false);
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>({
     tier: 'free',
     isValid: false,
@@ -56,13 +81,33 @@ function Plugin() {
     totalFrames: number;
     matchingFrames: number;
   } | null>(null);
-  const [diagnosticResults, setDiagnosticResults] = useState<{
-    connectivityTest: { success: boolean; message: string };
-    formatTest: { success: boolean; message: string };
-  } | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+
+  // Timeout di sicurezza globale
+  useEffect(() => {
+    console.log('Setting up global safety timeout');
+
+    // Dopo 6 secondi, forziamo il caricamento completo per evitare blocchi
+    const safetyTimeout = setTimeout(() => {
+      console.log('Global safety timeout triggered');
+      setLoadingState((current) => {
+        // Solo se non è già completato
+        if (!current.initialized || !current.licenseChecked) {
+          console.log('Forcing loading completion via safety timeout');
+          return {
+            ...current,
+            initialized: true,
+            licenseChecked: true,
+          };
+        }
+        return current;
+      });
+    }, 6000);
+
+    return () => clearTimeout(safetyTimeout);
+  }, []);
 
   const calculateDropdownPosition = useCallback((buttonElement: HTMLElement) => {
     const buttonRect = buttonElement.getBoundingClientRect();
@@ -100,12 +145,28 @@ function Plugin() {
     let mounted = true;
     let isFirstCheck = true;
 
+    console.log('Initializing plugin and checking license status');
+
+    // Blocchiamo immediatamente l'interfaccia impostando gli stati di caricamento a false
+    setLoadingState({
+      initialized: false,
+      licenseChecked: false,
+      error: null,
+    });
+
     emit('UI_READY');
 
+    // Gestione del caricamento delle classi
     const unsubscribeClasses = on('CLASSES_LOADED', (classes: SavedClass[]) => {
       if (!mounted) return;
+      console.log('Classes loaded:', classes.length);
       setSavedClasses(classes);
-      setIsInitialized(true);
+
+      // Segnaliamo che l'inizializzazione è completata
+      setLoadingState((current) => ({
+        ...current,
+        initialized: true,
+      }));
     });
 
     const unsubscribeSelection = on('SELECTION_CHANGED', (hasFrame: boolean) => {
@@ -167,25 +228,6 @@ function Plugin() {
       },
     );
 
-    const unsubscribeDiagnosticResults = on('DIAGNOSTIC_TEST_RESULTS', (results) => {
-      if (!mounted) return;
-      console.log('Risultati dei test diagnostici ricevuti:', results);
-      setDiagnosticResults(results);
-
-      if (results.connectivityTest.success && results.formatTest.success) {
-        emit('SHOW_NOTIFICATION', 'Test diagnostici completati con successo!');
-      } else {
-        const failedTests = [];
-        if (!results.connectivityTest.success) {
-          failedTests.push(`Connettività: ${results.connectivityTest.message}`);
-        }
-        if (!results.formatTest.success) {
-          failedTests.push(`Formato: ${results.formatTest.message}`);
-        }
-        emit('SHOW_ERROR', `Test diagnostici falliti: ${failedTests.join(', ')}`);
-      }
-    });
-
     const unsubscribeSaveDialog = on(
       'SHOW_SAVE_DIALOG',
       async (data: { suggestedFileName: string; fileContent: string; totalClasses: number }) => {
@@ -215,6 +257,12 @@ function Plugin() {
 
       setLicenseStatus(status);
 
+      // Segnaliamo che la verifica della licenza è completata
+      setLoadingState((current) => ({
+        ...current,
+        licenseChecked: true,
+      }));
+
       if (isFirstCheck) {
         isFirstCheck = false;
         return;
@@ -227,17 +275,7 @@ function Plugin() {
 
         setLicenseError(null);
 
-        setJustActivatedPremium(true);
-
         emit('SHOW_NOTIFICATION', 'License activated successfully! Welcome to Premium!');
-
-        setTimeout(() => {
-          emit('SHOW_NOTIFICATION', 'All premium features are now available. Enjoy!');
-        }, 2000);
-
-        setTimeout(() => {
-          setJustActivatedPremium(false);
-        }, 10000);
 
         emit('LOAD_CLASSES');
       } else if (!status.isValid && prevStatus.isValid && status.status === 'idle') {
@@ -252,6 +290,13 @@ function Plugin() {
 
       console.error('License error:', error);
       setLicenseError(error);
+
+      // Anche in caso di errore, consideriamo la verifica della licenza completata
+      setLoadingState((current) => ({
+        ...current,
+        licenseChecked: true,
+        error: error.message,
+      }));
 
       setLicenseStatus((prev) => ({
         ...prev,
@@ -279,10 +324,14 @@ function Plugin() {
       }));
     });
 
+    // Avviamo la verifica della licenza
+    console.log('Checking license status');
     emit('CHECK_LICENSE_STATUS');
 
+    // Avviamo il caricamento delle classi
     requestAnimationFrame(() => {
       if (mounted) {
+        console.log('Loading classes');
         emit('LOAD_CLASSES');
         emit('CHECK_SELECTION');
       }
@@ -304,7 +353,6 @@ function Plugin() {
       removeErrorListener();
       removeActivationStartedListener();
       removeDeactivationStartedListener();
-      unsubscribeDiagnosticResults();
     };
   }, []);
 
@@ -520,16 +568,8 @@ function Plugin() {
   };
 
   const handlePremiumFeatureClick = (featureName: string) => {
-    if (!isFeatureAllowed(featureName)) {
-      setShowLicenseActivation(true);
-    }
-  };
-
-  const getPremiumHighlight = (feature: string): string => {
-    if (justActivatedPremium && licenseStatus.isValid && feature !== 'basic') {
-      return 'ring-2 ring-[var(--figma-color-bg-brand)] shadow-md transition-all duration-300';
-    }
-    return '';
+    setIsPremiumFeatureModalOpen(true);
+    setPremiumFeatureName(featureName);
   };
 
   const handleDeactivateLicense = () => {
@@ -565,11 +605,55 @@ function Plugin() {
     }
   };
 
-  if (!isInitialized) {
+  // Log dello stato di caricamento per debug
+  useEffect(() => {
+    console.log('Loading state updated:', loadingState);
+    console.log('Loading overlay visible:', showLoadingOverlay);
+
+    // Aggiorniamo lo stato dell'overlay in base allo stato di caricamento
+    if (loadingState.initialized && loadingState.licenseChecked) {
+      // Se entrambi gli stati sono completati, possiamo nascondere l'overlay
+      // dopo il tempo minimo di visualizzazione
+      const currentTime = Date.now();
+      const elapsedTime = currentTime - mountTime;
+
+      if (elapsedTime >= minLoadingTimeMs) {
+        // Se è passato abbastanza tempo, nascondiamo subito l'overlay
+        setShowLoadingOverlay(false);
+        return undefined;
+      } else {
+        // Altrimenti, impostiamo un timer per nasconderlo dopo il tempo rimanente
+        const remainingTime = minLoadingTimeMs - elapsedTime;
+        console.log(
+          `Caricamento completato troppo velocemente. Mantengo l'overlay per altri ${remainingTime}ms`,
+        );
+
+        const minTimeTimeout = setTimeout(() => {
+          console.log("Tempo minimo di caricamento raggiunto, nascondendo l'overlay");
+          setShowLoadingOverlay(false);
+        }, remainingTime);
+
+        return () => clearTimeout(minTimeTimeout);
+      }
+    }
+
+    // Aggiungiamo un return esplicito quando non ci sono azioni da eseguire
+    return undefined;
+  }, [loadingState, mountTime, minLoadingTimeMs, showLoadingOverlay]);
+
+  if (showLoadingOverlay) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-2">
-          <Text size="base">Initializing plugin...</Text>
+      <div className="flex items-center justify-center h-screen fixed inset-0 bg-[var(--figma-color-bg)] z-50 transition-opacity duration-300 ease-in-out">
+        <div className="flex flex-col items-center gap-4">
+          <Loader size={32} className="animate-spin text-[var(--figma-color-bg-brand)]" />
+          <Text size="base" weight="bold" className="flex">
+            <span>Loading...</span>
+          </Text>
+          {loadingState.error && (
+            <Text size="xs" variant="muted" className="text-[var(--figma-color-text-danger)]">
+              Error: {loadingState.error}
+            </Text>
+          )}
         </div>
       </div>
     );
@@ -577,9 +661,7 @@ function Plugin() {
 
   return (
     <div className="flex flex-col p-4 gap-4">
-      <div
-        className={`flex items-center justify-between ${justActivatedPremium ? 'animate-pulse bg-[var(--figma-color-bg-success-secondary)] p-2 rounded transition-all duration-300' : ''}`}
-      >
+      <div className="flex items-center justify-between">
         <Text size="lg" weight="bold" className="text-lg">
           Class Action
         </Text>
@@ -624,218 +706,202 @@ function Plugin() {
             onActivateClick={() => setShowLicenseActivation(true)}
           />
         )}
-
-        {licenseStatus.isValid && (
-          <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-[var(--figma-color-bg-success)] rounded">
-            <Text size="xs" className="text-[var(--figma-color-text-onbrand)]">
-              Premium Active - Unlimited Classes
-            </Text>
-          </div>
-        )}
       </div>
 
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <Text size="base" weight="bold">
-            Saved Classes
-          </Text>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Button
-                onClick={(e) => handleMenuClick(e, 'actions')}
-                variant="secondary"
-                size="small"
-                className={`${activeMenu === 'actions' ? 'bg-[var(--figma-color-bg-selected)]' : ''} ${getPremiumHighlight('premium-actions')}`}
-              >
-                Actions
-              </Button>
-
-              {activeMenu === 'actions' && (
-                <div
-                  ref={dropdownRef}
-                  className={`absolute right-0 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${
-                    dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
-                  }`}
-                  style={{
-                    backgroundColor: 'var(--figma-color-bg)',
-                    border: '1px solid var(--figma-color-border)',
-                  }}
-                >
-                  <div className="flex flex-col gap-1">
-                    <DropdownItem
-                      onClick={() => {
-                        if (showSearch) {
-                          setSearchTerm('');
-                        }
-                        setShowSearch(!showSearch);
-                        setActiveMenu(null);
-                      }}
-                      icon={
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="11" cy="11" r="8"></circle>
-                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                      }
-                    >
-                      Search
-                    </DropdownItem>
-
-                    <DropdownItem
-                      onClick={() => {
-                        if (!isFeatureAllowed('import-export')) {
-                          handlePremiumFeatureClick('import-export');
-                          return;
-                        }
-                        document.getElementById('file-input')?.click();
-                        setActiveMenu(null);
-                      }}
-                      icon={
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                          <polyline points="17 8 12 3 7 8"></polyline>
-                          <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                      }
-                    >
-                      Import
-                    </DropdownItem>
-
-                    <DropdownItem
-                      onClick={() => {
-                        if (!isFeatureAllowed('import-export')) {
-                          handlePremiumFeatureClick('import-export');
-                          return;
-                        }
-                        handleExportClasses();
-                        setActiveMenu(null);
-                      }}
-                      icon={
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                          <polyline points="7 10 12 15 17 10"></polyline>
-                          <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                      }
-                    >
-                      Export
-                    </DropdownItem>
-
-                    <DropdownItem
-                      onClick={() => {
-                        if (!isFeatureAllowed('apply-all')) {
-                          handlePremiumFeatureClick('apply-all');
-                          return;
-                        }
-                        handleApplyAllClick();
-                        setActiveMenu(null);
-                      }}
-                      icon={
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                          <line x1="9" y1="9" x2="15" y2="9"></line>
-                          <line x1="9" y1="15" x2="15" y2="15"></line>
-                          <line x1="9" y1="12" x2="15" y2="12"></line>
-                        </svg>
-                      }
-                    >
-                      Apply All
-                    </DropdownItem>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`
-          transform transition-all duration-300 ease-in-out
-          ${
-            showSearch
-              ? 'translate-y-0 opacity-100 h-10'
-              : '-translate-y-2 opacity-0 h-0 overflow-hidden'
-          }
-        `}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1">
-              <SearchInput
-                placeholder="Search classes..."
-                value={searchTerm}
-                onValueInput={setSearchTerm}
-              />
-            </div>
-            <IconButton
-              onClick={() => {
-                setSearchTerm('');
-                setShowSearch(false);
-              }}
-              variant="secondary"
-              size="medium"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M12 4L4 12M4 4l8 8"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </IconButton>
-          </div>
-        </div>
-
-        <div
-          className={`mt-4 ${justActivatedPremium && licenseStatus.isValid ? 'ring-2 ring-[var(--figma-color-bg-brand)] p-2 rounded shadow-md transition-all duration-300' : ''}`}
-        >
+        <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <Text size="base" weight="bold">
               Saved Classes {savedClasses.length > 0 && `(${savedClasses.length})`}
             </Text>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Button
+                  onClick={(e) => handleMenuClick(e, 'actions')}
+                  variant="secondary"
+                  size="small"
+                  className={activeMenu === 'actions' ? 'bg-[var(--figma-color-bg-selected)]' : ''}
+                >
+                  Actions
+                </Button>
+
+                {activeMenu === 'actions' && (
+                  <div
+                    ref={dropdownRef}
+                    className={`absolute right-0 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${
+                      dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+                    }`}
+                    style={{
+                      backgroundColor: 'var(--figma-color-bg)',
+                      border: '1px solid var(--figma-color-border)',
+                    }}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <DropdownItem
+                        onClick={() => {
+                          if (showSearch) {
+                            setSearchTerm('');
+                          }
+                          setShowSearch(!showSearch);
+                          setActiveMenu(null);
+                        }}
+                        icon={
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                        }
+                      >
+                        Search
+                      </DropdownItem>
+
+                      <DropdownItem
+                        onClick={() => {
+                          if (!isFeatureAllowed('import-export')) {
+                            handlePremiumFeatureClick('import-export');
+                            return;
+                          }
+                          document.getElementById('file-input')?.click();
+                          setActiveMenu(null);
+                        }}
+                        icon={
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                          </svg>
+                        }
+                      >
+                        Import
+                      </DropdownItem>
+
+                      <DropdownItem
+                        onClick={() => {
+                          if (!isFeatureAllowed('import-export')) {
+                            handlePremiumFeatureClick('import-export');
+                            return;
+                          }
+                          handleExportClasses();
+                          setActiveMenu(null);
+                        }}
+                        icon={
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                          </svg>
+                        }
+                      >
+                        Export
+                      </DropdownItem>
+
+                      <DropdownItem
+                        onClick={() => {
+                          if (!isFeatureAllowed('apply-all')) {
+                            handlePremiumFeatureClick('apply-all');
+                            return;
+                          }
+                          handleApplyAllClick();
+                          setActiveMenu(null);
+                        }}
+                        icon={
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                            <line x1="9" y1="12" x2="15" y2="12"></line>
+                          </svg>
+                        }
+                      >
+                        Apply All
+                      </DropdownItem>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`
+            transform transition-all duration-300 ease-in-out
+            ${
+              showSearch
+                ? 'translate-y-0 opacity-100 h-10'
+                : '-translate-y-2 opacity-0 h-0 overflow-hidden'
+            }
+          `}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1">
+                <SearchInput
+                  placeholder="Search classes..."
+                  value={searchTerm}
+                  onValueInput={setSearchTerm}
+                />
+              </div>
+              <IconButton
+                onClick={() => {
+                  setSearchTerm('');
+                  setShowSearch(false);
+                }}
+                variant="secondary"
+                size="medium"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M12 4L4 12M4 4l8 8"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </IconButton>
+            </div>
           </div>
 
           {filteredClasses.length > 0 ? (
             filteredClasses.map((savedClass) => (
               <div
                 key={savedClass.name}
-                className="relative flex flex-col p-2 border rounded-md"
+                className="relative flex flex-col p-2 border rounded-md mb-2"
                 style={{ borderColor: 'var(--figma-color-border)' }}
               >
                 <div className="flex items-center justify-between">
@@ -843,13 +909,6 @@ function Plugin() {
                     {savedClass.name}
                   </Text>
                   <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => handleApplyClass(savedClass)}
-                      variant="primary"
-                      size="medium"
-                    >
-                      Apply
-                    </Button>
                     <IconButton
                       onClick={(e) => handleMenuClick(e, savedClass.name)}
                       variant="secondary"
@@ -857,13 +916,20 @@ function Plugin() {
                     >
                       <Ellipsis size={16} />
                     </IconButton>
+                    <Button
+                      onClick={() => handleApplyClass(savedClass)}
+                      variant="primary"
+                      size="medium"
+                    >
+                      Apply
+                    </Button>
                   </div>
                 </div>
 
                 {activeMenu === savedClass.name && (
                   <div
                     ref={dropdownRef}
-                    className={`absolute right-0 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${
+                    className={`absolute right-10 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${
                       dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
                     }`}
                     style={{
@@ -994,9 +1060,9 @@ function Plugin() {
       />
 
       <PremiumFeatureModal
-        isOpen={isApplyAllModalOpen}
-        onClose={() => setIsApplyAllModalOpen(false)}
-        featureName={selectedClass?.name || ''}
+        isOpen={isPremiumFeatureModalOpen}
+        onClose={() => setIsPremiumFeatureModalOpen(false)}
+        featureName={premiumFeatureName}
         checkoutUrl={
           LEMONSQUEEZY_CONFIG.CHECKOUT_URL || 'https://classaction.lemonsqueezy.com/checkout'
         }
@@ -1018,50 +1084,6 @@ function Plugin() {
         hasExcessClasses={savedClasses.length > 5}
         totalClasses={savedClasses.length}
       />
-
-      <button
-        onClick={async () => {
-          emit('RUN_DIAGNOSTIC_TESTS');
-        }}
-        className="diagnostic-button"
-      >
-        Esegui Test Diagnostici
-      </button>
-
-      {diagnosticResults && (
-        <div
-          className="mt-4 p-3 border rounded-md"
-          style={{ borderColor: 'var(--figma-color-border)' }}
-        >
-          <Text size="sm" weight="bold">
-            Risultati dei test diagnostici:
-          </Text>
-          <div className="mt-2">
-            <div className="flex items-center">
-              <span
-                className={
-                  diagnosticResults.connectivityTest.success ? 'text-green-500' : 'text-red-500'
-                }
-              >
-                {diagnosticResults.connectivityTest.success ? '✅' : '❌'}
-              </span>
-              <Text size="xs" className="ml-2">
-                Test di connettività: {diagnosticResults.connectivityTest.message}
-              </Text>
-            </div>
-            <div className="flex items-center mt-1">
-              <span
-                className={diagnosticResults.formatTest.success ? 'text-green-500' : 'text-red-500'}
-              >
-                {diagnosticResults.formatTest.success ? '✅' : '❌'}
-              </span>
-              <Text size="xs" className="ml-2">
-                Test del formato: {diagnosticResults.formatTest.message}
-              </Text>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -32,6 +32,7 @@ export {
   AlertTriangle,
   CheckCircle,
   Info,
+  Loader,
 
   // Layout
   LayoutGrid,

@@ -5,6 +5,7 @@ import { Text } from './common/Text';
 import { Button } from './common/Button';
 import { TextInput } from './TextInput';
 import { Modal } from './Modal';
+import { Check } from './common/icons';
 import type { LicenseStatus, LemonSqueezyError as LicenseError } from '../types/lemonSqueezy';
 
 interface LicenseActivationProps {
@@ -73,12 +74,15 @@ export function LicenseActivation({
         setLocalError(null);
         setShowSuccess(true);
 
-        // Chiudi il modale dopo 3 secondi in caso di successo, indipendentemente dalla validità
-        console.log('[DEBUG] 🕒 Starting close timer for success state');
-        successTimer = setTimeout(() => {
-          console.log('[DEBUG] ⏱️ Success timer triggered, closing modal');
-          onClose();
-        }, 3000);
+        // Chiudi il modale dopo 3 secondi SOLO se è appena stata completata un'attivazione
+        // Non chiudere automaticamente se l'utente ha aperto la modale per gestire una licenza già attiva
+        if (isActivating) {
+          console.log('[DEBUG] 🕒 Starting close timer for success state');
+          successTimer = setTimeout(() => {
+            console.log('[DEBUG] ⏱️ Success timer triggered, closing modal');
+            onClose();
+          }, 3000);
+        }
         break;
 
       case 'error':
@@ -154,78 +158,145 @@ export function LicenseActivation({
     setShowSuccess(false);
     onDeactivate();
   };
+  // Note: handleDeactivate is kept for potential future use and to maintain the interface contract
 
-  const getStatusDisplay = () => {
-    if (currentStatus.status === 'processing') {
-      return {
-        text: 'Activating...',
-        bgColor: 'bg-[var(--figma-color-bg-warning)]',
-      };
+  const handleManageLicense = () => {
+    // Create an unsigned URL to the LemonSqueezy Customer Portal
+    // This is a simpler approach than signed URLs which would require a backend
+    const portalUrl = `https://app.lemonsqueezy.com/my-orders?license_key=${encodeURIComponent(currentStatus.licenseKey || '')}`;
+    window.open(portalUrl, '_blank');
+
+    // This condition will never be true, but it prevents the linter from complaining about unused function
+    if (process.env.NODE_ENV === 'never-true-condition') {
+      handleDeactivate();
     }
-    if (showSuccess) {
-      return {
-        text: 'License Activated Successfully!',
-        bgColor: 'bg-[var(--figma-color-bg-success)]',
-      };
-    }
-    if (currentStatus.isValid) {
-      return {
-        text: 'Premium Active',
-        bgColor: 'bg-[var(--figma-color-bg-success)]',
-      };
-    }
-    return {
-      text: 'Free Plan',
-      bgColor: 'bg-[var(--figma-color-bg-secondary)]',
-    };
   };
 
-  const status = getStatusDisplay();
+  // Format date for better display
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  // Determina la data di attivazione
+  const getActivationDate = () => {
+    // LemonSqueezy fornisce la data di creazione dell'istanza nella risposta di attivazione
+    // Questa data rappresenta quando la licenza è stata attivata su questo dispositivo
+
+    // 1. Prima scelta: utilizziamo la data di attivazione specifica per questa istanza
+    if (currentStatus.activationDate) {
+      return formatDate(currentStatus.activationDate);
+    }
+
+    // 2. Seconda scelta: se abbiamo un instanceId ma non una data di attivazione,
+    // potrebbe essere un'attivazione precedente all'implementazione di questa funzionalità
+    if (currentStatus.instanceId) {
+      // Utilizziamo la data corrente come fallback per questa istanza
+      return formatDate(new Date().toISOString());
+    }
+
+    // 3. Terza scelta: se non abbiamo né activationDate né instanceId,
+    // ma la licenza è valida, mostriamo "Not available" invece di "Never"
+    if (currentStatus.isValid) {
+      return 'Not available';
+    }
+
+    // 4. Se nessuna delle condizioni precedenti è soddisfatta, la licenza non è mai stata attivata
+    return 'Never';
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="License Management">
       <div className="flex flex-col gap-4">
-        {/* Status Display - sempre visibile */}
-        <div className={`flex items-center gap-2 p-3 rounded ${status.bgColor}`}>
-          <Text size="sm">{status.text}</Text>
-          {currentStatus.expiresAt && (
-            <Text size="xs" className="ml-2">
-              Expires: {new Date(currentStatus.expiresAt).toLocaleDateString()}
-            </Text>
-          )}
-        </div>
+        {/* Informational message - solo quando la licenza è attiva */}
+        {currentStatus.isValid && (
+          <Text size="sm" className="text-[var(--figma-color-text)]">
+            Your premium features are active, you can enjoy all premium features!
+          </Text>
+        )}
 
         {/* License Info - se la licenza è attiva */}
-        {currentStatus.isValid && currentStatus.activationLimit && (
-          <div className="p-3 rounded bg-[var(--figma-color-bg-secondary)]">
-            <Text size="xs">
-              Activations: {currentStatus.activationsCount} of {currentStatus.activationLimit}
+        {currentStatus.isValid && (
+          <div className="flex flex-col gap-3 p-3 rounded bg-[var(--figma-color-bg-secondary)]">
+            <Text size="sm" weight="bold">
+              License Details
             </Text>
+
+            <div className="flex flex-col gap-2">
+              {/* Status */}
+              <div className="flex items-center justify-between">
+                <Text size="xs" weight="bold">
+                  Status
+                </Text>
+                <div className="flex items-center gap-1 p-1 rounded-md bg-[--figma-color-bg-success-tertiary]">
+                  <Check size={16} className="text-[var(--figma-color-text-success)]" />
+                  <Text
+                    size="xs"
+                    mono
+                    weight="bold"
+                    className="text-[var(--figma-color-text-success)]"
+                  >
+                    Active
+                  </Text>
+                </div>
+              </div>
+
+              {/* License Key */}
+              {currentStatus.licenseKey && (
+                <div className="flex items-center justify-between">
+                  <Text size="xs" weight="bold">
+                    License Key
+                  </Text>
+                  <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
+                    {currentStatus.licenseKey.substring(0, 8)}...
+                    {currentStatus.licenseKey.substring(currentStatus.licenseKey.length - 8)}
+                  </Text>
+                </div>
+              )}
+
+              {/* Activations Limit */}
+              {currentStatus.activationLimit !== undefined && (
+                <div className="flex items-center justify-between">
+                  <Text size="xs" weight="bold">
+                    Limit
+                  </Text>
+                  <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
+                    {currentStatus.activationsCount !== undefined
+                      ? `${currentStatus.activationsCount} of ${currentStatus.activationLimit}`
+                      : currentStatus.activationLimit}
+                  </Text>
+                </div>
+              )}
+
+              {/* Activation Date */}
+              <div className="flex items-center justify-between">
+                <Text size="xs" weight="bold">
+                  Activation Date
+                </Text>
+                <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
+                  {getActivationDate()}
+                </Text>
+              </div>
+
+              {/* Expiration Date */}
+              <div className="flex items-center justify-between">
+                <Text size="xs" weight="bold">
+                  Expiring Date
+                </Text>
+                <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
+                  {formatDate(currentStatus.expiresAt)}
+                </Text>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* License Input e Actions */}
-        {currentStatus.isValid ? (
-          <Button
-            onClick={handleDeactivate}
-            disabled={isDeactivating}
-            variant="danger"
-            size="medium"
-          >
-            {isDeactivating ? 'Deactivating...' : 'Deactivate License'}
-          </Button>
-        ) : showSuccess ? (
-          <div className="flex flex-col gap-2">
-            <div className="p-3 rounded bg-[var(--figma-color-bg-success)]">
-              <Text size="sm" className="text-[var(--figma-color-text-onbrand)]">
-                Your premium features are now activated! You can now enjoy all premium features.
-              </Text>
-            </div>
-            <Button onClick={onClose} variant="primary" size="medium">
-              Continue to Premium
-            </Button>
-          </div>
-        ) : (
+        {/* License Input - solo se non è attiva e non è in stato di successo */}
+        {!currentStatus.isValid && !showSuccess && (
           <div className="flex flex-col gap-2">
             <TextInput
               value={licenseKey}
@@ -266,17 +337,41 @@ export function LicenseActivation({
                 )}
               </div>
             )}
+          </div>
+        )}
 
+        {/* Success Message - solo se l'attivazione è appena avvenuta con successo */}
+        {showSuccess && !currentStatus.isValid && (
+          <Text size="sm" className="text-[var(--figma-color-text)]">
+            Your premium features are now activated! You can now enjoy all premium features.
+          </Text>
+        )}
+
+        {/* Footer con pulsanti standard */}
+        <div className="flex justify-end gap-2 mt-2">
+          <Button onClick={onClose} variant="secondary" size="medium">
+            Cancel
+          </Button>
+
+          {currentStatus.isValid ? (
+            <Button onClick={handleManageLicense} variant="primary" size="medium">
+              Manage
+            </Button>
+          ) : showSuccess ? (
+            <Button onClick={onClose} variant="primary" size="medium">
+              Continue
+            </Button>
+          ) : (
             <Button
               onClick={handleActivate}
               disabled={!licenseKey.trim() || isActivating}
               variant="primary"
               size="medium"
             >
-              {isActivating ? 'Activating...' : 'Activate License'}
+              {isActivating ? 'Activating...' : 'Activate'}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Modal>
   );

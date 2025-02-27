@@ -11,35 +11,6 @@ import { validateClassData, generateChecksum } from './utils/validation';
 import { storageService } from './services/storageService';
 import { licenseService } from './services/licenseService';
 
-// Import diagnostic tests dynamically when needed
-interface DiagnosticTestModule {
-  runAllTests: () => {
-    connectivity: { success: boolean; message: string };
-    format: { success: boolean; message: string };
-  };
-}
-
-let diagnosticTests: DiagnosticTestModule | null = null;
-
-// Function to run diagnostic tests
-function runDiagnosticTests() {
-  try {
-    // Load the tests dynamically if not already loaded
-    if (!diagnosticTests) {
-      // Using dynamic import would be better, but for now we'll keep the structure similar
-      diagnosticTests = require('./__tests__/diagnostics/test-lemonsqueezy.js');
-    }
-    // Use non-null assertion since we just loaded the module
-    return diagnosticTests!.runAllTests();
-  } catch (error) {
-    console.error("Errore durante l'importazione dei test diagnostici:", error);
-    return {
-      connectivity: { success: false, message: "Errore durante l'importazione dei test" },
-      format: { success: false, message: "Errore durante l'importazione dei test" },
-    };
-  }
-}
-
 // Notification handler
 let currentNotification: NotificationHandler | null = null;
 
@@ -106,37 +77,6 @@ export default function () {
     // Non emettiamo qui lo stato di processing, lo faremo in ACTIVATE_LICENSE
   });
 
-  // Test diagnostico dell'endpoint di attivazione viene eseguito solo quando l'UI è pronta
-  // Non eseguiamo il test qui direttamente per evitare errori CORS
-  // licenseService.testActivationEndpoint().catch((error) => {
-  //   console.error('Failed to run activation endpoint test:', error);
-  // });
-
-  // Aggiungiamo un handler per eseguire i test diagnostici su richiesta
-  on('RUN_DIAGNOSTIC_TESTS', async () => {
-    try {
-      console.log('Esecuzione dei test diagnostici su richiesta...');
-      const testResults = await runDiagnosticTests();
-      console.log('Risultati dei test diagnostici:', testResults);
-
-      // Invia i risultati all'UI
-      emit('DIAGNOSTIC_TEST_RESULTS', testResults);
-
-      // Mostra una notifica con il risultato
-      if (testResults.connectivity.success && testResults.format.success) {
-        showNotification('Test diagnostici completati con successo!');
-      } else {
-        showNotification(
-          'Alcuni test diagnostici sono falliti. Controlla la console per i dettagli.',
-          { error: true },
-        );
-      }
-    } catch (error) {
-      console.error("Errore durante l'esecuzione dei test diagnostici:", error);
-      showNotification("Errore durante l'esecuzione dei test diagnostici.", { error: true });
-    }
-  });
-
   on('ACTIVATE_LICENSE', async (licenseKey: string) => {
     if (isProcessingLicense) {
       console.log('[License] Another license operation is in progress');
@@ -175,7 +115,8 @@ export default function () {
 
       // Show appropriate notification
       if (activationResult.isValid) {
-        showNotification('License activated successfully!');
+        // Removing this notification since it's already shown in the UI component
+        // showNotification('License activated successfully!');
 
         // Force refresh the UI state after successful activation
         setTimeout(() => {
