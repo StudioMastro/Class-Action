@@ -49,11 +49,6 @@ export function Modal({
           :root {
             overflow: hidden !important;
           }
-          
-          /* Quando la modale è aperta, ripristiniamo il padding normale per evitare il "bump" */
-          .main-scrollbar-compensation {
-            padding-right: var(--padding-x, 16px) !important;
-          }
         `}
       </style>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

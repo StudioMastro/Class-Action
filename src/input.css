@@ -30,10 +30,11 @@
 
 /* Stili personalizzati per le scrollbar e altre utility */
 @layer utilities {
-  /* Stili per WebKit (Chrome, Safari, Edge) */
+  /* Stili per WebKit (Chrome, Safari, Edge) - Nascondi completamente la scrollbar */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 0px;
+    height: 0px;
+    display: none;
   }
   
   ::-webkit-scrollbar-track {
@@ -41,18 +42,14 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: var(--figma-color-border);
-    border-radius: 2px;
+    background: transparent;
+    border-radius: 0;
   }
   
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--figma-color-text-secondary);
-  }
-  
-  /* Stili per Firefox */
+  /* Stili per Firefox - Nascondi completamente la scrollbar */
   * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--figma-color-border) transparent;
+    scrollbar-width: none;
+    scrollbar-color: transparent transparent;
   }
   
   /* Classe per contenitori con scrollbar che mantengono il border-radius */
@@ -66,32 +63,33 @@
     overflow-y: auto !important; /* Forza lo scrolling verticale */
     padding-top: var(--padding-y, 16px);
     padding-bottom: var(--padding-y, 16px);
+    -ms-overflow-style: none; /* IE and Edge */
   }
   
   /* 
-   * Classe generica per bilanciare il padding quando è presente una scrollbar
-   * Riduzione di 10px per un padding destro finale di 6px quando il padding base è 16px
+   * Poiché la scrollbar è nascosta, non è più necessaria la compensazione
+   * Utilizziamo padding uniforme su tutti i lati
    */
   .scrollbar-compensation {
     padding-left: var(--padding-x, 16px);
-    padding-right: calc(var(--padding-x, 16px) - 10px);
+    padding-right: var(--padding-x, 16px);
   }
   
   /* 
-   * Classe specifica per la compensazione della scrollbar nel contenitore principale
-   * Usa la stessa logica della classe generica
+   * Classe specifica per il contenitore principale
+   * Utilizziamo padding uniforme su tutti i lati
    */
   .main-scrollbar-compensation {
     padding-left: var(--padding-x, 16px);
-    padding-right: calc(var(--padding-x, 16px) - 10px);
+    padding-right: var(--padding-x, 16px);
   }
   
   /* 
-   * Classe specifica per la compensazione della scrollbar nelle modali
-   * Usa la stessa logica della classe generica
+   * Classe specifica per le modali
+   * Utilizziamo padding uniforme su tutti i lati
    */
   .modal-scrollbar-compensation {
     padding-left: var(--padding-x, 16px);
-    padding-right: calc(var(--padding-x, 16px) - 10px);
+    padding-right: var(--padding-x, 16px);
   }
 }
