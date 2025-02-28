@@ -262,7 +262,7 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
         onClick: onClose,
       }}
     >
-      <div className="max-h-[70vh] overflow-y-auto">
+      <div>
         <CodeBlock properties={allProperties} />
       </div>
     </Modal>

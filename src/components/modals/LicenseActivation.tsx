@@ -329,7 +329,7 @@ export function LicenseActivation({
         {/* License Input - solo se non è attiva e non è in stato di successo */}
         {!currentStatus.isValid && !showSuccess && (
           <div className="flex flex-col gap-2">
-            <Text size="sm" className="text-[var(--figma-color-text)]">
+            <Text size="base" className="text-[var(--figma-color-text)]">
               Enter your license key to activate premium features
             </Text>
             <TextInput

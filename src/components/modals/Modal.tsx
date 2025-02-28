@@ -49,17 +49,22 @@ export function Modal({
           :root {
             overflow: hidden !important;
           }
+          
+          /* Quando la modale è aperta, ripristiniamo il padding normale per evitare il "bump" */
+          .main-scrollbar-compensation {
+            padding-right: var(--padding-x, 16px) !important;
+          }
         `}
       </style>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/50" onClick={onClose} />
         <div
-          className="relative z-10 w-[300px] max-h-[90vh] overflow-y-auto bg-[var(--figma-color-bg)] rounded-lg shadow-lg"
+          className="scrollable-container relative z-10 w-full max-w-[300px] max-h-[90vh] bg-[var(--figma-color-bg)] rounded-lg shadow-lg"
           style={{ marginTop: '2vh', marginBottom: '2vh' }}
         >
-          <div className="sticky top-0 z-20 flex items-center justify-between py-3 px-4 border-b border-[var(--figma-color-border)] bg-[var(--figma-color-bg)]">
+          <div className="sticky top-0 z-20 flex items-center justify-between py-2 px-4 border-b border-[var(--figma-color-border)] bg-[var(--figma-color-bg)]">
             <div>
-              <Text size="lg" weight="bold">
+              <Text size="base" weight="bold">
                 {title}
               </Text>
             </div>
@@ -67,11 +72,20 @@ export function Modal({
               <Icon icon={Close} size="sm" />
             </IconButton>
           </div>
-          <div className="p-4">{children}</div>
+          <div
+            className="scrollable-content modal-scrollbar-compensation"
+            style={{
+              maxHeight: 'calc(90vh - 120px)',
+              '--padding-x': '16px' /* Padding orizzontale */,
+              '--padding-y': '16px' /* Padding verticale */,
+            }}
+          >
+            {children}
+          </div>
 
           {/* Footer standardizzato */}
           {showFooter && (
-            <div className="sticky bottom-0 z-20 flex justify-end gap-2 p-4 border-t border-[var(--figma-color-border)] bg-[var(--figma-color-bg)]">
+            <div className="sticky bottom-0 z-20 flex justify-end gap-2 px-4 py-3 border-t border-[var(--figma-color-border)] bg-[var(--figma-color-bg)]">
               {secondaryButton && (
                 <Button
                   onClick={secondaryButton.onClick}

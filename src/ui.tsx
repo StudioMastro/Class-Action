@@ -445,6 +445,13 @@ function Plugin() {
 
   const handleUpdate = (savedClass: SavedClass) => {
     setActiveMenu(null);
+
+    // Verifica se c'è un frame selezionato
+    if (!hasSelectedFrame) {
+      emit('SHOW_ERROR', 'Please select a frame to update this class with');
+      return;
+    }
+
     setClassToUpdate(savedClass);
     setIsUpdateModalOpen(true);
   };
@@ -472,6 +479,14 @@ function Plugin() {
   const handleConfirmUpdate = async () => {
     if (!classToUpdate) return;
 
+    // Verifica aggiuntiva che ci sia ancora un frame selezionato
+    if (!hasSelectedFrame) {
+      emit('SHOW_ERROR', 'No frame selected. Please select a frame to update this class with');
+      setIsUpdateModalOpen(false);
+      setClassToUpdate(null);
+      return;
+    }
+
     await emit('UPDATE_CLASS', classToUpdate);
     setIsUpdateModalOpen(false);
     setClassToUpdate(null);
@@ -482,6 +497,20 @@ function Plugin() {
 
     const trimmedName = newName.trim();
     console.log('Attempting to rename in UI:', selectedClass.name, 'to:', trimmedName);
+
+    // Verifica se il nome è effettivamente cambiato (case-sensitive)
+    if (trimmedName === selectedClass.name) {
+      setIsRenameModalOpen(false);
+      setSelectedClass(null);
+      setNewName('');
+      return;
+    }
+
+    // Verifica se il nome è cambiato solo per maiuscole/minuscole
+    if (trimmedName.toLowerCase() === selectedClass.name.toLowerCase()) {
+      console.log('Only case changed in name');
+      // Continuiamo con la rinomina in questo caso
+    }
 
     const validation = validateClassName(trimmedName);
     if (!validation.isValid) {
@@ -676,7 +705,10 @@ function Plugin() {
   }
 
   return (
-    <div className="flex flex-col p-4 gap-4">
+    <div
+      className="flex flex-col p-4 gap-4 main-scrollbar-compensation"
+      style={{ '--padding-x': '16px', '--padding-y': '16px' }}
+    >
       <div className="flex items-center justify-between">
         <Text size="lg" weight="bold" className="text-lg">
           Class Action
@@ -724,7 +756,7 @@ function Plugin() {
         )}
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 flex-grow">
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <Text size="base" weight="bold">
@@ -744,7 +776,7 @@ function Plugin() {
                 {activeMenu === 'actions' && (
                   <div
                     ref={dropdownRef}
-                    className={`absolute right-0 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${
+                    className={`absolute right-0 p-1 rounded-md z-50 overflow-hidden whitespace-nowrap shadow-lg ${
                       dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
                     }`}
                     style={{
@@ -913,83 +945,89 @@ function Plugin() {
             </div>
           </div>
 
-          {filteredClasses.length > 0 ? (
-            filteredClasses.map((savedClass) => (
-              <div
-                key={savedClass.name}
-                className="relative flex flex-col p-2 border rounded-md mb-2"
-                style={{ borderColor: 'var(--figma-color-border)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <Text mono size="xs">
-                    {savedClass.name}
-                  </Text>
-                  <div className="flex items-center gap-2">
-                    <IconButton
-                      onClick={(e) => handleMenuClick(e, savedClass.name)}
-                      variant="secondary"
-                      size="medium"
-                    >
-                      <Ellipsis size={16} />
-                    </IconButton>
-                    <Button
-                      onClick={() => handleApplyClass(savedClass)}
-                      variant="primary"
-                      size="medium"
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                </div>
-
-                {activeMenu === savedClass.name && (
-                  <div
-                    ref={dropdownRef}
-                    className={`absolute right-10 p-1 rounded-md z-10 overflow-hidden whitespace-nowrap shadow-lg ${
-                      dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
-                    }`}
-                    style={{
-                      backgroundColor: 'var(--figma-color-bg)',
-                      border: '1px solid var(--figma-color-border)',
-                    }}
-                  >
-                    <div className="flex flex-col gap-1">
-                      <DropdownItem
-                        onClick={() => handleViewDetails(savedClass)}
-                        icon={<Info size={16} />}
+          <div>
+            {filteredClasses.length > 0 ? (
+              filteredClasses.map((savedClass) => (
+                <div
+                  key={savedClass.name}
+                  className="relative flex flex-col p-2 border rounded-md mb-2"
+                  style={{ borderColor: 'var(--figma-color-border)' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <Text mono size="xs">
+                      {savedClass.name}
+                    </Text>
+                    <div className="flex items-center gap-2">
+                      <IconButton
+                        onClick={(e) => handleMenuClick(e, savedClass.name)}
+                        variant="secondary"
+                        size="medium"
                       >
-                        Info
-                      </DropdownItem>
-
-                      <DropdownItem
-                        onClick={() => handleRename(savedClass)}
-                        icon={<Rename size={16} />}
+                        <Ellipsis size={16} />
+                      </IconButton>
+                      <Button
+                        onClick={() => handleApplyClass(savedClass)}
+                        variant="primary"
+                        size="medium"
                       >
-                        Rename
-                      </DropdownItem>
-
-                      <DropdownItem
-                        onClick={() => handleUpdate(savedClass)}
-                        icon={<Update size={16} />}
-                      >
-                        Update
-                      </DropdownItem>
-
-                      <DropdownItem
-                        onClick={() => handleDeleteClick(savedClass)}
-                        icon={<Trash size={16} />}
-                        variant="danger"
-                      >
-                        Delete
-                      </DropdownItem>
+                        Apply
+                      </Button>
                     </div>
                   </div>
-                )}
+
+                  {activeMenu === savedClass.name && (
+                    <div
+                      ref={dropdownRef}
+                      className={`absolute right-10 p-1 rounded-md z-50 overflow-hidden whitespace-nowrap shadow-lg ${
+                        dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+                      }`}
+                      style={{
+                        backgroundColor: 'var(--figma-color-bg)',
+                        border: '1px solid var(--figma-color-border)',
+                      }}
+                    >
+                      <div className="flex flex-col gap-1">
+                        <DropdownItem
+                          onClick={() => handleViewDetails(savedClass)}
+                          icon={<Info size={16} />}
+                        >
+                          Info
+                        </DropdownItem>
+
+                        <DropdownItem
+                          onClick={() => handleRename(savedClass)}
+                          icon={<Rename size={16} />}
+                        >
+                          Rename
+                        </DropdownItem>
+
+                        <DropdownItem
+                          onClick={() => handleUpdate(savedClass)}
+                          icon={<Update size={16} />}
+                        >
+                          Update
+                        </DropdownItem>
+
+                        <DropdownItem
+                          onClick={() => handleDeleteClick(savedClass)}
+                          icon={<Trash size={16} />}
+                          variant="danger"
+                        >
+                          Delete
+                        </DropdownItem>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <Text size="sm" variant="muted">
+                  {searchTerm ? 'No classes match your search.' : 'No saved classes yet.'}
+                </Text>
               </div>
-            ))
-          ) : (
-            <Text variant="muted">No classes found</Text>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -1016,9 +1054,14 @@ function Plugin() {
         onClose={() => setIsUpdateModalOpen(false)}
         onConfirm={handleConfirmUpdate}
         title="Update Class"
-        message="Do you want to update this class with the current frame dimensions?"
+        message={
+          hasSelectedFrame
+            ? `Do you want to update the class "${classToUpdate?.name}" with the current frame dimensions?`
+            : 'No frame is currently selected. Please select a frame first.'
+        }
         confirmText="Update"
         variant="info"
+        confirmDisabled={!hasSelectedFrame}
       />
 
       <ConfirmDialog
@@ -1033,6 +1076,7 @@ function Plugin() {
         variant="info"
         message="Enter new name for the selected class:"
         confirmText="Rename"
+        confirmDisabled={selectedClass ? newName.trim() === selectedClass.name : false}
       >
         <div className="mt-2">
           <TextInput
@@ -1041,7 +1085,7 @@ function Plugin() {
             className="w-full"
             placeholder="Enter new name"
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && selectedClass && newName.trim() !== selectedClass.name) {
                 handleConfirmRename();
               }
             }}
@@ -1080,7 +1124,8 @@ function Plugin() {
         onClose={() => setIsPremiumFeatureModalOpen(false)}
         featureName={premiumFeatureName}
         checkoutUrl={
-          LEMONSQUEEZY_CONFIG.CHECKOUT_URL || 'https://classaction.lemonsqueezy.com/checkout'
+          LEMONSQUEEZY_CONFIG.CHECKOUT_URL ||
+          'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c'
         }
       />
 
