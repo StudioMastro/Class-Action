@@ -1,33 +1,10 @@
 /** @jsx h */
-import { h, Fragment, VNode } from 'preact';
-import { Text } from './common/Text';
-import { emit, on } from '@create-figma-plugin/utilities';
-import type { SavedClass } from '../types';
-import { Button, IconButton } from './common';
+import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { Icon, Close } from './common/icons';
-
-// Props per il Modal base
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: VNode | VNode[] | string | null;
-}
-
-// Props per il Dialog di conferma
-interface ConfirmDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title: string;
-  message?: string;
-  children?: VNode | VNode[] | string | null;
-  confirmText?: string;
-  variant?: 'danger' | 'warning' | 'success' | 'info';
-  showCancelButton?: boolean;
-  cancelButtonText?: string;
-}
+import { Button } from '../common/Button';
+import { Modal } from './Modal';
+import { emit, on } from '@create-figma-plugin/utilities';
+import type { SavedClass } from '../../types';
 
 // Props per il Modal dei dettagli della classe
 interface ClassDetailsModalProps {
@@ -95,79 +72,6 @@ function copyToClipboard(text: string): void {
     console.error('Failed to copy text:', err);
     emit('SHOW_ERROR', 'Failed to copy text');
   }
-}
-
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  if (!isOpen) return null;
-
-  return (
-    <Fragment>
-      <style>
-        {`
-          :root {
-            overflow: hidden !important;
-          }
-        `}
-      </style>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-        <div
-          className="relative z-10 w-[300px] max-h-[90vh] overflow-y-auto bg-[var(--figma-color-bg)] rounded-lg shadow-lg"
-          style={{ marginTop: '2vh', marginBottom: '2vh' }}
-        >
-          <div className="sticky top-0 z-20 flex items-center justify-between py-3 px-4 border-b border-[var(--figma-color-border)] bg-[var(--figma-color-bg)]">
-            <div>
-              <Text size="lg" weight="bold">
-                {title}
-              </Text>
-            </div>
-            <IconButton onClick={onClose} variant="secondary" size="small">
-              <Icon icon={Close} size="sm" />
-            </IconButton>
-          </div>
-          <div className="p-4">{children}</div>
-        </div>
-      </div>
-    </Fragment>
-  );
-}
-
-export function ConfirmDialog({
-  isOpen,
-  onClose,
-  onConfirm,
-  title,
-  message,
-  children,
-  confirmText = 'Confirm',
-  variant = 'info',
-  showCancelButton = true,
-  cancelButtonText = 'Cancel',
-}: ConfirmDialogProps) {
-  if (!isOpen) return null;
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <div className="flex flex-col gap-2">
-        {message && <Text size="base">{message}</Text>}
-        {children}
-        <div className="flex justify-end gap-2 mt-4">
-          {showCancelButton && (
-            <Button onClick={onClose} variant="secondary" size="medium">
-              {cancelButtonText}
-            </Button>
-          )}
-          <Button
-            onClick={onConfirm}
-            variant={variant === 'danger' ? 'danger' : 'primary'}
-            size="medium"
-          >
-            {confirmText}
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
 }
 
 export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsModalProps) {
@@ -349,7 +253,15 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Info">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Info"
+      secondaryButton={{
+        label: 'Close',
+        onClick: onClose,
+      }}
+    >
       <div className="max-h-[70vh] overflow-y-auto">
         <CodeBlock properties={allProperties} />
       </div>

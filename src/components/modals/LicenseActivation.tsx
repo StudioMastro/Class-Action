@@ -1,12 +1,13 @@
 /** @jsx h */
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
-import { Text } from './common/Text';
-import { Button } from './common/Button';
-import { TextInput } from './TextInput';
+import { Text } from '../common/Text';
+import { Button } from '../common/Button';
+import { TextInput } from '../TextInput';
 import { Modal } from './Modal';
-import { Check } from './common/icons';
-import type { LicenseStatus, LemonSqueezyError as LicenseError } from '../types/lemonSqueezy';
+import { Check } from '../common/icons';
+import type { LicenseStatus, LemonSqueezyError as LicenseError } from '../../types/lemonSqueezy';
+import { LEMONSQUEEZY_CONFIG } from '../../config/lemonSqueezy';
 
 interface LicenseActivationProps {
   currentStatus: LicenseStatus;
@@ -209,8 +210,38 @@ export function LicenseActivation({
     return 'Never';
   };
 
+  // Determina i bottoni da mostrare nel footer
+  const getPrimaryButton = () => {
+    if (currentStatus.isValid) {
+      return {
+        label: 'Manage',
+        onClick: handleManageLicense,
+      };
+    } else if (showSuccess) {
+      return {
+        label: 'Continue',
+        onClick: onClose,
+      };
+    } else {
+      return {
+        label: isActivating ? 'Activating...' : 'Activate',
+        onClick: handleActivate,
+        disabled: !licenseKey.trim() || isActivating,
+      };
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="License Management">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="License Management"
+      primaryButton={getPrimaryButton()}
+      secondaryButton={{
+        label: 'Cancel',
+        onClick: onClose,
+      }}
+    >
       <div className="flex flex-col gap-4">
         {/* Informational message - solo quando la licenza è attiva */}
         {currentStatus.isValid && (
@@ -298,6 +329,9 @@ export function LicenseActivation({
         {/* License Input - solo se non è attiva e non è in stato di successo */}
         {!currentStatus.isValid && !showSuccess && (
           <div className="flex flex-col gap-2">
+            <Text size="sm" className="text-[var(--figma-color-text)]">
+              Enter your license key to activate premium features
+            </Text>
             <TextInput
               value={licenseKey}
               onChange={setLicenseKey}
@@ -309,6 +343,24 @@ export function LicenseActivation({
                 }
               }}
             />
+
+            {/* Link per l'acquisto di una licenza */}
+            <div className="mt-1">
+              <Text size="xs" className="text-[var(--figma-color-text)]">
+                You don't have a license?{' '}
+                <a
+                  href={
+                    LEMONSQUEEZY_CONFIG.CHECKOUT_URL ||
+                    'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c'
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[var(--figma-color-text-brand)] hover:underline"
+                >
+                  Upgrade to Premium
+                </a>
+              </Text>
+            </div>
 
             {/* Error Display - sotto l'input */}
             {activeError && (
@@ -346,32 +398,6 @@ export function LicenseActivation({
             Your premium features are now activated! You can now enjoy all premium features.
           </Text>
         )}
-
-        {/* Footer con pulsanti standard */}
-        <div className="flex justify-end gap-2 mt-2">
-          <Button onClick={onClose} variant="secondary" size="medium">
-            Cancel
-          </Button>
-
-          {currentStatus.isValid ? (
-            <Button onClick={handleManageLicense} variant="primary" size="medium">
-              Manage
-            </Button>
-          ) : showSuccess ? (
-            <Button onClick={onClose} variant="primary" size="medium">
-              Continue
-            </Button>
-          ) : (
-            <Button
-              onClick={handleActivate}
-              disabled={!licenseKey.trim() || isActivating}
-              variant="primary"
-              size="medium"
-            >
-              {isActivating ? 'Activating...' : 'Activate'}
-            </Button>
-          )}
-        </div>
       </div>
     </Modal>
   );

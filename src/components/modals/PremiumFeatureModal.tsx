@@ -1,8 +1,7 @@
 /** @jsx h */
 import { h } from 'preact';
 import { Modal } from './Modal';
-import { Text } from './common/Text';
-import { Button } from './common/Button';
+import { Text } from '../common/Text';
 
 interface PremiumFeatureModalProps {
   isOpen: boolean;
@@ -24,7 +23,19 @@ export function PremiumFeatureModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Upgrade to Premium">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Upgrade to Premium"
+      primaryButton={{
+        label: 'Upgrade now',
+        onClick: handleUpgradeClick,
+      }}
+      secondaryButton={{
+        label: 'Maybe Later',
+        onClick: onClose,
+      }}
+    >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Text size="base">{featureName} is a Premium feature. Upgrade now to unlock:</Text>
@@ -120,15 +131,6 @@ export function PremiumFeatureModal({
               </Text>
             </div>
           </div>
-        </div>
-
-        <div className="flex justify-end gap-2 mt-2">
-          <Button onClick={onClose} variant="secondary" size="medium">
-            Maybe Later
-          </Button>
-          <Button onClick={handleUpgradeClick} variant="primary" size="medium">
-            Upgrade now
-          </Button>
         </div>
       </div>
     </Modal>

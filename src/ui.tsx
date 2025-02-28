@@ -4,7 +4,13 @@ import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { render } from '@create-figma-plugin/ui';
 import { emit, on } from '@create-figma-plugin/utilities';
 import '!./output.css';
-import { ConfirmDialog, ClassDetailsModal } from './components/Modal';
+import {
+  ConfirmDialog,
+  ClassDetailsModal,
+  PremiumFeatureModal,
+  LicenseActivation,
+  LicenseDeactivationModal,
+} from './components/modals';
 import { Button, IconButton, Text } from './components/common';
 import { DropdownItem } from './components/DropdownItem';
 import { SearchInput } from './components/SearchInput';
@@ -21,9 +27,6 @@ import {
   Loader,
 } from './components/common/icons';
 import { ClassCounter } from './components/ClassCounter';
-import { PremiumFeatureModal } from './components/PremiumFeatureModal';
-import { LicenseActivation } from './components/LicenseActivation';
-import { LicenseDeactivationModal } from './components/LicenseDeactivationModal';
 import { makeApiRequest } from './ui/services/apiService';
 
 // Definizione dei possibili stati di caricamento
@@ -605,6 +608,19 @@ function Plugin() {
     }
   };
 
+  // Nuova funzione per aprire il modale di attivazione della licenza
+  const handleLicenseActivationOpen = () => {
+    console.log('Opening license activation modal', { licenseError, licenseStatus });
+    // Resetta l'errore prima di aprire il modale
+    setLicenseError(null);
+    setLicenseStatus((prev) => ({
+      ...prev,
+      status: prev.status === 'error' ? 'idle' : prev.status,
+      error: undefined,
+    }));
+    setShowLicenseActivation(true);
+  };
+
   // Log dello stato di caricamento per debug
   useEffect(() => {
     console.log('Loading state updated:', loadingState);
@@ -666,7 +682,7 @@ function Plugin() {
           Class Action
         </Text>
         {licenseStatus.isValid && (
-          <Button onClick={() => setShowLicenseActivation(true)} variant="secondary" size="small">
+          <Button onClick={handleLicenseActivationOpen} variant="secondary" size="small">
             Manage License
           </Button>
         )}
@@ -703,7 +719,7 @@ function Plugin() {
             maxClasses={5}
             isPremium={licenseStatus.tier === 'premium'}
             onUpgradeClick={() => handlePremiumFeatureClick('Unlimited Classes')}
-            onActivateClick={() => setShowLicenseActivation(true)}
+            onActivateClick={handleLicenseActivationOpen}
           />
         )}
       </div>
