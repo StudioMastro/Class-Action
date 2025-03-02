@@ -116,8 +116,19 @@ export interface LemonSqueezyValidationResponse {
   license_key?: {
     id: number;
     status: string;
+    key?: string;
+    activation_limit?: number;
+    activation_usage?: number;
+    created_at?: string;
+    expires_at?: string | null;
     [key: string]: unknown;
   };
+  instance?: {
+    id: string;
+    name: string;
+    created_at: string;
+    [key: string]: unknown;
+  } | null;
   [key: string]: unknown;
 }
 
@@ -157,6 +168,7 @@ export interface StoredLicenseData {
   instanceId: string | null;
   licenseStatus: LicenseStatusType;
   licenseFeatures: string[];
+  activationDate?: string | null;
 }
 
 /**

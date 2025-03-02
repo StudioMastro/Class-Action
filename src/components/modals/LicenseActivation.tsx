@@ -176,37 +176,61 @@ export function LicenseActivation({
   // Format date for better display
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString(undefined, {
+
+    // Log the raw date string for debugging
+    console.log('[DEBUG] Formatting date string:', dateString);
+
+    const date = new Date(dateString);
+
+    // Log the parsed date object for debugging
+    console.log('[DEBUG] Parsed date object:', date.toString());
+
+    // Format as DD/MM/YYYY
+    const formatted = date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
     });
+
+    console.log('[DEBUG] Formatted date:', formatted);
+
+    return formatted;
   };
 
   // Determina la data di attivazione
   const getActivationDate = () => {
-    // LemonSqueezy fornisce la data di creazione dell'istanza nella risposta di attivazione
-    // Questa data rappresenta quando la licenza è stata attivata su questo dispositivo
+    // Log the current status for debugging
+    console.log('[DEBUG] Getting activation date from status:', {
+      activationDate: currentStatus.activationDate,
+      instanceId: currentStatus.instanceId,
+      isValid: currentStatus.isValid,
+      fullStatus: JSON.stringify(currentStatus, null, 2),
+    });
 
     // 1. Prima scelta: utilizziamo la data di attivazione specifica per questa istanza
     if (currentStatus.activationDate) {
+      console.log('[DEBUG] Using activationDate from currentStatus:', currentStatus.activationDate);
       return formatDate(currentStatus.activationDate);
     }
 
-    // 2. Seconda scelta: se abbiamo un instanceId ma non una data di attivazione,
-    // potrebbe essere un'attivazione precedente all'implementazione di questa funzionalità
+    // 2. Se abbiamo un instanceId ma non una data di attivazione,
+    // NON utilizziamo più la data corrente come fallback, ma mostriamo "Not available"
     if (currentStatus.instanceId) {
-      // Utilizziamo la data corrente come fallback per questa istanza
-      return formatDate(new Date().toISOString());
+      console.log('[DEBUG] Has instanceId but no activationDate, showing "Not available"');
+      return 'Not available';
     }
 
-    // 3. Terza scelta: se non abbiamo né activationDate né instanceId,
+    // 3. Se non abbiamo né activationDate né instanceId,
     // ma la licenza è valida, mostriamo "Not available" invece di "Never"
     if (currentStatus.isValid) {
+      console.log(
+        '[DEBUG] License is valid but no activation date or instanceId, showing "Not available"',
+      );
       return 'Not available';
     }
 
     // 4. Se nessuna delle condizioni precedenti è soddisfatta, la licenza non è mai stata attivata
+    console.log('[DEBUG] License has never been activated');
     return 'Never';
   };
 

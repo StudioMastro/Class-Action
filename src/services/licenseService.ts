@@ -28,6 +28,7 @@ export class LicenseService {
   private licenseStatusType: LicenseStatusType = 'inactive';
   private licenseFeatures: string[] = [];
   private storageKey = 'license_data';
+  private activationDate: string | null = null;
 
   constructor() {
     try {
@@ -268,9 +269,11 @@ export class LicenseService {
 
       this.validationInProgress = true;
 
+      // Only include instance_id if it's a non-empty string
       const data = {
         license_key: licenseKey,
-        instance_id: this.instanceId || '',
+        // Only include instance_id if it exists and is not empty
+        ...(this.instanceId ? { instance_id: this.instanceId } : {}),
         // Aggiungiamo esplicitamente store_id e product_id, anche se sono vuoti
         // Questo è necessario per l'API di LemonSqueezy
         store_id: LEMONSQUEEZY_CONFIG.STORE_ID || '155794', // Valore di fallback
@@ -291,6 +294,44 @@ export class LicenseService {
       );
 
       this.validationInProgress = false;
+
+      // Log the response to help with debugging
+      console.log(
+        '[LICENSE] 🔍 Validation response:',
+        JSON.stringify(
+          {
+            valid: response.valid,
+            hasLicenseKey: !!response.license_key,
+            hasInstance: !!response.instance,
+            instanceId:
+              response.instance && response.instance.id
+                ? `${response.instance.id.substring(0, 4)}...`
+                : 'missing',
+            activationDate:
+              response.instance && response.instance.created_at
+                ? response.instance.created_at
+                : 'missing',
+          },
+          null,
+          2,
+        ),
+      );
+
+      // If the response doesn't include the license key, add it
+      if (response.valid && response.license_key && !response.license_key.key) {
+        response.license_key.key = licenseKey;
+      }
+
+      // If we have an instance in the response with a created_at date, update our stored activation date
+      if (response.instance && response.instance.created_at) {
+        this.activationDate = response.instance.created_at as string;
+        console.log(
+          '[LICENSE] ✅ Updated activation date from validation response:',
+          this.activationDate,
+        );
+        // Save the updated license data
+        this.saveLicenseData();
+      }
 
       return response;
     } catch (error) {
@@ -412,53 +453,122 @@ export class LicenseService {
     return 'activated' in activationResponse;
   }
 
-  private mapResponseToLicenseStatus(
-    response: LemonSqueezyValidationResponse | LemonSqueezyActivationResponse,
-  ): LicenseStatus {
+  private mapResponseToLicenseStatus(response: LemonSqueezyResponse): LicenseStatus {
     try {
-      if (this.isValidationResponse(response)) {
-        const licenseData = response.license_key;
+      // Log the raw response structure for debugging
+      console.log('[LICENSE] 🔍 Raw response structure:', JSON.stringify(response, null, 2));
 
-        if (!licenseData) {
+      if (this.isValidationResponse(response)) {
+        try {
+          // Log the raw validation response structure for debugging
+          console.log(
+            '[LICENSE] 🔍 Raw validation response structure:',
+            JSON.stringify(response, null, 2),
+          );
+
+          // Check if the license is valid based on the 'valid' property
+          if (response.valid !== true) {
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'INVALID_LICENSE',
+                message: response.error || 'Invalid license',
+                actions: ['Check your license key', 'Contact support'],
+              },
+            };
+          }
+
+          // Extract license data directly from the response
+          const licenseData = response.license_key;
+
+          // Log the extracted data for debugging
+          console.log('[LICENSE] 🔍 Extracted license data:', {
+            hasLicenseData: !!licenseData,
+            status: licenseData?.status,
+            key: licenseData?.key ? '***' : 'missing',
+            hasInstance: !!response.instance,
+            instanceId: response.instance?.id
+              ? `${response.instance.id.substring(0, 4)}...`
+              : 'missing',
+            activationDate: response.instance?.created_at || this.activationDate || 'missing',
+          });
+
+          if (!licenseData || licenseData.status !== 'active') {
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'INVALID_LICENSE',
+                message: 'License is not active',
+                actions: ['Check your license key', 'Contact support'],
+              },
+            };
+          }
+
+          // If we have an instance in the response with a created_at date, update our stored activation date
+          if (response.instance?.created_at) {
+            this.activationDate = response.instance.created_at as string;
+            console.log(
+              '[LICENSE] ✅ Updated activation date from validation instance:',
+              this.activationDate,
+            );
+          }
+
+          // Prepare the response object
+          const responseStatus: LicenseStatus = {
+            tier: 'premium',
+            isValid: true,
+            features: ['all'], // LemonSqueezy doesn't provide features in the response, so we use 'all'
+            status: 'success',
+          };
+
+          // Add license key if available
+          if (licenseData.key) {
+            responseStatus.licenseKey = licenseData.key as string;
+          }
+
+          // Add activation date if available
+          if (response.instance?.created_at) {
+            responseStatus.activationDate = response.instance.created_at as string;
+          } else if (typeof this.activationDate === 'string') {
+            responseStatus.activationDate = this.activationDate;
+          } else {
+            responseStatus.activationDate = null;
+          }
+
+          // Add activation limit and usage if available
+          if (licenseData.activation_limit !== undefined) {
+            responseStatus.activationLimit = licenseData.activation_limit as number;
+          }
+          if (licenseData.activation_usage !== undefined) {
+            responseStatus.activationsCount = licenseData.activation_usage as number;
+          }
+
+          // Add instance ID if available
+          if (this.instanceId) {
+            responseStatus.instanceId = this.instanceId;
+          }
+
+          return responseStatus;
+        } catch (error) {
+          console.error('[LICENSE] ❌ Error processing validation response:', error);
           return {
             tier: 'free',
             isValid: false,
             features: [],
             status: 'error',
             error: {
-              code: 'INVALID_LICENSE',
-              message: 'Invalid license key',
-              actions: ['Check your license key', 'Contact support'],
+              code: 'API_ERROR',
+              message: 'Error processing validation response',
+              actions: ['Try again later', 'Contact support'],
             },
           };
         }
-
-        if (licenseData.status === 'active') {
-          return {
-            tier: 'premium',
-            isValid: true,
-            features: ['all'],
-            status: 'success',
-            lemonSqueezyStatus: licenseData.status,
-            activationLimit: licenseData.activation_limit as number,
-            activationsCount: licenseData.activation_usage as number,
-            expiresAt: licenseData.expires_at as string | null,
-            licenseKey: licenseData.key as string,
-          };
-        }
-
-        return {
-          tier: 'free',
-          isValid: false,
-          features: [],
-          status: 'error',
-          error: {
-            code: 'LICENSE_EXPIRED',
-            message: `License is ${licenseData.status}`,
-            actions: ['Renew your license', 'Contact support'],
-          },
-          lemonSqueezyStatus: licenseData.status,
-        };
       }
 
       if (this.isActivationResponse(response)) {
@@ -495,6 +605,7 @@ export class LicenseService {
             key: licenseData?.key ? '***' : 'missing',
             hasInstanceData: !!instanceData,
             instanceId: instanceData?.id ? `${instanceData.id.substring(0, 4)}...` : 'missing',
+            activationDate: instanceData?.created_at || 'missing',
           });
 
           if (!licenseData || licenseData.status !== 'active') {
@@ -511,8 +622,13 @@ export class LicenseService {
             };
           }
 
-          // Return success status with available data
-          return {
+          // Store the activation date for future use
+          if (instanceData?.created_at) {
+            this.activationDate = instanceData.created_at as string;
+          }
+
+          // Prepare the response object
+          const responseStatus: LicenseStatus = {
             tier: 'premium',
             isValid: true,
             features: ['all'], // LemonSqueezy doesn't provide features in the response, so we use 'all'
@@ -522,8 +638,16 @@ export class LicenseService {
             expiresAt: licenseData.expires_at as string | null,
             licenseKey: licenseData.key as string,
             instanceId: instanceData?.id as string,
-            activationDate: (instanceData?.created_at as string) || null,
           };
+
+          // Add activation date if available
+          if (typeof this.activationDate === 'string') {
+            responseStatus.activationDate = this.activationDate;
+          } else {
+            responseStatus.activationDate = null;
+          }
+
+          return responseStatus;
         } catch (error) {
           console.error('[LICENSE] ❌ Error processing activation response:', error);
           return {
@@ -587,9 +711,19 @@ export class LicenseService {
         };
       }
 
+      console.log(
+        '[LICENSE] 🔍 handleValidate - Current activation date before validation:',
+        this.activationDate,
+      );
+
       // Valida la licenza
       const validationResponse = await this.validateLicense(licenseKey, uiReady);
       const status = this.mapResponseToLicenseStatus(validationResponse);
+
+      console.log(
+        '[LICENSE] 🔍 handleValidate - Activation date after mapping response:',
+        this.activationDate,
+      );
 
       // Aggiorna lo stato della licenza
       this.licenseKey = licenseKey;
@@ -599,7 +733,69 @@ export class LicenseService {
       // Salva i dati della licenza
       this.saveLicenseData();
 
-      return status;
+      // Create the response status object
+      const responseStatus: LicenseStatus = {
+        ...status,
+        licenseKey: licenseKey, // Always include the license key
+      };
+
+      // Add activation date if available
+      if (typeof this.activationDate === 'string') {
+        console.log(
+          '[LICENSE] 🔍 handleValidate - Using this.activationDate:',
+          this.activationDate,
+        );
+        responseStatus.activationDate = this.activationDate;
+      } else if (status.activationDate) {
+        console.log(
+          '[LICENSE] 🔍 handleValidate - Using status.activationDate:',
+          status.activationDate,
+        );
+        responseStatus.activationDate = status.activationDate;
+      } else {
+        console.log('[LICENSE] 🔍 handleValidate - No activation date available, setting to null');
+        responseStatus.activationDate = null;
+      }
+
+      // If we have an instance ID, include it
+      if (this.instanceId) {
+        responseStatus.instanceId = this.instanceId;
+      }
+
+      // Include activation limits if available in the validation response
+      if (validationResponse.license_key) {
+        // Try to extract activation limit and usage from the validation response
+        // These might not be available in all validation responses
+        const licenseData = validationResponse.license_key;
+        if (licenseData.activation_limit !== undefined) {
+          responseStatus.activationLimit = licenseData.activation_limit as number;
+        }
+        if (licenseData.activation_usage !== undefined) {
+          responseStatus.activationsCount = licenseData.activation_usage as number;
+        }
+      }
+
+      console.log(
+        '[LICENSE] 🔍 handleValidate - Final response status:',
+        JSON.stringify(
+          {
+            tier: responseStatus.tier,
+            isValid: responseStatus.isValid,
+            status: responseStatus.status,
+            activationDate: responseStatus.activationDate,
+            licenseKey: responseStatus.licenseKey ? '***' : 'missing',
+            instanceId: responseStatus.instanceId
+              ? `${responseStatus.instanceId.substring(0, 4)}...`
+              : 'missing',
+            activationLimit: responseStatus.activationLimit,
+            activationsCount: responseStatus.activationsCount,
+          },
+          null,
+          2,
+        ),
+      );
+
+      return responseStatus;
     } catch (error) {
       console.error('[LICENSE] ❌ Error handling license validation:', error);
       return {
@@ -674,6 +870,7 @@ export class LicenseService {
           this.instanceId = instanceData?.id || null;
           this.licenseStatusType = 'active';
           this.licenseFeatures = ['all']; // LemonSqueezy doesn't provide features in the response
+          this.activationDate = (instanceData?.created_at as string) || null;
           this.saveLicenseData();
 
           // Return success status
@@ -687,7 +884,7 @@ export class LicenseService {
             expiresAt: licenseData.expires_at as string | null,
             licenseKey: licenseData.key as string,
             instanceId: this.instanceId as string | undefined,
-            activationDate: (instanceData?.created_at as string) || null,
+            activationDate: this.activationDate,
           };
         }
       }
@@ -766,6 +963,7 @@ export class LicenseService {
         this.instanceId = null;
         this.licenseStatusType = 'inactive';
         this.licenseFeatures = [];
+        this.activationDate = null;
         this.saveLicenseData();
         await figma.clientStorage.deleteAsync(STORAGE_KEYS.LICENSE_KEY);
       } else {
@@ -827,6 +1025,7 @@ export class LicenseService {
         instanceId: this.instanceId,
         licenseStatus: this.licenseStatusType,
         licenseFeatures: this.licenseFeatures,
+        activationDate: typeof this.activationDate === 'string' ? this.activationDate : null,
       };
 
       // Salva i dati nello storage di Figma
@@ -852,6 +1051,7 @@ export class LicenseService {
         this.instanceId = data.instanceId;
         this.licenseStatusType = data.licenseStatus;
         this.licenseFeatures = data.licenseFeatures;
+        this.activationDate = data.activationDate || null;
       }
     } catch (error) {
       console.error('Error loading license data:', error);

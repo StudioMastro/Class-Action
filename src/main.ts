@@ -102,6 +102,9 @@ export default function () {
       // Log the raw activation result for debugging
       console.log('[License] Raw activation result:', JSON.stringify(activationResult, null, 2));
 
+      // Log the activation date specifically for debugging
+      console.log('[License] Activation date:', activationResult.activationDate);
+
       // Save the license key regardless of validity
       // This allows us to validate it again later
       await figma.clientStorage.setAsync('licenseKey', licenseKey);
@@ -281,6 +284,9 @@ export default function () {
       console.log('[CheckLicenseStatus] Found stored key, validating...');
       const status = await licenseService.handleValidate(storedKey, isUiReadyForApi);
       console.log('[CheckLicenseStatus] Validation result:', status);
+
+      // Log the activation date for debugging
+      console.log('[CheckLicenseStatus] Activation date:', status.activationDate);
 
       emit('LICENSE_STATUS_CHANGED', status);
       return status;
