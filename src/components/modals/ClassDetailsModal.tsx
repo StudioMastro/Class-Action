@@ -49,6 +49,30 @@ function toKebabCase(str: string): string {
   return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
 
+// Funzione per convertire un nome qualsiasi in un nome di classe CSS valido
+function toCssClassName(name: string): string {
+  // Rimuovi i punti (già vietati nell'input)
+  let cssName = name.replace(/\./g, '');
+
+  // Sostituisci spazi e caratteri non validi con trattini
+  cssName = cssName.replace(/\s+/g, '-');
+
+  // Rimuovi caratteri non validi per i selettori CSS
+  cssName = cssName.replace(/[^\w-]/g, '');
+
+  // Assicurati che non inizi con un numero o un trattino
+  if (/^[0-9-]/.test(cssName)) {
+    cssName = 'class-' + cssName;
+  }
+
+  // Se il nome è vuoto dopo la pulizia, usa un fallback
+  if (!cssName) {
+    cssName = 'figma-class';
+  }
+
+  return cssName.toLowerCase();
+}
+
 // Funzione per copiare il testo negli appunti
 function copyToClipboard(text: string): void {
   try {
@@ -208,9 +232,12 @@ export function ClassDetailsModal({ isOpen, onClose, classData }: ClassDetailsMo
 
     if (definedProperties.length === 0) return null;
 
+    // Converti il nome della classe in un formato CSS valido
+    const cssClassName = toCssClassName(classData.name);
+
     // Genera il codice CSS
     const cssCode = `
-.${classData.name} {
+.${cssClassName} {
 ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSValue(value)};`).join('\n')}
 }`;
 
@@ -231,7 +258,7 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
           <div className="p-4 font-mono text-xs">
             <div className="text-[var(--figma-color-text)]">
               <span className="text-[var(--figma-color-text-secondary)]">.</span>
-              <span className="text-[var(--figma-color-text-brand)]">{classData.name}</span>
+              <span className="text-[var(--figma-color-text-brand)]">{cssClassName}</span>
               <span className="text-[var(--figma-color-text-secondary)]"> {`{`}</span>
             </div>
             {definedProperties.map(([key, value]) => (

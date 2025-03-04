@@ -340,11 +340,26 @@ export default function () {
       console.log('Loading saved classes...');
       const savedClasses = await storageService.getSavedClasses();
       console.log('Loaded classes:', savedClasses);
+
+      // Verifica che le classi caricate abbiano la proprietà variableReferences
+      if (savedClasses.length > 0) {
+        console.log('Verifica delle proprietà variableReferences nelle classi caricate:');
+        savedClasses.forEach((cls, index) => {
+          if (cls.variableReferences) {
+            console.log(
+              `Classe ${index} (${cls.name}): ✅ ha variableReferences con ${Object.keys(cls.variableReferences).length} variabili`,
+            );
+          } else {
+            console.warn(`Classe ${index} (${cls.name}): ⚠️ NON ha variableReferences`);
+          }
+        });
+      }
+
       emit('CLASSES_LOADED', savedClasses);
       return savedClasses;
     } catch (error) {
       console.error('Error loading saved classes:', error);
-      emit('SHOW_ERROR', 'Failed to load saved classes');
+      showNotification('Failed to load saved classes', { error: true });
       return [];
     }
   }
@@ -358,68 +373,110 @@ export default function () {
       }
     } catch (error) {
       console.error('Error saving classes:', error);
-      emit('SHOW_ERROR', 'Failed to save classes');
+      showNotification('Failed to save classes', { error: true });
     }
   }
 
-  async function extractFrameProperties(frame: FrameNode): Promise<Omit<FrameProperties, 'name'>> {
-    console.log('Extracting properties from frame:', frame.name);
-    console.log('Frame fills:', frame.fills);
-    console.log('Frame strokes:', frame.strokes);
+  async function extractFrameProperties(node: FrameNode): Promise<FrameProperties> {
+    console.log('Extracting properties from frame:', node.name);
+    console.log('Frame fills:', node.fills);
+    console.log('Frame strokes:', node.strokes);
 
-    // Initialize with basic properties that all frames have
-    const properties: Omit<FrameProperties, 'name'> = {
-      width: frame.width,
-      height: frame.height,
-      layoutMode: frame.layoutMode,
+    const properties: FrameProperties = {
+      name: node.name,
+      width: node.width,
+      height: node.height,
+      layoutMode: node.layoutMode,
+      // Add aspect ratio properties using the new Figma API
+      aspectRatio: {
+        // Utilizziamo targetAspectRatio se disponibile, altrimenti calcoliamo il rapporto
+        value:
+          'targetAspectRatio' in node && typeof node.targetAspectRatio === 'number'
+            ? node.targetAspectRatio
+            : node.width / node.height,
+        // Verifichiamo se il rapporto di aspetto è bloccato
+        isLocked: 'constrainProportions' in node ? node.constrainProportions : false,
+      },
+      // Add position properties
+      position: {
+        rotation: node.rotation,
+        constraints: {
+          horizontal: node.constraints.horizontal,
+          vertical: node.constraints.vertical,
+        },
+      },
       minWidth: undefined,
       maxWidth: undefined,
       minHeight: undefined,
       maxHeight: undefined,
+      // Salviamo i fill e gli stroke direttamente
+      fills: JSON.parse(JSON.stringify(node.fills)),
+      strokes: JSON.parse(JSON.stringify(node.strokes)),
     };
 
     // Add auto-layout specific properties
-    if (frame.layoutMode === 'HORIZONTAL' || frame.layoutMode === 'VERTICAL') {
+    if (node.layoutMode === 'HORIZONTAL' || node.layoutMode === 'VERTICAL') {
       console.log('Frame has auto-layout, extracting sizing properties');
 
       // Add min/max constraints only for auto-layout frames
-      properties.minWidth = frame.minWidth;
-      properties.maxWidth = frame.maxWidth;
-      properties.minHeight = frame.minHeight;
-      properties.maxHeight = frame.maxHeight;
+      properties.minWidth = node.minWidth;
+      properties.maxWidth = node.maxWidth;
+      properties.minHeight = node.minHeight;
+      properties.maxHeight = node.maxHeight;
 
       properties.layoutProperties = {
-        primaryAxisSizingMode: frame.primaryAxisSizingMode,
-        counterAxisSizingMode: frame.counterAxisSizingMode,
-        primaryAxisAlignItems: frame.primaryAxisAlignItems as
-          | 'MIN'
-          | 'MAX'
-          | 'CENTER'
-          | 'SPACE_BETWEEN',
-        counterAxisAlignItems: frame.counterAxisAlignItems as 'MIN' | 'MAX' | 'CENTER',
-        layoutWrap: frame.layoutWrap,
-        itemSpacing: typeof frame.itemSpacing === 'number' ? frame.itemSpacing : null,
+        // Sizing modes
+        primaryAxisSizingMode: node.primaryAxisSizingMode,
+        counterAxisSizingMode: node.counterAxisSizingMode,
+
+        // Alignment
+        primaryAxisAlignItems: node.primaryAxisAlignItems,
+        counterAxisAlignItems: node.counterAxisAlignItems as 'MIN' | 'MAX' | 'CENTER',
+        layoutAlign: node.layoutAlign as 'INHERIT' | 'STRETCH' | 'MIN' | 'CENTER' | 'MAX',
+
+        // Wrapping and spacing
+        layoutWrap: node.layoutWrap,
+        itemSpacing: typeof node.itemSpacing === 'number' ? node.itemSpacing : null,
         counterAxisSpacing:
-          typeof frame.counterAxisSpacing === 'number' ? frame.counterAxisSpacing : null,
+          typeof node.counterAxisSpacing === 'number' ? node.counterAxisSpacing : null,
+
+        // Growth and shrinking
+        layoutGrow: node.layoutGrow || 0,
+
+        // Padding
         padding: {
-          top: frame.paddingTop,
-          right: frame.paddingRight,
-          bottom: frame.paddingBottom,
-          left: frame.paddingLeft,
+          top: node.paddingTop,
+          right: node.paddingRight,
+          bottom: node.paddingBottom,
+          left: node.paddingLeft,
         },
-        layoutPositioning: frame.layoutPositioning,
+
+        // Positioning and behavior
+        layoutPositioning: node.layoutPositioning,
+        itemReverseZIndex: node.itemReverseZIndex || false,
+        clipsContent: node.clipsContent,
       };
 
       console.log('Extracted auto-layout properties:', {
-        layoutWrap: frame.layoutWrap,
-        itemSpacing: frame.itemSpacing,
-        counterAxisSpacing: frame.counterAxisSpacing,
+        layoutMode: node.layoutMode,
+        primaryAxisSizingMode: node.primaryAxisSizingMode,
+        counterAxisSizingMode: node.counterAxisSizingMode,
+        primaryAxisAlignItems: node.primaryAxisAlignItems,
+        counterAxisAlignItems: node.counterAxisAlignItems,
+        layoutAlign: node.layoutAlign,
+        layoutWrap: node.layoutWrap,
+        itemSpacing: node.itemSpacing,
+        counterAxisSpacing: node.counterAxisSpacing,
+        layoutGrow: node.layoutGrow,
         padding: {
-          top: frame.paddingTop,
-          right: frame.paddingRight,
-          bottom: frame.paddingBottom,
-          left: frame.paddingLeft,
+          top: node.paddingTop,
+          right: node.paddingRight,
+          bottom: node.paddingBottom,
+          left: node.paddingLeft,
         },
+        layoutPositioning: node.layoutPositioning,
+        itemReverseZIndex: node.itemReverseZIndex,
+        clipsContent: node.clipsContent,
       });
     } else {
       console.log('Frame has no auto-layout, saving only fixed dimensions');
@@ -427,12 +484,16 @@ export default function () {
 
     // Add appearance properties
     const appearance: AppearanceProperties = {
-      opacity: frame.opacity,
-      blendMode: frame.blendMode,
-      cornerRadius: frame.cornerRadius,
-      strokeWeight: frame.strokeWeight,
-      strokeAlign: frame.strokeAlign,
-      dashPattern: [...frame.dashPattern], // Create a copy of the array
+      opacity: node.opacity,
+      blendMode: node.blendMode,
+      cornerRadius: node.cornerRadius,
+      topLeftRadius: node.topLeftRadius,
+      topRightRadius: node.topRightRadius,
+      bottomLeftRadius: node.bottomLeftRadius,
+      bottomRightRadius: node.bottomRightRadius,
+      strokeWeight: node.strokeWeight,
+      strokeAlign: node.strokeAlign,
+      dashPattern: [...node.dashPattern],
     };
     properties.appearance = appearance;
 
@@ -443,6 +504,11 @@ export default function () {
       effectStyleId: '',
       gridStyleId: '',
     };
+
+    // Aggiungo un oggetto per memorizzare i riferimenti alle variabili
+    const variableReferences: Record<string, string> = {};
+    let hasVariableReferences = false;
+
     let hasStyleReferences = false;
 
     // Check style IDs and get style names and values
@@ -470,101 +536,175 @@ export default function () {
       }
     }
 
-    if (frame.fillStyleId && typeof frame.fillStyleId === 'string') {
-      const { id } = await getStyleInfo(frame.fillStyleId);
+    if (node.fillStyleId && typeof node.fillStyleId === 'string') {
+      const { id } = await getStyleInfo(node.fillStyleId);
       styleReferences.fillStyleId = id;
       hasStyleReferences = true;
       console.log('Found fill style ID:', id);
     }
-    if (frame.strokeStyleId && typeof frame.strokeStyleId === 'string') {
-      const { id } = await getStyleInfo(frame.strokeStyleId);
+    if (node.strokeStyleId && typeof node.strokeStyleId === 'string') {
+      const { id } = await getStyleInfo(node.strokeStyleId);
       styleReferences.strokeStyleId = id;
       hasStyleReferences = true;
       console.log('Found stroke style ID:', id);
     }
-    if (frame.effectStyleId && typeof frame.effectStyleId === 'string') {
-      const { name } = await getStyleInfo(frame.effectStyleId);
+    if (node.effectStyleId && typeof node.effectStyleId === 'string') {
+      const { name } = await getStyleInfo(node.effectStyleId);
       styleReferences.effectStyleId = name;
       hasStyleReferences = true;
       console.log('Found effect style:', name);
     }
-    if (frame.gridStyleId && typeof frame.gridStyleId === 'string') {
-      const { name } = await getStyleInfo(frame.gridStyleId);
+    if (node.gridStyleId && typeof node.gridStyleId === 'string') {
+      const { name } = await getStyleInfo(node.gridStyleId);
       styleReferences.gridStyleId = name;
       hasStyleReferences = true;
+    }
+
+    // Controllo se ci sono variabili associate alle proprietà del nodo
+    if (node.boundVariables) {
+      console.log('Found bound variables:', JSON.stringify(node.boundVariables, null, 2));
+
+      // Salvo i riferimenti alle variabili per ogni proprietà
+      for (const [property, variable] of Object.entries(node.boundVariables)) {
+        console.log(`Examining variable for property: ${property}`, variable);
+        if (variable && 'id' in variable) {
+          const variableId = variable.id;
+          // Converto l'ID in stringa per evitare errori di tipo
+          variableReferences[property] = String(variableId);
+          hasVariableReferences = true;
+          console.log(`Found variable for ${property}:`, variableId);
+
+          // Ottieni informazioni aggiuntive sulla variabile
+          try {
+            const variableObj = await figma.variables.getVariableByIdAsync(String(variableId));
+            if (variableObj) {
+              console.log(`Variable details for ${property}:`, {
+                name: variableObj.name,
+                resolvedType: variableObj.resolvedType,
+                valuesByMode: variableObj.valuesByMode,
+              });
+            }
+          } catch (err) {
+            console.error(`Error getting variable details for ${property}:`, err);
+          }
+        }
+      }
+    }
+
+    // Controllo se ci sono variabili associate ai fill
+    if (node.fills && Array.isArray(node.fills)) {
+      console.log('Examining fills for variables:', node.fills);
+      console.log('Fill bound variables:', node.boundVariables?.fills);
+
+      for (let i = 0; i < node.fills.length; i++) {
+        const fill = node.fills[i];
+        console.log(`Examining fill at index ${i}:`, fill);
+
+        if (fill.type === 'SOLID' && node.boundVariables?.fills?.[i]) {
+          console.log(`Found bound variable for fill at index ${i}:`, node.boundVariables.fills[i]);
+          // Accedo alla proprietà color in modo sicuro
+          const fillVariable = node.boundVariables.fills[i];
+
+          // Gestisco sia il caso in cui fillVariable ha una proprietà color, sia il caso in cui è direttamente un VARIABLE_ALIAS
+          if (fillVariable && typeof fillVariable === 'object' && fillVariable !== null) {
+            // Caso 1: fillVariable ha una proprietà 'color'
+            if ('color' in fillVariable) {
+              console.log(`Fill variable has color property:`, fillVariable.color);
+              const colorVariable = fillVariable.color;
+              // Uso un'asserzione di tipo per evitare errori di tipo
+              if (colorVariable && typeof colorVariable === 'object' && colorVariable !== null) {
+                console.log(`Color variable is an object:`, colorVariable);
+                const variableWithId = colorVariable as { id: string };
+                if ('id' in variableWithId) {
+                  // Converto l'ID in stringa per evitare errori di tipo
+                  const variableId = String(variableWithId.id);
+                  variableReferences[`fills.${i}.color`] = variableId;
+                  hasVariableReferences = true;
+                  console.log(`Found variable for fills[${i}].color:`, variableId);
+
+                  // Ottieni informazioni aggiuntive sulla variabile
+                  try {
+                    const variableObj = await figma.variables.getVariableByIdAsync(variableId);
+                    if (variableObj) {
+                      console.log(`Variable details for fills[${i}].color:`, {
+                        name: variableObj.name,
+                        resolvedType: variableObj.resolvedType,
+                        valuesByMode: variableObj.valuesByMode,
+                      });
+                    }
+                  } catch (err) {
+                    console.error(`Error getting variable details for fills[${i}].color:`, err);
+                  }
+                }
+              }
+            }
+            // Caso 2: fillVariable è direttamente un VARIABLE_ALIAS
+            else if (
+              'type' in fillVariable &&
+              fillVariable.type === 'VARIABLE_ALIAS' &&
+              'id' in fillVariable
+            ) {
+              console.log(`Fill variable is a VARIABLE_ALIAS with id:`, fillVariable.id);
+              const variableId = String(fillVariable.id);
+              variableReferences[`fills.${i}`] = variableId;
+              hasVariableReferences = true;
+              console.log(`Found variable for fills[${i}]:`, variableId);
+
+              // Ottieni informazioni aggiuntive sulla variabile
+              try {
+                const variableObj = await figma.variables.getVariableByIdAsync(variableId);
+                if (variableObj) {
+                  console.log(`Variable details for fills[${i}]:`, {
+                    name: variableObj.name,
+                    resolvedType: variableObj.resolvedType,
+                    valuesByMode: variableObj.valuesByMode,
+                  });
+                }
+              } catch (err) {
+                console.error(`Error getting variable details for fills[${i}]:`, err);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Controllo se ci sono variabili associate agli strokes
+    if (node.strokes && Array.isArray(node.strokes)) {
+      for (let i = 0; i < node.strokes.length; i++) {
+        const stroke = node.strokes[i];
+        if (stroke.type === 'SOLID' && node.boundVariables?.strokes?.[i]) {
+          // Accedo alla proprietà color in modo sicuro
+          const strokeVariable = node.boundVariables.strokes[i];
+          if (
+            strokeVariable &&
+            typeof strokeVariable === 'object' &&
+            strokeVariable !== null &&
+            'color' in strokeVariable
+          ) {
+            const colorVariable = strokeVariable.color;
+            // Uso un'asserzione di tipo per evitare errori di tipo
+            if (colorVariable && typeof colorVariable === 'object' && colorVariable !== null) {
+              const variableWithId = colorVariable as { id: string };
+              if ('id' in variableWithId) {
+                // Converto l'ID in stringa per evitare errori di tipo
+                variableReferences[`strokes.${i}.color`] = String(variableWithId.id);
+                hasVariableReferences = true;
+                console.log(`Found variable for strokes[${i}].color:`, variableWithId.id);
+              }
+            }
+          }
+        }
+      }
     }
 
     if (hasStyleReferences) {
       properties.styleReferences = styleReferences;
     }
 
-    // Handle direct styles only if no style references exist for that property
-    const styles: Required<NonNullable<SavedClass['styles']>> = {
-      fills: [],
-      strokes: [],
-      effects: [],
-      layoutGrids: [],
-    };
-    let hasStyles = false;
-
-    // Convert Figma Paint to CSS color
-    function paintToCSS(paint: Paint): string | null {
-      console.log('Converting paint to CSS:', paint);
-      if (paint.type === 'SOLID') {
-        const { r, g, b } = paint.color;
-        const opacity = 'opacity' in paint ? paint.opacity : 1;
-        const cssColor = `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${opacity})`;
-        console.log('Generated CSS color:', cssColor);
-        return cssColor;
-      }
-      return null;
-    }
-
-    if (Array.isArray(frame.fills) && !styleReferences.fillStyleId) {
-      console.log('Processing fills for frame:', frame.fills);
-      const cssColors = frame.fills
-        .map(paintToCSS)
-        .filter((color): color is string => color !== null);
-      if (cssColors.length > 0) {
-        styles.fills = cssColors;
-        hasStyles = true;
-        console.log('Saved CSS colors for fills:', cssColors);
-      }
-    }
-
-    if (Array.isArray(frame.strokes) && !styleReferences.strokeStyleId) {
-      console.log('Processing strokes for frame:', frame.strokes);
-      const cssColors = frame.strokes
-        .map(paintToCSS)
-        .filter((color): color is string => color !== null);
-      if (cssColors.length > 0) {
-        styles.strokes = cssColors;
-        hasStyles = true;
-        console.log('Saved CSS colors for strokes:', cssColors);
-      }
-    }
-
-    if (Array.isArray(frame.effects) && !styleReferences.effectStyleId) {
-      console.log('Processing effects:', frame.effects);
-      const cssEffects = frame.effects
-        .map((effect) => {
-          if (effect.type === 'DROP_SHADOW') {
-            const { offset, radius, color } = effect;
-            return `${offset.x}px ${offset.y}px ${radius}px rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a})`;
-          }
-          return null;
-        })
-        .filter((effect): effect is string => effect !== null);
-      if (cssEffects.length > 0) {
-        styles.effects = cssEffects;
-        hasStyles = true;
-        console.log('Saved CSS shadows:', cssEffects);
-      }
-    }
-
-    if (hasStyles) {
-      console.log('Final styles object:', styles);
-      properties.styles = styles;
+    // Salvo i riferimenti alle variabili nelle proprietà
+    if (hasVariableReferences) {
+      properties.variableReferences = variableReferences;
     }
 
     console.log('Final properties object:', properties);
@@ -579,11 +719,80 @@ export default function () {
       }
 
       const frameProperties = await extractFrameProperties(frame);
+      console.log('Extracted frame properties:', JSON.stringify(frameProperties, null, 2));
+
+      // Verifichiamo se ci sono variabili nei fill
+      const variableReferences = frameProperties.variableReferences;
+      if (variableReferences && Object.keys(variableReferences).length > 0) {
+        console.log('Variable references found:', JSON.stringify(variableReferences, null, 2));
+
+        // Verifichiamo se ci sono riferimenti a variabili nei fill
+        const fillVariables = Object.keys(variableReferences)
+          .filter((key) => key.startsWith('fills.'))
+          .map((key) => ({
+            key,
+            variableId: variableReferences[key],
+          }));
+
+        if (fillVariables.length > 0) {
+          console.log('Fill variables found:', fillVariables);
+
+          // Per ogni variabile di fill, otteniamo informazioni dettagliate
+          for (const { key, variableId } of fillVariables) {
+            try {
+              const variable = await figma.variables.getVariableByIdAsync(variableId);
+              if (variable) {
+                console.log(`Variable details for ${key}:`, {
+                  id: variable.id,
+                  name: variable.name,
+                  resolvedType: variable.resolvedType,
+                  valuesByMode: variable.valuesByMode,
+                });
+              } else {
+                console.warn(`Variable with ID ${variableId} not found`);
+              }
+            } catch (err) {
+              console.error(`Error getting variable details for ${key}:`, err);
+            }
+          }
+        } else {
+          console.log('No fill variables found in the frame');
+        }
+      } else {
+        console.log('No variable references found in the frame');
+      }
+
+      // Use frame name if the provided name is empty
+      const className = event.name.trim() ? event.name.trim() : frame.name;
+      console.log('Attempting to save class with name:', className);
+
+      // Check if a class with this name already exists
+      const existingClasses = await loadSavedClasses();
+      console.log('Existing classes count:', existingClasses.length);
+
+      const existingClass = existingClasses.find(
+        (cls) => cls.name.toLowerCase() === className.toLowerCase(),
+      );
+      if (existingClass) {
+        console.log('Found existing class with same name:', existingClass);
+        throw new Error('A class with this name already exists (names are case-insensitive)');
+      }
+
       const newClass: SavedClass = {
-        name: event.name,
-        createdAt: Date.now(),
         ...frameProperties,
+        name: className, // Use the determined class name
+        createdAt: Date.now(),
       };
+
+      console.log('Saving new class:', JSON.stringify(newClass, null, 2));
+      console.log('Variable references in new class:', newClass.variableReferences);
+
+      // Verifica esplicita che variableReferences sia incluso nell'oggetto newClass
+      if (newClass.variableReferences) {
+        console.log("✅ variableReferences è presente nell'oggetto newClass");
+      } else {
+        console.warn("⚠️ variableReferences NON è presente nell'oggetto newClass");
+      }
 
       await storageService.addClass(newClass);
       emit('CLASS_SAVED', newClass);
@@ -592,31 +801,136 @@ export default function () {
     } catch (error) {
       console.error('Error saving class:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save class';
-      emit('SHOW_ERROR', errorMessage);
+      showNotification(errorMessage, { error: true });
       return { success: false, error: errorMessage };
     }
   }
 
   async function handleApplyClass(classData: SavedClass, shouldNotify = true) {
     if (!checkSelection()) {
-      showNotification('Please select at least one frame', { error: true });
-      return false;
-    }
-
-    const frames = figma.currentPage.selection.filter(
-      (node) => node.type === 'FRAME',
-    ) as FrameNode[];
-    if (frames.length === 0) {
-      showNotification('Please select at least one frame', { error: true });
       return false;
     }
 
     try {
+      console.log('Applying class:', JSON.stringify(classData, null, 2));
+      console.log('Variable references in class:', classData.variableReferences);
+
+      // Verifica esplicita che variableReferences sia incluso nell'oggetto classData
+      if (classData.variableReferences) {
+        console.log("✅ variableReferences è presente nell'oggetto classData");
+        console.log('Numero di variabili:', Object.keys(classData.variableReferences).length);
+      } else {
+        console.warn("⚠️ variableReferences NON è presente nell'oggetto classData");
+
+        // Verifica se l'oggetto classData ha altre proprietà attese
+        console.log('Proprietà presenti in classData:', Object.keys(classData));
+      }
+
+      const frames = figma.currentPage.selection.filter(
+        (node) => node.type === 'FRAME',
+      ) as FrameNode[];
+      if (frames.length === 0) {
+        throw new Error('No frames selected');
+      }
+
       let successCount = 0;
+
       for (const frame of frames) {
-        // Set frame name to class name
-        frame.name = classData.name;
         console.log('Setting frame name to:', classData.name);
+        frame.name = classData.name;
+
+        // Apply position properties if present
+        if (classData.position) {
+          console.log('Applying position properties:', classData.position);
+
+          // Apply rotation
+          frame.rotation = classData.position.rotation;
+
+          // Apply transform only if explicitly requested (which we're not doing anymore)
+          // This code is commentato per riferimento futuro
+          /* 
+          if (classData.position.relativeTransform) {
+            frame.relativeTransform = classData.position.relativeTransform as Transform;
+          }
+          */
+
+          // Apply constraints
+          frame.constraints = {
+            horizontal: classData.position.constraints.horizontal,
+            vertical: classData.position.constraints.vertical,
+          };
+
+          console.log('Applied position properties:', {
+            rotation: frame.rotation,
+            constraints: frame.constraints,
+          });
+        }
+
+        // Apply aspect ratio settings if present
+        if (classData.aspectRatio) {
+          console.log('Applying aspect ratio settings:', classData.aspectRatio);
+          if (classData.aspectRatio.isLocked) {
+            // Utilizziamo il nuovo metodo lockAspectRatio invece di constrainProportions
+            try {
+              // Definiamo un tipo per accedere ai nuovi metodi di Figma
+              type FigmaFrameWithNewAPI = {
+                lockAspectRatio?: () => void;
+                unlockAspectRatio?: () => void;
+                constrainProportions?: boolean;
+              };
+
+              // Verifichiamo se il metodo esiste e lo chiamiamo
+              const frameAny = frame as unknown as FigmaFrameWithNewAPI;
+
+              if (typeof frameAny.lockAspectRatio === 'function') {
+                frameAny.lockAspectRatio();
+                console.log('Used new lockAspectRatio API');
+              } else {
+                // Fallback per compatibilità con versioni precedenti di Figma
+                frameAny.constrainProportions = true;
+                console.log('Used legacy constrainProportions API');
+              }
+            } catch (error) {
+              console.error('Error setting aspect ratio lock:', error);
+            }
+
+            // Resize maintaining the aspect ratio
+            const currentRatio = frame.width / frame.height;
+            const targetRatio = classData.aspectRatio.value || currentRatio;
+
+            if (currentRatio !== targetRatio) {
+              // Adjust dimensions to match the target ratio while keeping the area similar
+              const currentArea = frame.width * frame.height;
+              const newWidth = Math.sqrt(currentArea * targetRatio);
+              const newHeight = newWidth / targetRatio;
+              frame.resize(newWidth, newHeight);
+            }
+          } else {
+            // Utilizziamo il nuovo metodo unlockAspectRatio invece di constrainProportions = false
+            try {
+              // Definiamo un tipo per accedere ai nuovi metodi di Figma
+              type FigmaFrameWithNewAPI = {
+                lockAspectRatio?: () => void;
+                unlockAspectRatio?: () => void;
+                constrainProportions?: boolean;
+              };
+
+              // Verifichiamo se il metodo esiste e lo chiamiamo
+              const frameAny = frame as unknown as FigmaFrameWithNewAPI;
+
+              if (typeof frameAny.unlockAspectRatio === 'function') {
+                frameAny.unlockAspectRatio();
+                console.log('Used new unlockAspectRatio API');
+              } else {
+                // Fallback per compatibilità con versioni precedenti di Figma
+                frameAny.constrainProportions = false;
+                console.log('Used legacy constrainProportions API');
+              }
+            } catch (error) {
+              console.error('Error setting aspect ratio unlock:', error);
+            }
+          }
+        }
 
         // Set layout mode first as it affects how dimensions are applied
         frame.layoutMode = classData.layoutMode;
@@ -698,6 +1012,10 @@ export default function () {
           frame.opacity = classData.appearance.opacity;
           frame.blendMode = classData.appearance.blendMode;
           frame.cornerRadius = classData.appearance.cornerRadius;
+          frame.topLeftRadius = classData.appearance.topLeftRadius;
+          frame.topRightRadius = classData.appearance.topRightRadius;
+          frame.bottomLeftRadius = classData.appearance.bottomLeftRadius;
+          frame.bottomRightRadius = classData.appearance.bottomRightRadius;
           if (classData.appearance.strokeWeight !== figma.mixed) {
             frame.strokeWeight = classData.appearance.strokeWeight;
           }
@@ -733,109 +1051,230 @@ export default function () {
           }
         }
 
-        // Apply direct styles only if no style references exist for that property
-        if (classData.styles) {
-          if (!classData.styleReferences?.fillStyleId && Array.isArray(classData.styles.fills)) {
-            if (typeof classData.styles.fills[0] === 'string') {
-              // Se sono valori CSS, creiamo un nuovo Paint object
-              const newFills = classData.styles.fills
-                .map((cssColor) => {
-                  if (typeof cssColor !== 'string') return null;
-                  const matches = cssColor.match(
-                    /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/,
-                  );
-                  if (matches) {
-                    const [, r, g, b, a = '1'] = matches;
-                    return {
-                      type: 'SOLID',
-                      color: { r: parseInt(r) / 255, g: parseInt(g) / 255, b: parseInt(b) / 255 },
-                      opacity: parseFloat(a),
-                    } as Paint;
-                  }
-                  return null;
-                })
-                .filter((fill): fill is Paint => fill !== null);
-              if (newFills.length > 0) {
-                frame.fills = newFills;
-              }
-            } else {
-              // Se sono Paint objects, li applichiamo direttamente
-              frame.fills = classData.styles.fills as Paint[];
-            }
-          }
+        // Applico le variabili se presenti
+        if (classData.variableReferences) {
+          console.log(
+            'Applying variable references:',
+            JSON.stringify(classData.variableReferences, null, 2),
+          );
+          console.log('Current frame fills:', frame.fills);
+          console.log('Current frame strokes:', frame.strokes);
 
-          if (
-            !classData.styleReferences?.strokeStyleId &&
-            Array.isArray(classData.styles.strokes)
-          ) {
-            if (typeof classData.styles.strokes[0] === 'string') {
-              // Se sono valori CSS, creiamo un nuovo Paint object
-              const newStrokes = classData.styles.strokes
-                .map((cssColor) => {
-                  if (typeof cssColor !== 'string') return null;
-                  const matches = cssColor.match(
-                    /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/,
-                  );
-                  if (matches) {
-                    const [, r, g, b, a = '1'] = matches;
-                    return {
-                      type: 'SOLID',
-                      color: { r: parseInt(r) / 255, g: parseInt(g) / 255, b: parseInt(b) / 255 },
-                      opacity: parseFloat(a),
-                    } as Paint;
-                  }
-                  return null;
-                })
-                .filter((stroke): stroke is Paint => stroke !== null);
-              if (newStrokes.length > 0) {
-                frame.strokes = newStrokes;
-              }
-            } else {
-              // Se sono Paint objects, li applichiamo direttamente
-              frame.strokes = classData.styles.strokes as Paint[];
-            }
-          }
+          try {
+            for (const [property, variableId] of Object.entries(classData.variableReferences)) {
+              console.log(`Attempting to apply variable ${variableId} to property ${property}`);
+              try {
+                // Carico la variabile dal suo ID
+                let variable = await figma.variables.getVariableByIdAsync(variableId);
 
-          if (
-            !classData.styleReferences?.effectStyleId &&
-            Array.isArray(classData.styles.effects)
-          ) {
-            if (typeof classData.styles.effects[0] === 'string') {
-              // Se sono valori CSS, creiamo nuovi Effect objects
-              const newEffects = classData.styles.effects
-                .map((cssShadow) => {
-                  if (typeof cssShadow !== 'string') return null;
-                  const matches = cssShadow.match(
-                    /(-?\d+)px\s+(-?\d+)px\s+(-?\d+)px\s+rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/,
-                  );
-                  if (matches) {
-                    const [, x, y, blur, r, g, b, a] = matches;
-                    return {
-                      type: 'DROP_SHADOW',
-                      color: {
-                        r: parseInt(r) / 255,
-                        g: parseInt(g) / 255,
-                        b: parseInt(b) / 255,
-                        a: parseFloat(a),
-                      },
-                      offset: { x: parseInt(x), y: parseInt(y) },
-                      radius: parseInt(blur),
-                      visible: true,
-                      blendMode: 'NORMAL',
-                    } as Effect;
+                if (variable) {
+                  console.log(`Found variable for ${property}:`, {
+                    id: variable.id,
+                    name: variable.name,
+                    resolvedType: variable.resolvedType,
+                  });
+                }
+
+                if (!variable) {
+                  console.warn(`Variable with ID ${variableId} not found`);
+
+                  // Tentiamo di trovare una variabile con lo stesso nome
+                  try {
+                    // Otteniamo tutte le collezioni di variabili
+                    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+                    console.log(
+                      `Searching for alternative variable in ${collections.length} collections`,
+                    );
+                    let foundVariable = null;
+
+                    // Cerchiamo in tutte le collezioni
+                    for (const collection of collections) {
+                      console.log(`Searching in collection: ${collection.name}`);
+                      const variables = await figma.variables.getLocalVariablesAsync();
+                      // Filtriamo le variabili per collezione
+                      const collectionVariables = variables.filter(
+                        (v) => v.variableCollectionId === collection.id,
+                      );
+                      console.log(
+                        `Found ${collectionVariables.length} variables in collection ${collection.name}`,
+                      );
+
+                      // Cerchiamo una variabile che potrebbe corrispondere
+                      for (const v of collectionVariables) {
+                        console.log(`Checking variable: ${v.name} (${v.id})`);
+                        // Se troviamo una variabile con lo stesso nome o che contiene l'ID nel nome
+                        if (v.name.includes(variableId.substring(0, 8))) {
+                          foundVariable = v;
+                          console.log(`Found alternative variable: ${v.name} with ID: ${v.id}`);
+                          break;
+                        }
+                      }
+                      if (foundVariable) break;
+                    }
+
+                    if (foundVariable) {
+                      console.log(
+                        `Using alternative variable: ${foundVariable.name} instead of missing variable: ${variableId}`,
+                      );
+                      // Usiamo la variabile alternativa trovata
+                      variable = foundVariable;
+                    } else {
+                      console.log(`No alternative variable found for ${variableId}, skipping`);
+                      continue; // Se non troviamo alternative, passiamo alla prossima variabile
+                    }
+                  } catch (err) {
+                    console.error('Error while trying to find alternative variable:', err);
+                    continue;
                   }
-                  return null;
-                })
-                .filter((effect): effect is Effect => effect !== null);
-              if (newEffects.length > 0) {
-                frame.effects = newEffects;
+                }
+
+                // Gestisco le proprietà di fill e stroke
+                if (property.startsWith('fills.')) {
+                  console.log(`Processing fill property: ${property}`);
+                  const parts = property.split('.');
+                  const index = parseInt(parts[1]);
+                  const subProperty = parts.length > 2 ? parts[2] : null;
+
+                  // Assicuriamoci che il frame abbia almeno un fill
+                  if (!frame.fills || !Array.isArray(frame.fills) || frame.fills.length === 0) {
+                    console.log('Frame has no fills, creating default fill');
+                    // Se non ci sono fills, creiamo un fill solido di default
+                    frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 1 }];
+                  }
+
+                  // Usiamo l'indice 0 se l'indice originale è fuori range
+                  const targetIndex = frame.fills.length > index ? index : 0;
+                  console.log(
+                    `Using target index ${targetIndex} for fill (original index: ${index})`,
+                  );
+
+                  // Caso 1: Variabile per l'intero fill (senza subProperty)
+                  if (!subProperty) {
+                    console.log(`Applying variable to entire fill at index ${targetIndex}`);
+                    try {
+                      // Creo una copia dell'array fills per poterlo modificare
+                      const fillsCopy = JSON.parse(JSON.stringify(frame.fills));
+
+                      // Imposto la variabile direttamente sul fill
+                      try {
+                        // Uso il metodo setBoundVariableForPaint per impostare la variabile sul fill
+                        fillsCopy[targetIndex] = figma.variables.setBoundVariableForPaint(
+                          fillsCopy[targetIndex],
+                          'color', // Usiamo 'color' come chiave per impostare la variabile sul fill
+                          variable,
+                        );
+                        console.log('Modified fill with variable:', fillsCopy[targetIndex]);
+
+                        // Assegno l'array modificato al frame
+                        frame.fills = fillsCopy;
+                        console.log(`Applied variable to fills[${targetIndex}]:`, variableId);
+                        console.log('New frame fills:', frame.fills);
+                      } catch (err: unknown) {
+                        const errorMessage = err instanceof Error ? err.message : String(err);
+                        console.error(`Error applying variable to fill: ${errorMessage}`);
+                      }
+                    } catch (err: unknown) {
+                      const errorMessage = err instanceof Error ? err.message : String(err);
+                      console.error(`Error applying variable to fill: ${errorMessage}`);
+                    }
+                  }
+                  // Caso 2: Variabile per una proprietà specifica del fill (come color)
+                  else if (subProperty === 'color') {
+                    console.log(`Processing fill color at index ${index}`);
+
+                    // Verifichiamo che il fill sia di tipo SOLID
+                    if (frame.fills[targetIndex].type === 'SOLID') {
+                      console.log(`Fill at index ${targetIndex} is SOLID, applying variable`);
+                      // Creo una copia dell'array fills per poterlo modificare
+                      const fillsCopy = JSON.parse(JSON.stringify(frame.fills));
+                      console.log('Original fill:', fillsCopy[targetIndex]);
+
+                      // Uso il metodo helper per impostare la variabile sul fill
+                      try {
+                        fillsCopy[targetIndex] = figma.variables.setBoundVariableForPaint(
+                          fillsCopy[targetIndex],
+                          'color',
+                          variable,
+                        );
+                        console.log('Modified fill with variable:', fillsCopy[targetIndex]);
+
+                        // Assegno l'array modificato al frame
+                        frame.fills = fillsCopy;
+                        console.log(`Applied variable to fills[${targetIndex}].color:`, variableId);
+                      } catch (err: unknown) {
+                        const errorMessage = err instanceof Error ? err.message : String(err);
+                        console.error(`Error applying variable to fill color: ${errorMessage}`);
+                      }
+                    } else {
+                      console.warn(
+                        `Fill at index ${targetIndex} is not SOLID, cannot apply color variable`,
+                      );
+                    }
+                  }
+                }
+              } catch (err: unknown) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                console.error(`Error processing variable ${variableId}: ${errorMessage}`);
               }
-            } else {
-              // Se sono Effect objects, li applichiamo direttamente
-              frame.effects = classData.styles.effects as Effect[];
             }
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            console.error(`Error applying variables: ${errorMessage}`);
           }
         }
+
+        // Applico i fill e gli stroke diretti se presenti e se non sono stati applicati stili o variabili
+        if (
+          classData.fills &&
+          (!classData.styleReferences?.fillStyleId || classData.styleReferences.fillStyleId === '')
+        ) {
+          console.log('Applying direct fills:', classData.fills);
+          try {
+            // Verifichiamo se ci sono variabili nei fill
+            const hasVariablesInFills =
+              classData.variableReferences &&
+              Object.keys(classData.variableReferences).some((key) => key.startsWith('fills.'));
+
+            // Applichiamo i fill diretti solo se non ci sono variabili
+            if (!hasVariablesInFills) {
+              // Utilizziamo un cast esplicito per evitare errori di tipo
+              frame.fills = JSON.parse(JSON.stringify(classData.fills)) as Paint[];
+              console.log('Applied direct fills successfully');
+            } else {
+              console.log('Skipping direct fills application because variables are present');
+            }
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            console.error(`Error applying direct fills: ${errorMessage}`);
+          }
+        }
+
+        if (
+          classData.strokes &&
+          (!classData.styleReferences?.strokeStyleId ||
+            classData.styleReferences.strokeStyleId === '')
+        ) {
+          console.log('Applying direct strokes:', classData.strokes);
+          try {
+            // Verifichiamo se ci sono variabili negli stroke
+            const hasVariablesInStrokes =
+              classData.variableReferences &&
+              Object.keys(classData.variableReferences).some((key) => key.startsWith('strokes.'));
+
+            // Applichiamo gli stroke diretti solo se non ci sono variabili
+            if (!hasVariablesInStrokes) {
+              // Utilizziamo un cast esplicito per evitare errori di tipo
+              frame.strokes = JSON.parse(JSON.stringify(classData.strokes)) as Paint[];
+              console.log('Applied direct strokes successfully');
+            } else {
+              console.log('Skipping direct strokes application because variables are present');
+            }
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            console.error(`Error applying direct strokes: ${errorMessage}`);
+          }
+        }
+
         successCount++;
       }
 
@@ -857,17 +1296,26 @@ export default function () {
 
   async function handleUpdateClass(classToUpdate: SavedClass): Promise<SavedClassResult | null> {
     try {
-      await storageService.updateClass(classToUpdate);
-      emit('CLASS_UPDATED', {
+      const frame = figma.currentPage.selection[0] as FrameNode;
+      if (!frame || frame.type !== 'FRAME') {
+        throw new Error('No frame selected');
+      }
+
+      const frameProperties = await extractFrameProperties(frame);
+      const updatedClass: SavedClass = {
+        ...frameProperties,
         name: classToUpdate.name,
-        properties: classToUpdate,
-      });
+        createdAt: classToUpdate.createdAt,
+      };
+
+      await storageService.updateClass(updatedClass);
+      emit('CLASS_UPDATED', updatedClass);
       showNotification('Class updated successfully');
-      return { success: true, data: classToUpdate };
+      return { success: true, data: updatedClass };
     } catch (error) {
       console.error('Error updating class:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to update class';
-      emit('SHOW_ERROR', errorMessage);
+      showNotification(errorMessage, { error: true });
       return { success: false, error: errorMessage };
     }
   }
@@ -875,11 +1323,13 @@ export default function () {
   async function handleDeleteClass(classData: SavedClass) {
     try {
       await storageService.deleteClass(classData.name);
-      emit('CLASS_DELETED', classData.name);
+      emit('CLASS_DELETED', classData);
       showNotification('Class deleted successfully');
+      return true;
     } catch (error) {
       console.error('Error deleting class:', error);
-      emit('SHOW_ERROR', 'Failed to delete class');
+      showNotification('Failed to delete class', { error: true });
+      return false;
     }
   }
 
@@ -1164,6 +1614,40 @@ export default function () {
     } catch (error) {
       console.error('Error validating license:', error);
       emit('LICENSE_ERROR', error);
+    }
+  });
+
+  // Aggiungo il gestore per l'evento RESOLVE_STYLE_COLORS
+  on('RESOLVE_STYLE_COLORS', async (data: { styleIds: Record<string, string> }) => {
+    try {
+      console.log('Resolving style colors:', data.styleIds);
+      const resolvedColors: Record<string, string> = {};
+
+      // Elabora ogni style ID
+      for (const [key, styleId] of Object.entries(data.styleIds)) {
+        try {
+          // Ottieni lo stile da Figma
+          const style = figma.getStyleById(styleId);
+          if (style && style.type === 'PAINT') {
+            // Estrai il colore dallo stile
+            const paint = style.paints[0] as SolidPaint;
+            if (paint && paint.type === 'SOLID') {
+              const { r, g, b } = paint.color;
+              const opacity = paint.opacity ?? 1;
+              resolvedColors[key] =
+                `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${opacity})`;
+            }
+          }
+        } catch (styleError) {
+          console.error(`Error resolving style ${styleId}:`, styleError);
+        }
+      }
+
+      // Invia i colori risolti all'UI
+      console.log('Resolved colors:', resolvedColors);
+      emit('RESOLVED_STYLE_COLORS', { resolvedColors });
+    } catch (error) {
+      console.error('Error resolving style colors:', error);
     }
   });
 }

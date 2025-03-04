@@ -19,7 +19,8 @@ class StorageService {
 
     const candidate = cls as Record<string, unknown>;
 
-    return (
+    // Verifica le proprietà obbligatorie
+    const hasRequiredProps =
       'name' in candidate &&
       typeof candidate.name === 'string' &&
       'width' in candidate &&
@@ -27,75 +28,107 @@ class StorageService {
       'height' in candidate &&
       typeof candidate.height === 'number' &&
       'layoutMode' in candidate &&
-      typeof candidate.layoutMode === 'string'
-    );
+      typeof candidate.layoutMode === 'string';
+
+    if (!hasRequiredProps) return false;
+
+    // Verifica che variableReferences, se presente, sia un oggetto
+    if ('variableReferences' in candidate) {
+      const variableRefs = candidate.variableReferences;
+      if (
+        variableRefs !== undefined &&
+        (typeof variableRefs !== 'object' || variableRefs === null)
+      ) {
+        console.warn('StorageService: Invalid variableReferences format:', variableRefs);
+        return false;
+      }
+    }
+
+    return true;
   }
 
   public async getSavedClasses(): Promise<SavedClass[]> {
     try {
+      console.log('StorageService: Retrieving saved classes from storage key:', STORAGE_KEY);
       const savedClasses = await figma.clientStorage.getAsync(STORAGE_KEY);
-      console.log('Retrieved data from storage:', savedClasses);
+      console.log('StorageService: Raw data retrieved from storage:', savedClasses);
 
       if (!savedClasses) {
-        console.log('No saved classes found, initializing empty array');
+        console.log('StorageService: No saved classes found, initializing empty array');
         return [];
       }
 
       // Validate the data structure
       if (!Array.isArray(savedClasses)) {
-        console.error('Invalid data structure in storage - not an array:', savedClasses);
+        console.error(
+          'StorageService: Invalid data structure in storage - not an array:',
+          savedClasses,
+        );
         // Reset storage to prevent future errors
+        console.log('StorageService: Resetting storage due to invalid data structure');
         await this.resetStorage();
         return [];
       }
+
+      console.log('StorageService: Retrieved array of length:', savedClasses.length);
 
       // Filter out invalid classes
       const validClasses = savedClasses.filter((cls) => {
         const isValid = this.validateSavedClass(cls);
         if (!isValid) {
-          console.warn('Invalid class found in storage:', cls);
+          console.warn('StorageService: Invalid class found in storage:', cls);
         }
         return isValid;
       });
 
+      console.log('StorageService: Valid classes count:', validClasses.length);
+
       if (validClasses.length !== savedClasses.length) {
         console.warn(
-          `Found ${savedClasses.length - validClasses.length} invalid classes that were filtered out`,
+          `StorageService: Found ${savedClasses.length - validClasses.length} invalid classes that were filtered out`,
         );
         // Save only the valid classes back to storage
+        console.log('StorageService: Saving only valid classes back to storage');
         await this.saveClasses(validClasses);
       }
 
       return validClasses;
     } catch (error) {
-      console.error('Error retrieving saved classes:', error);
+      console.error('StorageService: Error retrieving saved classes:', error);
       return [];
     }
   }
 
   public async saveClasses(classes: SavedClass[]): Promise<boolean> {
     try {
+      console.log('StorageService: Saving classes to storage, count:', classes.length);
       await figma.clientStorage.setAsync(STORAGE_KEY, classes);
+      console.log('StorageService: Classes saved successfully');
       return true;
     } catch (error) {
-      console.error('Error saving classes:', error);
+      console.error('StorageService: Error saving classes:', error);
       return false;
     }
   }
 
   public async addClass(newClass: SavedClass): Promise<boolean> {
     try {
+      console.log('StorageService: Adding new class:', newClass.name);
       const classes = await this.getSavedClasses();
+      console.log('StorageService: Retrieved existing classes, count:', classes.length);
+
       const exists = classes.some((cls) => cls.name.toLowerCase() === newClass.name.toLowerCase());
+      console.log('StorageService: Class already exists?', exists);
 
       if (exists) {
         throw new Error('A class with this name already exists');
       }
 
       classes.push(newClass);
+      console.log('StorageService: Added new class, new count:', classes.length);
       return this.saveClasses(classes);
     } catch (error) {
-      console.error('Error adding class:', error);
+      console.error('StorageService: Error adding class:', error);
       return false;
     }
   }

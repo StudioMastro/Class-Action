@@ -183,9 +183,15 @@ function Plugin() {
       setNewClassName('');
     });
 
-    const unsubscribeClassDeleted = on('CLASS_DELETED', (deletedClassName: string) => {
+    const unsubscribeClassDeleted = on('CLASS_DELETED', (deletedClass: SavedClass) => {
       if (!mounted) return;
-      setSavedClasses((prevClasses) => prevClasses.filter((cls) => cls.name !== deletedClassName));
+      setSavedClasses((prevClasses) => prevClasses.filter((cls) => cls.name !== deletedClass.name));
+    });
+
+    const unsubscribeClassRenamed = on('CLASS_RENAMED', ({ oldName, newName }) => {
+      if (!mounted) return;
+      console.log('Class renamed from', oldName, 'to', newName);
+      // No need to update the state here as CLASSES_LOADED will be emitted after rename
     });
 
     const unsubscribeClassUpdated = on(
@@ -346,6 +352,7 @@ function Plugin() {
       unsubscribeSelection();
       unsubscribeClassSaved();
       unsubscribeClassDeleted();
+      unsubscribeClassRenamed();
       unsubscribeClassUpdated();
       unsubscribeClassApplied();
       unsubscribeClassesAppliedAll();
@@ -375,10 +382,12 @@ function Plugin() {
   }, []);
 
   const validateClassName = (name: string): { isValid: boolean; error?: string } => {
+    // Se il nome è vuoto, è comunque valido (useremo il nome del frame)
     if (!name.trim()) {
-      return { isValid: false, error: 'Class name cannot be empty' };
+      return { isValid: true };
     }
 
+    // Rimuoviamo la validazione con regex, permettendo qualsiasi carattere tranne i punti
     if (name.includes('.')) {
       return {
         isValid: false,
@@ -387,14 +396,7 @@ function Plugin() {
       };
     }
 
-    const validNameRegex = /^[a-zA-Z0-9-_]+$/;
-    if (!validNameRegex.test(name.trim())) {
-      return {
-        isValid: false,
-        error: 'Class name can only contain letters, numbers, hyphens (-) and underscores (_)',
-      };
-    }
-
+    // Tutti gli altri nomi sono validi
     return { isValid: true };
   };
 
@@ -413,12 +415,20 @@ function Plugin() {
       return;
     }
 
-    if (savedClasses.some((cls) => cls.name.toLowerCase() === name.trim().toLowerCase())) {
+    // If name is empty, we'll use the frame name, so we need to check for duplicates differently
+    const nameToCheck = name.trim() || ''; // Empty string will be replaced with frame name on the plugin side
+
+    // Only check for duplicates if a custom name is provided
+    if (
+      nameToCheck &&
+      savedClasses.some((cls) => cls.name.toLowerCase() === nameToCheck.toLowerCase())
+    ) {
       emit('SHOW_ERROR', 'A class with this name already exists (names are case-insensitive)');
       return;
     }
 
-    await emit('SAVE_CLASS', { name: name.trim() });
+    emit('SAVE_CLASS', { name: name.trim() });
+    setNewClassName('');
     setActiveMenu(null);
   };
 
@@ -724,7 +734,7 @@ function Plugin() {
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <TextInput
-              placeholder="Enter class name..."
+              placeholder="Enter class name (optional)..."
               value={newClassName}
               onChange={setNewClassName}
               onKeyDown={(e) => {

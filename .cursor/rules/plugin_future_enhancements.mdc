@@ -130,7 +130,46 @@ This document tracks completed features and planned improvements, providing a ro
   - Offline license validation
   - Trial period implementation
 
-### 9. New Features (Proposed)
+### 9. Enhanced Fill Type Support
+- **Status:** In Planning
+- **Feature:** Improve support for complex fill types, especially images and videos
+- **Objective:** Enable users to save and apply all fill types consistently
+- **Implementation Details:**
+  - **Image Fill Support:**
+    - Implement image extraction and storage
+    - Create proxy system for image references
+    - Support image transformations and scaling
+    - Add image library management
+  - **Video Fill Support:**
+    - Implement video reference system
+    - Support video transformations
+  - **Advanced Gradient Support:**
+    - Improve gradient transformation preservation
+    - Support all gradient types accurately
+- **Technical Approaches:**
+  - **Option 1: Base64 Encoding**
+    - Convert images to base64 strings
+    - Store in plugin storage with size limits
+    - Pros: Self-contained, no external dependencies
+    - Cons: Storage size limitations, performance impact
+  - **Option 2: Cloud Storage Integration**
+    - Upload images to cloud storage
+    - Store references in plugin
+    - Pros: Handles large images, better performance
+    - Cons: Requires authentication, network dependency
+  - **Option 3: Document Asset Library**
+    - Create a dedicated asset library in the document
+    - Reference assets by ID
+    - Pros: Native Figma integration, better performance
+    - Cons: Document-specific, requires setup
+- **Implementation Challenges:**
+  - Storage size limitations
+  - Cross-document compatibility
+  - Performance considerations
+  - User experience for image management
+  - Handling of missing references
+
+### 10. New Features (Proposed)
 - **Class Templates:**
   - Save and load class templates
   - Template categories
@@ -163,6 +202,7 @@ This document tracks completed features and planned improvements, providing a ro
 3. Enhance UI/UX
 4. Develop smart suggestions
 5. Implement team licensing
+6. Improve gradient fill support
 
 ### Long Term (6+ Months)
 1. Full cloud integration
@@ -170,6 +210,7 @@ This document tracks completed features and planned improvements, providing a ro
 3. License usage analytics
 4. Enterprise features
 5. AI enhancements
+6. Complete image and video fill support
 
 ## Technical Considerations
 - Maintain TypeScript strict mode
