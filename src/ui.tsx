@@ -194,18 +194,14 @@ function Plugin() {
       // No need to update the state here as CLASSES_LOADED will be emitted after rename
     });
 
-    const unsubscribeClassUpdated = on(
-      'CLASS_UPDATED',
-      (data: { name: string; properties: Omit<SavedClass, 'name'> }) => {
-        if (!mounted) return;
-        setSavedClasses((prevClasses) =>
-          prevClasses.map((cls) =>
-            cls.name === data.name ? { ...data.properties, name: data.name } : cls,
-          ),
-        );
-        setIsUpdateModalOpen(false);
-      },
-    );
+    const unsubscribeClassUpdated = on('CLASS_UPDATED', (updatedClass: SavedClass) => {
+      if (!mounted) return;
+      console.log('Class updated:', updatedClass);
+      setSavedClasses((prevClasses) =>
+        prevClasses.map((cls) => (cls.name === updatedClass.name ? updatedClass : cls)),
+      );
+      setIsUpdateModalOpen(false);
+    });
 
     const unsubscribeClassApplied = on(
       'CLASS_APPLIED',

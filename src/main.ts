@@ -977,19 +977,59 @@ export default function () {
             frame.counterAxisAlignItems = classData.layoutProperties.counterAxisAlignItems;
             frame.layoutWrap = classData.layoutProperties.layoutWrap;
 
-            // Apply spacing only if values are not null
+            // Apply spacing only if values are not null and non ci sono variabili
             if (classData.layoutProperties.itemSpacing !== null) {
-              frame.itemSpacing = classData.layoutProperties.itemSpacing;
+              // Verifichiamo se c'è una variabile per itemSpacing
+              if (
+                !classData.variableReferences ||
+                !Object.keys(classData.variableReferences).some((key) => key === 'itemSpacing')
+              ) {
+                frame.itemSpacing = classData.layoutProperties.itemSpacing;
+              }
             }
             if (classData.layoutProperties.counterAxisSpacing !== null) {
-              frame.counterAxisSpacing = classData.layoutProperties.counterAxisSpacing;
+              // Verifichiamo se c'è una variabile per counterAxisSpacing
+              if (
+                !classData.variableReferences ||
+                !Object.keys(classData.variableReferences).some(
+                  (key) => key === 'counterAxisSpacing',
+                )
+              ) {
+                frame.counterAxisSpacing = classData.layoutProperties.counterAxisSpacing;
+              }
             }
 
             // Apply individual padding values
-            frame.paddingTop = classData.layoutProperties.padding.top;
-            frame.paddingRight = classData.layoutProperties.padding.right;
-            frame.paddingBottom = classData.layoutProperties.padding.bottom;
-            frame.paddingLeft = classData.layoutProperties.padding.left;
+            // Verifichiamo se ci sono variabili per le proprietà di padding
+            if (
+              !classData.variableReferences ||
+              !Object.keys(classData.variableReferences).some((key) => key.includes('paddingTop'))
+            ) {
+              frame.paddingTop = classData.layoutProperties.padding.top;
+            }
+
+            if (
+              !classData.variableReferences ||
+              !Object.keys(classData.variableReferences).some((key) => key.includes('paddingRight'))
+            ) {
+              frame.paddingRight = classData.layoutProperties.padding.right;
+            }
+
+            if (
+              !classData.variableReferences ||
+              !Object.keys(classData.variableReferences).some((key) =>
+                key.includes('paddingBottom'),
+              )
+            ) {
+              frame.paddingBottom = classData.layoutProperties.padding.bottom;
+            }
+
+            if (
+              !classData.variableReferences ||
+              !Object.keys(classData.variableReferences).some((key) => key.includes('paddingLeft'))
+            ) {
+              frame.paddingLeft = classData.layoutProperties.padding.left;
+            }
 
             console.log('Applied auto-layout properties:', {
               layoutWrap: frame.layoutWrap,
@@ -1168,7 +1208,6 @@ export default function () {
                         // Assegno l'array modificato al frame
                         frame.fills = fillsCopy;
                         console.log(`Applied variable to fills[${targetIndex}]:`, variableId);
-                        console.log('New frame fills:', frame.fills);
                       } catch (err: unknown) {
                         const errorMessage = err instanceof Error ? err.message : String(err);
                         console.error(`Error applying variable to fill: ${errorMessage}`);
@@ -1210,6 +1249,54 @@ export default function () {
                         `Fill at index ${targetIndex} is not SOLID, cannot apply color variable`,
                       );
                     }
+                  }
+                }
+                // Gestisco le proprietà di padding e altre proprietà numeriche
+                else if (
+                  // Proprietà di auto-layout
+                  property === 'paddingTop' ||
+                  property === 'paddingRight' ||
+                  property === 'paddingBottom' ||
+                  property === 'paddingLeft' ||
+                  property === 'itemSpacing' ||
+                  property === 'counterAxisSpacing' ||
+                  // Proprietà di dimensione
+                  property === 'width' ||
+                  property === 'height' ||
+                  property === 'minWidth' ||
+                  property === 'maxWidth' ||
+                  property === 'minHeight' ||
+                  property === 'maxHeight' ||
+                  // Proprietà di bordo
+                  property === 'strokeWeight' ||
+                  property === 'cornerRadius' ||
+                  property === 'topLeftRadius' ||
+                  property === 'topRightRadius' ||
+                  property === 'bottomLeftRadius' ||
+                  property === 'bottomRightRadius' ||
+                  // Proprietà di opacità
+                  property === 'opacity'
+                ) {
+                  console.log(`Applying variable to ${property}`);
+                  try {
+                    // Utilizzo setBoundVariable per impostare la variabile sulla proprietà
+                    // Cast esplicito a VariableBindableNodeField per evitare errori di tipo
+                    frame.setBoundVariable(property as VariableBindableNodeField, variable);
+                    console.log(`Applied variable to ${property} successfully`);
+                  } catch (err) {
+                    console.error(`Error applying variable to ${property}:`, err);
+                  }
+                }
+                // Gestisco altre proprietà direttamente sul nodo
+                else {
+                  console.log(`Setting bound variable for property ${property}`);
+                  // Imposto la variabile sulla proprietà del nodo
+                  try {
+                    frame.setBoundVariable(property as VariableBindableNodeField, variable);
+                    console.log(`Applied variable to ${property}:`, variableId);
+                  } catch (err: unknown) {
+                    const errorMessage = err instanceof Error ? err.message : String(err);
+                    console.error(`Error setting bound variable for ${property}: ${errorMessage}`);
                   }
                 }
               } catch (err: unknown) {
@@ -1308,8 +1395,21 @@ export default function () {
         createdAt: classToUpdate.createdAt,
       };
 
+      // Verifica che width e height siano definiti
+      if (typeof updatedClass.width !== 'number' || typeof updatedClass.height !== 'number') {
+        console.error('Missing required dimensions:', {
+          width: updatedClass.width,
+          height: updatedClass.height,
+        });
+        throw new Error('Failed to extract frame dimensions');
+      }
+
+      console.log('Updated class before saving:', updatedClass);
       await storageService.updateClass(updatedClass);
+
+      // Emetto l'evento CLASS_UPDATED con l'intera classe aggiornata
       emit('CLASS_UPDATED', updatedClass);
+
       showNotification('Class updated successfully');
       return { success: true, data: updatedClass };
     } catch (error) {
