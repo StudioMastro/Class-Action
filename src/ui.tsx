@@ -714,8 +714,21 @@ function Plugin() {
   };
 
   const handlePremiumFeatureClick = (featureName: string) => {
+    // Format feature names for display
+    let displayFeatureName = featureName;
+
+    if (featureName === 'import-export') {
+      displayFeatureName = 'Import and Export';
+    } else if (featureName === 'apply-all') {
+      displayFeatureName = 'Apply Global';
+    } else if (featureName === 'batch-operations') {
+      displayFeatureName = 'Apply All';
+    } else if (featureName === 'Unlimited Classes') {
+      displayFeatureName = 'Unlimited classes';
+    }
+
     setIsPremiumFeatureModalOpen(true);
-    setPremiumFeatureName(featureName);
+    setPremiumFeatureName(displayFeatureName);
   };
 
   const handleDeactivateLicense = () => {
