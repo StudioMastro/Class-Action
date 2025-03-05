@@ -317,6 +317,8 @@ export default function () {
   on('IMPORT_CLASSES', handleImportClasses);
   on('APPLY_ALL_MATCHING_CLASSES', handleApplyAllMatchingClasses);
   on('ANALYZE_APPLY_ALL', handleAnalyzeApplyAll);
+  on('ANALYZE_APPLY_CLASS_TO_ALL', handleAnalyzeApplyClassToAll);
+  on('APPLY_CLASS_TO_ALL', handleApplyClassToAll);
   on('CHECK_SELECTION', checkSelection);
   on('LOAD_CLASSES', loadSavedClasses);
   on('CHECK_LICENSE_STATUS', checkLicenseStatus);
@@ -1608,12 +1610,12 @@ export default function () {
       // Show results
       if (appliedCount > 0) {
         showNotification(
-          `Applied ${appliedCount} classes successfully${errorCount > 0 ? ` (${errorCount} errors)` : ''}`,
+          `Apply Global: ${appliedCount} classes applied to frames with matching names${errorCount > 0 ? ` (${errorCount} errors)` : ''}`,
         );
         emit('CLASSES_APPLIED_ALL', { success: true, appliedCount, errorCount });
         return true;
       } else {
-        showNotification('No matching classes found');
+        showNotification('No frames with names matching your saved classes were found');
         return false;
       }
     } catch (error) {
@@ -1650,6 +1652,81 @@ export default function () {
     } catch (error) {
       console.error('Error analyzing frames:', error);
       showNotification('Failed to analyze frames', { error: true });
+    }
+  }
+
+  async function handleAnalyzeApplyClassToAll(className: string) {
+    try {
+      // Trova tutti i frame nella pagina corrente con il nome corrispondente
+      const frames = figma.currentPage.findAll(
+        (node) => node.type === 'FRAME' && node.name === className,
+      ) as FrameNode[];
+
+      // Emetti il risultato dell'analisi
+      const result = { className, matchingFrames: frames.length };
+      emit('APPLY_CLASS_TO_ALL_ANALYSIS_RESULT', result);
+
+      return result;
+    } catch (error) {
+      console.error('Error analyzing frames for class application:', error);
+      showNotification('Failed to analyze frames', { error: true });
+      return { className, matchingFrames: 0 };
+    }
+  }
+
+  async function handleApplyClassToAll(classData: SavedClass) {
+    try {
+      // Trova tutti i frame nella pagina corrente con il nome corrispondente
+      const frames = figma.currentPage.findAll(
+        (node) => node.type === 'FRAME' && node.name === classData.name,
+      ) as FrameNode[];
+
+      if (frames.length === 0) {
+        showNotification(`No frames found with name "${classData.name}"`);
+        return false;
+      }
+
+      let appliedCount = 0;
+      let errorCount = 0;
+
+      // Applica la classe a ciascun frame
+      for (const frame of frames) {
+        try {
+          // Seleziona temporaneamente il frame per usare handleApplyClass
+          figma.currentPage.selection = [frame];
+          await handleApplyClass(classData, false);
+          appliedCount++;
+        } catch (error) {
+          console.error(`Error applying class to frame ${frame.name}:`, error);
+          errorCount++;
+        }
+      }
+
+      // Mostra i risultati
+      showNotification(
+        `Applied "${classData.name}" to ${appliedCount} frames${
+          errorCount > 0 ? ` (${errorCount} errors)` : ''
+        }`,
+      );
+
+      emit('CLASS_APPLIED_TO_ALL', {
+        success: true,
+        className: classData.name,
+        appliedCount,
+        errorCount,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error applying class to all matching frames:', error);
+      showNotification('Failed to apply class to frames', { error: true });
+      emit('CLASS_APPLIED_TO_ALL', {
+        success: false,
+        className: classData.name,
+        error: String(error),
+      });
+
+      return false;
     }
   }
 

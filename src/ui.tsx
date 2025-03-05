@@ -85,6 +85,13 @@ function Plugin() {
     matchingFrames: number;
   } | null>(null);
 
+  // Stati per la funzionalità Apply All di una classe specifica
+  const [isApplyClassToAllModalOpen, setIsApplyClassToAllModalOpen] = useState(false);
+  const [applyClassToAllAnalysis, setApplyClassToAllAnalysis] = useState<{
+    className: string;
+    matchingFrames: number;
+  } | null>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
 
@@ -216,6 +223,12 @@ function Plugin() {
 
     const unsubscribeClassesAppliedAll = on('CLASSES_APPLIED_ALL', () => {});
 
+    const unsubscribeClassAppliedToAll = on('CLASS_APPLIED_TO_ALL', () => {
+      // Chiudiamo la modale se è ancora aperta
+      setIsApplyClassToAllModalOpen(false);
+      setApplyClassToAllAnalysis(null);
+    });
+
     const unsubscribeImportResult = on('IMPORT_RESULT', (result: ImportResult) => {
       if (result.success) {
         emit('LOAD_CLASSES');
@@ -230,6 +243,16 @@ function Plugin() {
         if (!mounted) return;
         setApplyAllAnalysis(result);
         setIsApplyAllModalOpen(true);
+      },
+    );
+
+    const unsubscribeApplyClassToAllAnalysisResult = on(
+      'APPLY_CLASS_TO_ALL_ANALYSIS_RESULT',
+      (result: { className: string; matchingFrames: number }) => {
+        if (!mounted) return;
+        console.log('Received APPLY_CLASS_TO_ALL_ANALYSIS_RESULT:', result);
+        setApplyClassToAllAnalysis(result);
+        // Non apriamo il modale qui, lo farà la funzione handleApplyClassToAll
       },
     );
 
@@ -352,8 +375,10 @@ function Plugin() {
       unsubscribeClassUpdated();
       unsubscribeClassApplied();
       unsubscribeClassesAppliedAll();
+      unsubscribeClassAppliedToAll();
       unsubscribeImportResult();
       unsubscribeAnalysisResult();
+      unsubscribeApplyClassToAllAnalysisResult();
       unsubscribeSaveDialog();
       removeStatusListener();
       removeErrorListener();
@@ -597,6 +622,66 @@ function Plugin() {
     }
   };
 
+  const handleApplyClassToAll = async (classData: SavedClass) => {
+    try {
+      // Imposta una variabile per tenere traccia dell'analisi
+      setSelectedClass(classData);
+
+      // Crea una promessa che verrà risolta quando l'evento viene ricevuto
+      const analysisPromise = new Promise<{ className: string; matchingFrames: number }>(
+        (resolve) => {
+          // Funzione che gestisce l'evento
+          const handleAnalysisResult = (result: { className: string; matchingFrames: number }) => {
+            console.log('Received analysis result in handleApplyClassToAll:', result);
+            resolve(result);
+          };
+
+          // Registra l'event listener temporaneo
+          const unsubscribe = on('APPLY_CLASS_TO_ALL_ANALYSIS_RESULT', handleAnalysisResult);
+
+          // Timeout di sicurezza dopo 3 secondi
+          setTimeout(() => {
+            unsubscribe();
+            // Risolviamo con un valore di default in caso di timeout
+            resolve({ className: classData.name, matchingFrames: 0 });
+          }, 3000);
+
+          // Emetti la richiesta di analisi
+          emit('ANALYZE_APPLY_CLASS_TO_ALL', classData.name);
+        },
+      );
+
+      // Mostra la modale di conferma con stato di caricamento
+      setApplyClassToAllAnalysis(null);
+      setIsApplyClassToAllModalOpen(true);
+
+      // Attendi il risultato dell'analisi
+      const analysis = await analysisPromise;
+
+      // Aggiorna lo stato con il risultato dell'analisi
+      setApplyClassToAllAnalysis(analysis);
+
+      // La modale è già aperta, l'utente può confermare o annullare
+    } catch (error) {
+      console.error('Error in handleApplyClassToAll:', error);
+      emit('SHOW_ERROR', 'An error occurred while analyzing frames');
+      setIsApplyClassToAllModalOpen(false);
+    }
+  };
+
+  const handleConfirmApplyClassToAll = async () => {
+    try {
+      if (!selectedClass) return;
+
+      await emit('APPLY_CLASS_TO_ALL', selectedClass);
+      setIsApplyClassToAllModalOpen(false);
+      setApplyClassToAllAnalysis(null);
+    } catch (error) {
+      console.error('Error applying class to all matching frames:', error);
+      emit('SHOW_ERROR', 'An error occurred while applying class to frames');
+    }
+  };
+
   const isFeatureAllowed = (feature: string): boolean => {
     return (
       licenseStatus.isValid ||
@@ -738,7 +823,7 @@ function Plugin() {
               <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
               <path d="M5 21h14" />
             </svg>
-            <span className="font-bold">Pro</span>
+            <span className="font-bold">Premium</span>
           </button>
         )}
       </div>
@@ -779,8 +864,10 @@ function Plugin() {
         )}
       </div>
 
+      <hr className="border-0 h-px bg-[var(--figma-color-border)]" />
+
       <div className="flex flex-col gap-1 flex-grow">
-        <div className="mt-4">
+        <div>
           <div className="flex items-center justify-between mb-2">
             <Text size="base" weight="bold">
               Saved Classes {savedClasses.length > 0 && `(${savedClasses.length})`}
@@ -904,28 +991,25 @@ function Plugin() {
                         }}
                         icon={
                           <svg
+                            xmlns="http://www.w3.org/2000/svg"
                             width="16"
                             height="16"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
                           >
-                            <path d="M15 4V2"></path>
-                            <path d="M15 16v-2"></path>
-                            <path d="M8 9h2"></path>
-                            <path d="M20 9h2"></path>
-                            <path d="M17.8 11.8 19 13"></path>
-                            <path d="M15 9h0"></path>
-                            <path d="M17.8 6.2 19 5"></path>
-                            <path d="m3 21 9-9"></path>
-                            <path d="M12.2 6.2 11 5"></path>
+                            <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+                            <path d="M20 3v4" />
+                            <path d="M22 5h-4" />
+                            <path d="M4 17v2" />
+                            <path d="M5 18H3" />
                           </svg>
                         }
                       >
-                        Apply All
+                        Apply Global
                       </DropdownItem>
                     </div>
                   </div>
@@ -1037,6 +1121,33 @@ function Plugin() {
                         </DropdownItem>
 
                         <DropdownItem
+                          onClick={() => {
+                            if (isFeatureAllowed('batch-operations')) {
+                              handleApplyClassToAll(savedClass);
+                            } else {
+                              handlePremiumFeatureClick('batch-operations');
+                            }
+                          }}
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+                            </svg>
+                          }
+                        >
+                          {licenseStatus.isValid ? 'Apply All' : 'Apply All Pro'}
+                        </DropdownItem>
+
+                        <DropdownItem
                           onClick={() => handleDeleteClick(savedClass)}
                           icon={<Trash size={16} />}
                           variant="danger"
@@ -1137,14 +1248,34 @@ function Plugin() {
           setApplyAllAnalysis(null);
         }}
         onConfirm={handleConfirmApplyAll}
-        title="Apply All Classes"
+        title="Apply Global"
         message={
           applyAllAnalysis
-            ? `This will apply matching classes to ${applyAllAnalysis.matchingFrames} out of ${applyAllAnalysis.totalFrames} frames in the current page. Continue?`
+            ? `This will apply matching classes to ${applyAllAnalysis.matchingFrames} frames with the same name in the current page. Do you want to continue?`
             : 'Analyzing frames...'
         }
         confirmText="Apply"
         variant="info"
+      />
+
+      <ConfirmDialog
+        isOpen={isApplyClassToAllModalOpen}
+        onClose={() => {
+          setIsApplyClassToAllModalOpen(false);
+          setApplyClassToAllAnalysis(null);
+        }}
+        onConfirm={handleConfirmApplyClassToAll}
+        title="Apply All"
+        message={
+          applyClassToAllAnalysis
+            ? `This will apply the class "${selectedClass?.name}" to ${applyClassToAllAnalysis.matchingFrames} frame${
+                applyClassToAllAnalysis.matchingFrames !== 1 ? 's' : ''
+              } with the same name in the current page. Do you want to continue?`
+            : 'Analyzing frames...'
+        }
+        confirmText="Apply"
+        variant="info"
+        confirmDisabled={!applyClassToAllAnalysis || applyClassToAllAnalysis.matchingFrames === 0}
       />
 
       <PremiumFeatureModal

@@ -270,17 +270,13 @@ export function LicenseActivation({
         {/* Informational message - solo quando la licenza è attiva */}
         {currentStatus.isValid && (
           <Text size="sm" className="text-[var(--figma-color-text)]">
-            Your premium features are active, you can enjoy all premium features!
+            Your license is active, you can enjoy all <strong>Premium features!</strong>
           </Text>
         )}
 
         {/* License Info - se la licenza è attiva */}
         {currentStatus.isValid && (
           <div className="flex flex-col gap-3 p-3 rounded bg-[var(--figma-color-bg-secondary)]">
-            <Text size="sm" weight="bold">
-              License Details
-            </Text>
-
             <div className="flex flex-col gap-2">
               {/* Status */}
               <div className="flex items-center justify-between">
