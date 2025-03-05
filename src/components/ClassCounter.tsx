@@ -41,8 +41,35 @@ export const ClassCounter = ({
     );
   }
 
+  // Determina il testo di stato
+  const getStatusText = () => {
+    if (isAtLimit) {
+      return (
+        <Text size="xs" className="text-[var(--figma-color-text-danger)]">
+          Class limit reached
+        </Text>
+      );
+    } else if (isNearLimit) {
+      return (
+        <Text size="xs" className="text-[var(--figma-color-text-warning)]">
+          Only {maxClasses - currentClasses}{' '}
+          {maxClasses - currentClasses === 1 ? 'class' : 'classes'} remaining
+        </Text>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="flex flex-col gap-1 mt-2">
+      {/* Titolo e stato */}
+      <div className="flex justify-between items-center">
+        <Text size="sm" weight="bold">
+          Free plan
+        </Text>
+        {getStatusText()}
+      </div>
+
       {/* Barra di progresso e contatore */}
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 bg-[var(--figma-color-bg-disabled)] rounded-full overflow-hidden">
@@ -55,28 +82,33 @@ export const ClassCounter = ({
           />
         </div>
         <Text size="xs" className="whitespace-nowrap">
-          {currentClasses}/{maxClasses} classes
+          {currentClasses}/{maxClasses}
         </Text>
       </div>
 
-      {/* Messaggio di stato e pulsanti */}
-      <div className="flex flex-col gap-2">
-        <Text size="xs" className={isAtLimit ? 'text-[var(--figma-color-text-danger)]' : undefined}>
-          {isAtLimit
-            ? 'Class limit reached'
-            : isNearLimit
-              ? `Only ${maxClasses - currentClasses} classes remaining`
-              : 'Free Plan'}
-        </Text>
-
-        <div className="flex items-center gap-2">
-          <Button onClick={onUpgradeClick} variant="primary" size="small" fullWidth>
-            Upgrade to Premium
-          </Button>
-          <Button onClick={onActivateClick} variant="secondary" size="small" fullWidth>
-            Have a License?
-          </Button>
-        </div>
+      {/* Pulsanti */}
+      <div className="flex items-center gap-2 mt-1">
+        <Button onClick={onActivateClick} variant="secondary" size="small" fullWidth>
+          Have a License?
+        </Button>
+        <Button onClick={onUpgradeClick} variant="primary" size="small" fullWidth>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mr-1"
+          >
+            <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
+            <path d="M5 21h14" />
+          </svg>
+          Upgrade
+        </Button>
       </div>
     </div>
   );

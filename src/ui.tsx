@@ -25,6 +25,8 @@ import {
   Ellipsis,
   Refresh as Update,
   Loader,
+  Upload,
+  Download,
 } from './components/common/icons';
 import { ClassCounter } from './components/ClassCounter';
 import { makeApiRequest } from './ui/services/apiService';
@@ -683,11 +685,32 @@ function Plugin() {
   };
 
   const isFeatureAllowed = (feature: string): boolean => {
-    return (
-      licenseStatus.isValid ||
-      (feature !== 'unlimited-classes' && savedClasses.length < 5) ||
-      feature === 'basic'
-    );
+    // Se l'utente ha una licenza valida, tutte le funzionalità sono consentite
+    if (licenseStatus.isValid) {
+      return true;
+    }
+
+    // Per gli utenti freemium, solo le funzionalità base sono consentite
+    // e possono salvare fino a 5 classi
+    if (feature === 'basic') {
+      return true;
+    }
+
+    // La funzionalità unlimited-classes è controllata separatamente
+    // perché dipende dal numero di classi salvate
+    if (feature === 'unlimited-classes') {
+      return savedClasses.length < 5;
+    }
+
+    // Tutte le altre funzionalità premium sono bloccate per gli utenti freemium
+    const premiumFeatures = [
+      'import-export',
+      'apply-all',
+      'batch-operations',
+      'advanced-search',
+      'auto-backup',
+    ];
+    return !premiumFeatures.includes(feature);
   };
 
   const handlePremiumFeatureClick = (featureName: string) => {
@@ -931,24 +954,9 @@ function Plugin() {
                           document.getElementById('file-input')?.click();
                           setActiveMenu(null);
                         }}
-                        icon={
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                          </svg>
-                        }
+                        icon={<Upload size={16} />}
                       >
-                        Import
+                        {'Import'}
                       </DropdownItem>
 
                       <DropdownItem
@@ -960,24 +968,9 @@ function Plugin() {
                           handleExportClasses();
                           setActiveMenu(null);
                         }}
-                        icon={
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                          </svg>
-                        }
+                        icon={<Download size={16} />}
                       >
-                        Export
+                        {'Export'}
                       </DropdownItem>
 
                       <DropdownItem
@@ -997,9 +990,10 @@ function Plugin() {
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="lucide lucide-sparkles"
                           >
                             <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
                             <path d="M20 3v4" />
@@ -1009,7 +1003,7 @@ function Plugin() {
                           </svg>
                         }
                       >
-                        Apply Global
+                        {'Apply Global'}
                       </DropdownItem>
                     </div>
                   </div>
@@ -1139,12 +1133,13 @@ function Plugin() {
                               stroke-width="2"
                               stroke-linecap="round"
                               stroke-linejoin="round"
+                              class="lucide lucide-sparkle"
                             >
                               <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
                             </svg>
                           }
                         >
-                          {licenseStatus.isValid ? 'Apply All' : 'Apply All Pro'}
+                          {'Apply All'}
                         </DropdownItem>
 
                         <DropdownItem
