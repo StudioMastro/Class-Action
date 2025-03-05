@@ -720,9 +720,26 @@ function Plugin() {
           Class Action
         </Text>
         {licenseStatus.isValid && (
-          <Button onClick={handleLicenseActivationOpen} variant="secondary" size="small">
-            Manage License
-          </Button>
+          <button
+            onClick={handleLicenseActivationOpen}
+            className="flex items-center gap-1.5 px-2 h-7 rounded-md cursor-pointer bg-[var(--figma-color-bg-warning-tertiary)] text-[var(--figma-color-text-warning)] hover:bg-[var(--figma-color-bg-warning-hover)] transition-colors"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-[var(--figma-color-text-warning)]"
+            >
+              <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
+              <path d="M5 21h14" />
+            </svg>
+            <span className="font-bold">Pro</span>
+          </button>
         )}
       </div>
 
@@ -730,7 +747,7 @@ function Plugin() {
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <TextInput
-              placeholder="Enter class name (optional)..."
+              placeholder="Enter class name..."
               value={newClassName}
               onChange={setNewClassName}
               onKeyDown={(e) => {
@@ -776,7 +793,7 @@ function Plugin() {
                   size="small"
                   className={activeMenu === 'actions' ? 'bg-[var(--figma-color-bg-selected)]' : ''}
                 >
-                  Actions
+                  Options
                 </Button>
 
                 {activeMenu === 'actions' && (
@@ -896,10 +913,15 @@ function Plugin() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                           >
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="9" y1="9" x2="15" y2="9"></line>
-                            <line x1="9" y1="15" x2="15" y2="15"></line>
-                            <line x1="9" y1="12" x2="15" y2="12"></line>
+                            <path d="M15 4V2"></path>
+                            <path d="M15 16v-2"></path>
+                            <path d="M8 9h2"></path>
+                            <path d="M20 9h2"></path>
+                            <path d="M17.8 11.8 19 13"></path>
+                            <path d="M15 9h0"></path>
+                            <path d="M17.8 6.2 19 5"></path>
+                            <path d="m3 21 9-9"></path>
+                            <path d="M12.2 6.2 11 5"></path>
                           </svg>
                         }
                       >
@@ -956,7 +978,7 @@ function Plugin() {
               filteredClasses.map((savedClass) => (
                 <div
                   key={savedClass.name}
-                  className="relative flex flex-col p-2 border rounded-md mb-2"
+                  className="relative flex flex-col px-3 py-2 border rounded-md mb-2"
                   style={{ borderColor: 'var(--figma-color-border)' }}
                 >
                   <div className="flex items-center justify-between">
@@ -967,14 +989,14 @@ function Plugin() {
                       <IconButton
                         onClick={(e) => handleMenuClick(e, savedClass.name)}
                         variant="secondary"
-                        size="medium"
+                        size="small"
                       >
                         <Ellipsis size={16} />
                       </IconButton>
                       <Button
                         onClick={() => handleApplyClass(savedClass)}
                         variant="primary"
-                        size="medium"
+                        size="small"
                       >
                         Apply
                       </Button>

@@ -21,6 +21,9 @@ This document tracks completed features and planned improvements, providing a ro
 - Complete state management system
 - License management system integration with LemonSqueezy
 - Feature toggling based on license tier
+- Full support for Figma variables (color, numeric, boolean, and string)
+- Improved class update functionality
+- Support for new Figma API features (lockAspectRatio, unlockAspectRatio)
 
 ## Proposed Enhancements
 
@@ -80,6 +83,7 @@ This document tracks completed features and planned improvements, providing a ro
   - Basic error notifications
   - Error logging to console
   - User-friendly error messages
+  - Improved validation for required properties
 - **Planned:**
   - Detailed error tracking
   - Error reporting system
@@ -101,12 +105,14 @@ This document tracks completed features and planned improvements, providing a ro
   - Drag and drop support
   - Accessibility improvements
   - Touch device support
+  - Visual indicators for variables in class list
 
 ### 7. Performance Optimization
 - **Status:** In Progress
 - **Completed:** ✓
   - Basic caching
   - Efficient DOM updates
+  - Improved variable handling
 - **Planned:**
   - Advanced caching system
   - Lazy loading improvements
@@ -169,7 +175,20 @@ This document tracks completed features and planned improvements, providing a ro
   - User experience for image management
   - Handling of missing references
 
-### 10. New Features (Proposed)
+### 10. Variables Management Enhancement
+- **Status:** Partially Implemented
+- **Completed:** ✓
+  - Support for color variables in fills and strokes
+  - Support for numeric variables in dimensions, padding, etc.
+  - Preservation of variable references during class update and application
+- **Planned:**
+  - Visual indicators for variables in class list
+  - Variable conflict resolution when applying classes
+  - Variable mode switching support
+  - Variable collection management
+  - Variable value preview
+
+### 11. New Features (Proposed)
 - **Class Templates:**
   - Save and load class templates
   - Template categories
@@ -186,6 +205,10 @@ This document tracks completed features and planned improvements, providing a ro
   - Class sharing
   - Team libraries
   - Comments and annotations
+- **Advanced Figma API Integration:**
+  - Support for new Figma features as they become available
+  - Auto-layout gap support
+  - Advanced effects support
 
 ## Development Priorities
 
@@ -195,6 +218,7 @@ This document tracks completed features and planned improvements, providing a ro
 3. Optimize performance
 4. Implement class templates
 5. Add trial period functionality
+6. Add visual indicators for variables in class list
 
 ### Medium Term (3-6 Months)
 1. Implement advanced search
@@ -203,6 +227,7 @@ This document tracks completed features and planned improvements, providing a ro
 4. Develop smart suggestions
 5. Implement team licensing
 6. Improve gradient fill support
+7. Enhance variables management
 
 ### Long Term (6+ Months)
 1. Full cloud integration
@@ -211,6 +236,7 @@ This document tracks completed features and planned improvements, providing a ro
 4. Enterprise features
 5. AI enhancements
 6. Complete image and video fill support
+7. Advanced Figma API integration
 
 ## Technical Considerations
 - Maintain TypeScript strict mode
@@ -221,6 +247,7 @@ This document tracks completed features and planned improvements, providing a ro
 - Follow accessibility guidelines
 - Support multiple platforms
 - Ensure secure license data handling
+- Keep up with Figma API changes
 
 ## References
 - @docs/README.mdc - Project documentation overview

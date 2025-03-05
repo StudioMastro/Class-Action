@@ -45,17 +45,27 @@ The plugin can save and apply the following properties:
 - Corner radius
 - Opacity and blend mode
 - Stroke properties (weight, align, dash pattern)
+- Figma variables (color, numeric, and boolean variables)
 
 ### Style Properties Support
 
 | Property Type | Support Level    | Notes                                            |
 | ------------- | ---------------- | ------------------------------------------------ |
-| Solid Colors  | ✅ Full          | Both direct colors and style references          |
+| Solid Colors  | ✅ Full          | Direct colors, style references, and variables   |
 | Gradients     | ⚠️ Partial       | Basic gradient support, may lose some properties |
 | Images        | ❌ Not Supported | Image fills are not saved or applied             |
 | Videos        | ❌ Not Supported | Video fills are not saved or applied             |
 | Effects       | ✅ Full          | Shadows and blur effects are fully supported     |
 | Layout Grids  | ✅ Full          | Grid styles are supported                        |
+
+### Variables Support
+
+| Variable Type | Support Level | Notes                                           |
+| ------------- | ------------- | ----------------------------------------------- |
+| Color         | ✅ Full       | Color variables in fills and strokes            |
+| Number        | ✅ Full       | Numeric variables for dimensions, padding, etc. |
+| Boolean       | ✅ Full       | Boolean variables are preserved                 |
+| String        | ✅ Full       | String variables are preserved                  |
 
 ### Known Limitations
 
