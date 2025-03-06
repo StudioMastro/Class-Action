@@ -1,34 +1,23 @@
 /** @jsx h */
-import { h } from 'preact'
-import { JSX } from 'preact'
-import { Button, ButtonProps } from './Button'
+import { h, ComponentChildren } from 'preact'
 
-export interface DropdownItemProps extends ButtonProps {
-  icon?: JSX.Element
+interface DropdownItemProps {
+  onClick?: () => void
+  icon?: ComponentChildren
+  children: ComponentChildren
+  className?: string
 }
 
-export function DropdownItem({ 
-  icon,
-  children,
-  className = '',
-  ...props
-}: DropdownItemProps) {
+const DropdownItem = ({ onClick, icon, children, className = '' }: DropdownItemProps) => {
   return (
-    <div className="w-full">
-      <Button 
-        className={`w-full flex items-center justify-start gap-2 h-7 leading-none ${className}`}
-        size="small"
-        {...props}
-      >
-        <div className="flex items-center gap-2 flex-1">
-          {icon && (
-            <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-              {icon}
-            </div>
-          )}
-          <span className="text-left">{children}</span>
-        </div>
-      </Button>
+    <div
+      onClick={onClick}
+      className={`flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer ${className}`}
+    >
+      {icon && <span className="mr-2">{icon}</span>}
+      <span className="text-left">{children}</span>
     </div>
   )
-} 
+}
+
+export default DropdownItem 

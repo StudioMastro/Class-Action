@@ -1,14 +1,29 @@
 {
-  "extends": "@create-figma-plugin/tsconfig",
   "compilerOptions": {
-    "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@figma"
-    ],
+    "target": "es2017",
+    "module": "esnext",
+    "moduleResolution": "node",
     "jsx": "react",
     "jsxFactory": "h",
     "jsxFragmentFactory": "Fragment",
-    "skipLibCheck": true
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowJs": true,
+    "checkJs": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
+    "types": ["node", "jest", "@figma/plugin-typings"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "postcss.config.mjs", "postcss.config.js", "tailwind.config.js"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "jest.config.ts"],
+  "exclude": ["node_modules", "build", "dist", "src/__tests__/diagnostics/*.js"]
 }

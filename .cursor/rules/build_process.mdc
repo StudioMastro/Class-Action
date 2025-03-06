@@ -1,0 +1,83 @@
+---
+description: Build Process Guidelines for the Figma Plugin Project
+globs: build-figma-plugin.*.js, tsconfig.json, package.json, tailwind.config.js, postcss.config.js
+alwaysApply: false
+---
+# Build Process Guidelines
+
+## Overview
+This document outlines the build process for the Figma Plugin Project. It covers the steps required to compile, bundle, and prepare the plugin for deployment, leveraging @create-figma-plugin/build. It also includes guidelines on integrating Tailwind CSS, Preact, and the license management system where applicable.
+
+## Build Tools and Configurations
+- **Bundler/Compiler:** Use the build tools provided by @create-figma-plugin/build for fast and efficient transpilation and bundling
+- **Language:** Ensure all code is written in TypeScript in strict mode
+- **CSS Framework:** Integrate Tailwind CSS for styling, ensuring proper configuration for purging unused styles in production
+- **UI Library:** Use Preact where needed for lightweight UI components, ensuring proper aliasing if required
+- **TypeScript Configuration:** Ensure `tsconfig.json` is properly configured with:
+  - `"strict": true` for strict type checking
+  - Appropriate `outDir` to prevent overwriting source files
+  - Necessary exclusions for JavaScript files that shouldn't be processed
+
+## Create Figma Plugin Integration
+- Follow the guidelines from @create-figma-plugin/build to set up the initial project structure
+- Ensure the plugin manifest is properly generated and validated as per Figma requirements
+- Configure environment-specific settings (development, staging, production) in the build process
+- Use the `build-figma-plugin.*.js` configuration files to customize the build process for different environments
+
+## License Management Integration
+- Ensure the license management system is properly integrated into the build process
+- Include necessary license validation and activation endpoints in the plugin
+- Configure proper error handling for license-related operations
+- Implement feature toggling based on license tier (free vs premium)
+- Ensure license data is securely stored and transmitted
+- Include appropriate license status indicators in the UI
+
+## Tailwind CSS Integration
+- Configure Tailwind CSS by importing its base, components, and utilities into your main stylesheet
+- Use PurgeCSS (or Tailwind's built-in purge feature) to remove unused styles in production builds
+- Extract commonly used utility combinations into reusable components when necessary, to enhance maintainability
+- Ensure Tailwind's configuration is optimized for the plugin's specific needs
+
+## Preact Integration
+- If using Preact, ensure that the JSX pragma is correctly set up (via Babel or TypeScript configuration) to use Preact's `h` and `Fragment`
+- Verify proper module aliasing if React is used elsewhere in the project, ensuring consistency with Preact
+- Optimize the bundle by leveraging code-splitting and lazy loading (using React.lazy and Suspense when applicable)
+- Ensure proper typing for Preact components to maintain TypeScript strict mode compliance
+
+## Build Steps
+1. **Transpilation:** Convert TypeScript code to JavaScript using a compiler (tsc or through the bundler). Ensure that strict type checking is enabled
+2. **Bundling:** Bundle the code using the chosen build tool. Ensure that external dependencies are correctly managed and that the final bundle is optimized for size and performance
+3. **Minification:** Apply minification and dead code elimination for production builds
+4. **Asset Management:** Copy static assets (images, fonts, etc.) to the appropriate output directories
+5. **Manifest Generation:** Automatically generate or validate the Figma Plugin manifest
+6. **Testing the Build:** Run automated tests (unit, integration) as part of the build pipeline to validate the output
+7. **Verification:** Inspect the final build output to ensure compliance with Figma's plugin requirements
+8. **License Validation:** Verify that license-related functionality works correctly in the built plugin
+
+## CI/CD Integration
+- Integrate the build process into the CI/CD pipeline to automate testing and deployment
+- Ensure that the build stage verifies type safety, code quality (linting, formatting), and bundle size limits
+- Implement automated testing for license management functionality
+- Configure different deployment targets based on build environment (development, staging, production)
+- Set up proper versioning and release management
+
+## Troubleshooting Common Build Issues
+- **TypeScript Compilation Errors:** Ensure proper configuration in `tsconfig.json`, especially regarding file exclusions and output directory
+- **Bundle Size Issues:** Analyze and optimize dependencies, implement code splitting where appropriate
+- **License Validation Failures:** Check API endpoints, request parameters, and error handling
+- **CSS Purging Problems:** Verify Tailwind configuration and ensure proper class usage patterns
+- **Manifest Generation Errors:** Check for invalid plugin configuration or missing required fields
+
+## Additional Considerations from Figma Official Documentation
+
+- **Plugin Linter:** Figma provides a set of TypeScript ESLint rules to automatically catch and fix issues in plugin code
+- **TypeScript Compilation:** Since Figma plugins run in the browser, they require a JavaScript output
+- **Dynamic Page Loading:** For plugins that support Figma's dynamic page loading feature, additional manifest configuration is needed
+- **Advanced Manifest Customization:** Utilize custom build configuration files to modify the manifest output before deployment
+- **Performance Optimization:** Follow Figma's guidelines for optimizing plugin performance, especially for operations on large files
+
+## References
+- @docs/README.mdc - Project documentation overview
+- @rules/figma_plugin.mdc - Figma plugin specific guidelines
+- @rules/react_components.mdc - React component guidelines
+- @types/license.ts - License management type definitions

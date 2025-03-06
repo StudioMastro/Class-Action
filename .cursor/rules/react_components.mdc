@@ -1,7 +1,9 @@
 ---
 description: Guidelines for React component development in the Figma plugin
-globs: 
+globs: src/components/**/*.tsx, src/components/**/*.ts
+alwaysApply: false
 ---
+> Note: For common rules regarding error handling, performance, input validation, and naming conventions, please refer to @rules/cursor_rules.mdc. The rules defined here are specific to React component development.
 
 # React Component Standards
 
@@ -45,4 +47,4 @@ globs:
 - Include usage examples
 - Document side effects
 - Specify required context providers
-- Note performance considerations 
+- Note performance considerations

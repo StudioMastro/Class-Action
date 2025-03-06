@@ -6,18 +6,90 @@
 @import './styles/geist.css';
 @import './styles/fonts.css';
 
-/* Override create-figma-plugin default fonts */
+/* Personalizzazioni nei layer appropriati */
 @layer base {
   :root {
-    font-family: 'Geist', sans-serif !important;
+    font-family: 'Geist', sans-serif;
+    max-height: 100vh; /* Limita l'altezza massima al viewport */
   }
   
   code, pre {
-    font-family: 'Geist Mono', monospace !important;
+    font-family: 'Geist Mono', monospace;
   }
 
   /* Ensure buttons use Geist */
   button {
-    font-family: 'Geist', sans-serif !important;
+    font-family: 'Geist', sans-serif;
+  }
+  
+  /* Applica lo scrolling al body principale invece che a :root */
+  body {
+    overflow-y: auto;
+  }
+}
+
+/* Stili personalizzati per le scrollbar e altre utility */
+@layer utilities {
+  /* Stili per WebKit (Chrome, Safari, Edge) - Nascondi completamente la scrollbar */
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    display: none;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 0;
+  }
+  
+  /* Stili per Firefox - Nascondi completamente la scrollbar */
+  * {
+    scrollbar-width: none;
+    scrollbar-color: transparent transparent;
+  }
+  
+  /* Classe per contenitori con scrollbar che mantengono il border-radius */
+  .scrollable-container {
+    border-radius: 0.5rem;
+    overflow: hidden; /* Mantiene il border-radius anche con la scrollbar */
+  }
+  
+  /* Classe per contenuti scrollabili */
+  .scrollable-content {
+    overflow-y: auto !important; /* Forza lo scrolling verticale */
+    padding-top: var(--padding-y, 16px);
+    padding-bottom: var(--padding-y, 16px);
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  /* 
+   * Poiché la scrollbar è nascosta, non è più necessaria la compensazione
+   * Utilizziamo padding uniforme su tutti i lati
+   */
+  .scrollbar-compensation {
+    padding-left: var(--padding-x, 16px);
+    padding-right: var(--padding-x, 16px);
+  }
+  
+  /* 
+   * Classe specifica per il contenitore principale
+   * Utilizziamo padding uniforme su tutti i lati
+   */
+  .main-scrollbar-compensation {
+    padding-left: var(--padding-x, 16px);
+    padding-right: var(--padding-x, 16px);
+  }
+  
+  /* 
+   * Classe specifica per le modali
+   * Utilizziamo padding uniforme su tutti i lati
+   */
+  .modal-scrollbar-compensation {
+    padding-left: var(--padding-x, 16px);
+    padding-right: var(--padding-x, 16px);
   }
 }

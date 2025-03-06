@@ -1,42 +1,46 @@
 /** @jsx h */
-import { h } from 'preact'
-import { inputBaseStyles } from './common/styles'
+import { h } from 'preact';
+import type { JSX } from 'preact';
+import { inputBaseStyles } from './common/styles';
 
 interface TextInputProps {
-  value: string
-  onValueInput: (value: string) => void
-  placeholder?: string
-  disabled?: boolean
-  className?: string
-  autoFocus?: boolean
-  onKeyDown?: (event: KeyboardEvent) => void
-  variant?: 'default' | 'border'
+  value: string;
+  onChange: (value: string) => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+  autoFocus?: boolean;
+  type?: string;
 }
 
 export function TextInput({
   value,
-  onValueInput,
+  onChange,
+  onKeyDown,
   placeholder = '',
   disabled = false,
   className = '',
   autoFocus = false,
-  onKeyDown,
-  variant = 'default'
+  type = 'text',
 }: TextInputProps) {
+  const handleChange = (e: JSX.TargetedEvent<HTMLInputElement, Event>) => {
+    onChange(e.currentTarget.value);
+  };
+
   return (
     <input
-      type="text"
+      type={type}
       value={value}
-      onInput={(e) => onValueInput((e.target as HTMLInputElement).value)}
+      onChange={handleChange}
+      onKeyDown={onKeyDown}
       placeholder={placeholder}
       disabled={disabled}
       autoFocus={autoFocus}
-      onKeyDown={onKeyDown}
       className={`
         ${inputBaseStyles}
-        ${variant === 'border' ? '' : 'border-none'}
         ${className}
       `}
     />
-  )
-} 
+  );
+}
