@@ -1,5 +1,6 @@
-# Hide the docs folder from GitHub archives while keeping it tracked in Git
+# Hide the docs folder and .cursor directory from GitHub archives while keeping them tracked in Git
 docs/ export-ignore
+.cursor/ export-ignore
 
 # Ensure text files are normalized correctly
 * text=auto
