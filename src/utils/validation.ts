@@ -49,6 +49,49 @@ export const validateClassData = (cls: SavedClass): boolean => {
     if (strokeWeight !== figma.mixed && typeof strokeWeight !== 'number') return false;
   }
 
+  // Effects validation
+  if (cls.effects) {
+    // Verifica che effects sia un array o figma.mixed
+    if (cls.effects !== figma.mixed && !Array.isArray(cls.effects)) return false;
+
+    // Se è un array, verifica ogni effetto
+    if (Array.isArray(cls.effects)) {
+      for (const effect of cls.effects) {
+        // Verifica il tipo dell'effetto
+        if (
+          !effect.type ||
+          !['DROP_SHADOW', 'INNER_SHADOW', 'LAYER_BLUR', 'BACKGROUND_BLUR'].includes(effect.type)
+        ) {
+          return false;
+        }
+
+        // Verifica proprietà specifiche in base al tipo
+        if (effect.type === 'DROP_SHADOW' || effect.type === 'INNER_SHADOW') {
+          // Verifica proprietà delle ombre
+          if (!effect.color || typeof effect.radius !== 'number' || !effect.offset) {
+            return false;
+          }
+        } else if (effect.type === 'LAYER_BLUR' || effect.type === 'BACKGROUND_BLUR') {
+          // Verifica proprietà delle sfocature
+          if (typeof effect.radius !== 'number') {
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  // Variable Modes validation
+  if (cls.variableModes) {
+    // Verifica che variableModes sia un oggetto
+    if (typeof cls.variableModes !== 'object' || cls.variableModes === null) return false;
+
+    // Verifica che le chiavi e i valori siano stringhe
+    for (const [collectionId, modeId] of Object.entries(cls.variableModes)) {
+      if (typeof collectionId !== 'string' || typeof modeId !== 'string') return false;
+    }
+  }
+
   return true;
 };
 

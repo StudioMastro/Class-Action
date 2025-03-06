@@ -290,6 +290,35 @@ ${definedProperties.map(([key, value]) => `  ${toKebabCase(key)}: ${formatCSSVal
       }}
     >
       <div>
+        {/* Aggiungiamo informazioni sul tipo di nodo di origine */}
+        {classData.sourceNodeType && (
+          <div className="mb-4 p-3 bg-[var(--figma-color-bg-secondary)] rounded-lg">
+            <div className="text-sm font-medium mb-1">Source Node Type</div>
+            <div className="text-xs text-[var(--figma-color-text-secondary)]">
+              {classData.sourceNodeType}
+            </div>
+          </div>
+        )}
+
+        {/* Aggiungiamo informazioni sui Variable Modes se presenti */}
+        {classData.variableModes && Object.keys(classData.variableModes).length > 0 && (
+          <div className="mb-4 p-3 bg-[var(--figma-color-bg-secondary)] rounded-lg">
+            <div className="text-sm font-medium mb-1">Variable Modes</div>
+            <div className="text-xs">
+              {Object.entries(classData.variableModes).map(([collectionId, modeId]) => (
+                <div key={collectionId} className="flex justify-between mb-1">
+                  <span className="text-[var(--figma-color-text-secondary)]">
+                    Collection: {collectionId.substring(0, 8)}...
+                  </span>
+                  <span className="text-[var(--figma-color-text-brand)]">
+                    Mode: {modeId.substring(0, 8)}...
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <CodeBlock properties={allProperties} />
       </div>
     </Modal>

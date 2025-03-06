@@ -1,0 +1,20 @@
+# Hide the docs folder from GitHub archives while keeping it tracked in Git
+docs/ export-ignore
+
+# Ensure text files are normalized correctly
+* text=auto
+
+# Specify how to handle specific file types
+*.md text
+*.ts text
+*.tsx text
+*.js text
+*.json text
+*.css text
+*.html text
+
+# Treat images as binary files
+*.png binary
+*.jpg binary
+*.gif binary
+*.svg text

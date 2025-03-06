@@ -109,12 +109,9 @@ export default function () {
       // This allows us to validate it again later
       await figma.clientStorage.setAsync('licenseKey', licenseKey);
 
-      // Always emit success status to ensure the modal closes
-      // The actual license validity will be checked when features are used
-      emit('LICENSE_STATUS_CHANGED', {
-        ...activationResult,
-        status: 'success', // Always use success to close the modal
-      });
+      // Emit the actual activation result status
+      // If there's an error, we want to show it in the modal
+      emit('LICENSE_STATUS_CHANGED', activationResult);
 
       // Show appropriate notification
       if (activationResult.isValid) {
@@ -129,8 +126,8 @@ export default function () {
             status: 'success',
           });
         }, 500);
-      } else {
-        // Still show success but with a different message
+      } else if (activationResult.status !== 'error') {
+        // Only show this if it's not an error (which will be shown in the modal)
         showNotification('License processed. Please check premium features availability.');
       }
     } catch (error) {
@@ -332,8 +329,11 @@ export default function () {
 
   // Check if current selection is a frame
   async function checkSelection() {
-    const hasSelectedFrame = figma.currentPage.selection.some((node) => node.type === 'FRAME');
-    emit('SELECTION_CHANGED', hasSelectedFrame);
+    const hasSelectedValidNode = figma.currentPage.selection.some(
+      (node) => node.type === 'FRAME' || node.type === 'COMPONENT' || node.type === 'INSTANCE',
+    );
+    emit('SELECTION_CHANGED', hasSelectedValidNode);
+    return hasSelectedValidNode;
   }
 
   // Load saved classes on startup
@@ -379,10 +379,16 @@ export default function () {
     }
   }
 
-  async function extractFrameProperties(node: FrameNode): Promise<FrameProperties> {
-    console.log('Extracting properties from frame:', node.name);
-    console.log('Frame fills:', node.fills);
-    console.log('Frame strokes:', node.strokes);
+  async function extractFrameProperties(
+    node: FrameNode | ComponentNode | InstanceNode,
+  ): Promise<FrameProperties> {
+    console.log(`Extracting properties from ${node.type}:`, node.name);
+    console.log('Node fills:', node.fills);
+    console.log('Node strokes:', node.strokes);
+    console.log('Node effects:', node.effects);
+
+    // Salviamo i Variable Modes espliciti
+    console.log('Node explicit variable modes:', node.explicitVariableModes);
 
     const properties: FrameProperties = {
       name: node.name,
@@ -411,9 +417,15 @@ export default function () {
       maxWidth: undefined,
       minHeight: undefined,
       maxHeight: undefined,
-      // Salviamo i fill e gli stroke direttamente
+      // Salviamo i fill, gli stroke e gli effects direttamente
       fills: JSON.parse(JSON.stringify(node.fills)),
       strokes: JSON.parse(JSON.stringify(node.strokes)),
+      effects: JSON.parse(JSON.stringify(node.effects)),
+      // Salviamo i Variable Modes espliciti
+      variableModes:
+        Object.keys(node.explicitVariableModes).length > 0
+          ? JSON.parse(JSON.stringify(node.explicitVariableModes))
+          : undefined,
     };
 
     // Add auto-layout specific properties
@@ -551,10 +563,10 @@ export default function () {
       console.log('Found stroke style ID:', id);
     }
     if (node.effectStyleId && typeof node.effectStyleId === 'string') {
-      const { name } = await getStyleInfo(node.effectStyleId);
-      styleReferences.effectStyleId = name;
+      const { id } = await getStyleInfo(node.effectStyleId);
+      styleReferences.effectStyleId = id;
       hasStyleReferences = true;
-      console.log('Found effect style:', name);
+      console.log('Found effect style ID:', id);
     }
     if (node.gridStyleId && typeof node.gridStyleId === 'string') {
       const { name } = await getStyleInfo(node.gridStyleId);
@@ -715,13 +727,25 @@ export default function () {
 
   async function handleSaveClass(event: { name: string }): Promise<SavedClassResult> {
     try {
-      const frame = figma.currentPage.selection[0] as FrameNode;
-      if (!frame || frame.type !== 'FRAME') {
-        throw new Error('No frame selected');
+      const selectedNode = figma.currentPage.selection[0];
+      if (
+        !selectedNode ||
+        (selectedNode.type !== 'FRAME' &&
+          selectedNode.type !== 'COMPONENT' &&
+          selectedNode.type !== 'INSTANCE')
+      ) {
+        throw new Error('No valid node selected. Please select a Frame, Component, or Instance.');
       }
 
-      const frameProperties = await extractFrameProperties(frame);
-      console.log('Extracted frame properties:', JSON.stringify(frameProperties, null, 2));
+      // Trattiamo il nodo come un FrameNode poiché ComponentNode e InstanceNode ereditano da FrameNode
+      const frameProperties = await extractFrameProperties(selectedNode as FrameNode);
+
+      // Aggiungiamo un campo per indicare il tipo di nodo di origine
+      const sourceNodeType = selectedNode.type;
+      console.log(
+        `Extracted properties from ${sourceNodeType}:`,
+        JSON.stringify(frameProperties, null, 2),
+      );
 
       // Verifichiamo se ci sono variabili nei fill
       const variableReferences = frameProperties.variableReferences;
@@ -764,8 +788,9 @@ export default function () {
         console.log('No variable references found in the frame');
       }
 
-      // Use frame name if the provided name is empty
-      const className = event.name.trim() ? event.name.trim() : frame.name;
+      // Use node name if the provided name is empty
+      const nodeName = selectedNode.name || 'Unnamed';
+      const className = event.name.trim() ? event.name.trim() : nodeName;
       console.log('Attempting to save class with name:', className);
 
       // Check if a class with this name already exists
@@ -784,6 +809,7 @@ export default function () {
         ...frameProperties,
         name: className, // Use the determined class name
         createdAt: Date.now(),
+        sourceNodeType, // Aggiungiamo il tipo di nodo di origine
       };
 
       console.log('Saving new class:', JSON.stringify(newClass, null, 2));
@@ -816,6 +842,7 @@ export default function () {
     try {
       console.log('Applying class:', JSON.stringify(classData, null, 2));
       console.log('Variable references in class:', classData.variableReferences);
+      console.log('Source node type:', classData.sourceNodeType || 'Not specified (legacy class)');
 
       // Verifica esplicita che variableReferences sia incluso nell'oggetto classData
       if (classData.variableReferences) {
@@ -828,43 +855,45 @@ export default function () {
         console.log('Proprietà presenti in classData:', Object.keys(classData));
       }
 
-      const frames = figma.currentPage.selection.filter(
-        (node) => node.type === 'FRAME',
-      ) as FrameNode[];
-      if (frames.length === 0) {
-        throw new Error('No frames selected');
+      // Ottieni tutti i nodi selezionati che sono frame, componenti o istanze
+      const validNodes = figma.currentPage.selection.filter(
+        (node) => node.type === 'FRAME' || node.type === 'COMPONENT' || node.type === 'INSTANCE',
+      ) as (FrameNode | ComponentNode | InstanceNode)[];
+
+      if (validNodes.length === 0) {
+        throw new Error('No valid nodes selected. Please select a Frame, Component, or Instance.');
       }
 
       let successCount = 0;
 
-      for (const frame of frames) {
-        console.log('Setting frame name to:', classData.name);
-        frame.name = classData.name;
+      for (const node of validNodes) {
+        console.log(`Setting ${node.type} name to:`, classData.name);
+        node.name = classData.name;
 
         // Apply position properties if present
         if (classData.position) {
           console.log('Applying position properties:', classData.position);
 
           // Apply rotation
-          frame.rotation = classData.position.rotation;
+          node.rotation = classData.position.rotation;
 
           // Apply transform only if explicitly requested (which we're not doing anymore)
           // This code is commentato per riferimento futuro
           /* 
           if (classData.position.relativeTransform) {
-            frame.relativeTransform = classData.position.relativeTransform as Transform;
+            node.relativeTransform = classData.position.relativeTransform as Transform;
           }
           */
 
           // Apply constraints
-          frame.constraints = {
+          node.constraints = {
             horizontal: classData.position.constraints.horizontal,
             vertical: classData.position.constraints.vertical,
           };
 
           console.log('Applied position properties:', {
-            rotation: frame.rotation,
-            constraints: frame.constraints,
+            rotation: node.rotation,
+            constraints: node.constraints,
           });
         }
 
@@ -882,7 +911,7 @@ export default function () {
               };
 
               // Verifichiamo se il metodo esiste e lo chiamiamo
-              const frameAny = frame as unknown as FigmaFrameWithNewAPI;
+              const frameAny = node as unknown as FigmaFrameWithNewAPI;
 
               if (typeof frameAny.lockAspectRatio === 'function') {
                 frameAny.lockAspectRatio();
@@ -897,15 +926,15 @@ export default function () {
             }
 
             // Resize maintaining the aspect ratio
-            const currentRatio = frame.width / frame.height;
+            const currentRatio = node.width / node.height;
             const targetRatio = classData.aspectRatio.value || currentRatio;
 
             if (currentRatio !== targetRatio) {
               // Adjust dimensions to match the target ratio while keeping the area similar
-              const currentArea = frame.width * frame.height;
+              const currentArea = node.width * node.height;
               const newWidth = Math.sqrt(currentArea * targetRatio);
               const newHeight = newWidth / targetRatio;
-              frame.resize(newWidth, newHeight);
+              node.resize(newWidth, newHeight);
             }
           } else {
             // Utilizziamo il nuovo metodo unlockAspectRatio invece di constrainProportions = false
@@ -918,7 +947,7 @@ export default function () {
               };
 
               // Verifichiamo se il metodo esiste e lo chiamiamo
-              const frameAny = frame as unknown as FigmaFrameWithNewAPI;
+              const frameAny = node as unknown as FigmaFrameWithNewAPI;
 
               if (typeof frameAny.unlockAspectRatio === 'function') {
                 frameAny.unlockAspectRatio();
@@ -935,49 +964,74 @@ export default function () {
         }
 
         // Set layout mode first as it affects how dimensions are applied
-        frame.layoutMode = classData.layoutMode;
+        node.layoutMode = classData.layoutMode;
         console.log('Setting layout mode to:', classData.layoutMode);
 
-        if (frame.layoutMode === 'NONE') {
+        // Log delle proprietà del nodo prima di applicare le modifiche
+        if (node.parent && node.parent.type === 'FRAME') {
+          console.log('Node parent is a frame with layoutMode:', node.parent.layoutMode);
+        }
+
+        console.log('Node properties before applying dimensions:', {
+          layoutMode: node.layoutMode,
+          layoutAlign: node.layoutAlign,
+          layoutGrow: node.layoutGrow,
+          primaryAxisSizingMode: node.primaryAxisSizingMode,
+          counterAxisSizingMode: node.counterAxisSizingMode,
+        });
+
+        if (node.layoutMode === 'NONE') {
           // For frames without auto-layout, apply only fixed dimensions
           console.log('Applying fixed dimensions:', {
             width: classData.width,
             height: classData.height,
           });
-          frame.resize(classData.width, classData.height);
+          node.resize(classData.width, classData.height);
         } else {
           // For auto-layout frames, apply all dimension properties
-          frame.resize(classData.width, classData.height);
+          node.resize(classData.width, classData.height);
 
           if (classData.minWidth !== null && classData.minWidth !== undefined) {
-            frame.minWidth = classData.minWidth;
+            node.minWidth = classData.minWidth;
           }
           if (classData.maxWidth !== null && classData.maxWidth !== undefined) {
-            frame.maxWidth = classData.maxWidth;
+            node.maxWidth = classData.maxWidth;
           }
           if (classData.minHeight !== null && classData.minHeight !== undefined) {
-            frame.minHeight = classData.minHeight;
+            node.minHeight = classData.minHeight;
           }
           if (classData.maxHeight !== null && classData.maxHeight !== undefined) {
-            frame.maxHeight = classData.maxHeight;
+            node.maxHeight = classData.maxHeight;
           }
 
           console.log('Applied auto-layout dimensions:', {
             width: classData.width,
             height: classData.height,
-            minWidth: frame.minWidth,
-            maxWidth: frame.maxWidth,
-            minHeight: frame.minHeight,
-            maxHeight: frame.maxHeight,
+            minWidth: node.minWidth,
+            maxWidth: node.maxWidth,
+            minHeight: node.minHeight,
+            maxHeight: node.maxHeight,
           });
 
           // Apply layout properties if present
           if (classData.layoutProperties) {
-            frame.primaryAxisSizingMode = classData.layoutProperties.primaryAxisSizingMode;
-            frame.counterAxisSizingMode = classData.layoutProperties.counterAxisSizingMode;
-            frame.primaryAxisAlignItems = classData.layoutProperties.primaryAxisAlignItems;
-            frame.counterAxisAlignItems = classData.layoutProperties.counterAxisAlignItems;
-            frame.layoutWrap = classData.layoutProperties.layoutWrap;
+            node.primaryAxisSizingMode = classData.layoutProperties.primaryAxisSizingMode;
+            node.counterAxisSizingMode = classData.layoutProperties.counterAxisSizingMode;
+            node.primaryAxisAlignItems = classData.layoutProperties.primaryAxisAlignItems;
+            node.counterAxisAlignItems = classData.layoutProperties.counterAxisAlignItems;
+            node.layoutWrap = classData.layoutProperties.layoutWrap;
+
+            // Applica layoutAlign (importante per il comportamento "fill" nell'asse contro-primario)
+            if (classData.layoutProperties.layoutAlign) {
+              console.log('Applying layoutAlign:', classData.layoutProperties.layoutAlign);
+              node.layoutAlign = classData.layoutProperties.layoutAlign;
+            }
+
+            // Applica layoutGrow (importante per il comportamento "fill" nell'asse primario)
+            if (typeof classData.layoutProperties.layoutGrow === 'number') {
+              console.log('Applying layoutGrow:', classData.layoutProperties.layoutGrow);
+              node.layoutGrow = classData.layoutProperties.layoutGrow;
+            }
 
             // Apply spacing only if values are not null and non ci sono variabili
             if (classData.layoutProperties.itemSpacing !== null) {
@@ -986,7 +1040,7 @@ export default function () {
                 !classData.variableReferences ||
                 !Object.keys(classData.variableReferences).some((key) => key === 'itemSpacing')
               ) {
-                frame.itemSpacing = classData.layoutProperties.itemSpacing;
+                node.itemSpacing = classData.layoutProperties.itemSpacing;
               }
             }
             if (classData.layoutProperties.counterAxisSpacing !== null) {
@@ -997,7 +1051,7 @@ export default function () {
                   (key) => key === 'counterAxisSpacing',
                 )
               ) {
-                frame.counterAxisSpacing = classData.layoutProperties.counterAxisSpacing;
+                node.counterAxisSpacing = classData.layoutProperties.counterAxisSpacing;
               }
             }
 
@@ -1007,14 +1061,14 @@ export default function () {
               !classData.variableReferences ||
               !Object.keys(classData.variableReferences).some((key) => key.includes('paddingTop'))
             ) {
-              frame.paddingTop = classData.layoutProperties.padding.top;
+              node.paddingTop = classData.layoutProperties.padding.top;
             }
 
             if (
               !classData.variableReferences ||
               !Object.keys(classData.variableReferences).some((key) => key.includes('paddingRight'))
             ) {
-              frame.paddingRight = classData.layoutProperties.padding.right;
+              node.paddingRight = classData.layoutProperties.padding.right;
             }
 
             if (
@@ -1023,46 +1077,48 @@ export default function () {
                 key.includes('paddingBottom'),
               )
             ) {
-              frame.paddingBottom = classData.layoutProperties.padding.bottom;
+              node.paddingBottom = classData.layoutProperties.padding.bottom;
             }
 
             if (
               !classData.variableReferences ||
               !Object.keys(classData.variableReferences).some((key) => key.includes('paddingLeft'))
             ) {
-              frame.paddingLeft = classData.layoutProperties.padding.left;
+              node.paddingLeft = classData.layoutProperties.padding.left;
             }
 
             console.log('Applied auto-layout properties:', {
-              layoutWrap: frame.layoutWrap,
-              itemSpacing: frame.itemSpacing,
-              counterAxisSpacing: frame.counterAxisSpacing,
+              layoutWrap: node.layoutWrap,
+              itemSpacing: node.itemSpacing,
+              counterAxisSpacing: node.counterAxisSpacing,
+              layoutAlign: node.layoutAlign,
+              layoutGrow: node.layoutGrow,
               padding: {
-                top: frame.paddingTop,
-                right: frame.paddingRight,
-                bottom: frame.paddingBottom,
-                left: frame.paddingLeft,
+                top: node.paddingTop,
+                right: node.paddingRight,
+                bottom: node.paddingBottom,
+                left: node.paddingLeft,
               },
             });
 
-            frame.layoutPositioning = classData.layoutProperties.layoutPositioning;
+            node.layoutPositioning = classData.layoutProperties.layoutPositioning;
           }
         }
 
         // Apply appearance properties
         if (classData.appearance) {
-          frame.opacity = classData.appearance.opacity;
-          frame.blendMode = classData.appearance.blendMode;
-          frame.cornerRadius = classData.appearance.cornerRadius;
-          frame.topLeftRadius = classData.appearance.topLeftRadius;
-          frame.topRightRadius = classData.appearance.topRightRadius;
-          frame.bottomLeftRadius = classData.appearance.bottomLeftRadius;
-          frame.bottomRightRadius = classData.appearance.bottomRightRadius;
+          node.opacity = classData.appearance.opacity;
+          node.blendMode = classData.appearance.blendMode;
+          node.cornerRadius = classData.appearance.cornerRadius;
+          node.topLeftRadius = classData.appearance.topLeftRadius;
+          node.topRightRadius = classData.appearance.topRightRadius;
+          node.bottomLeftRadius = classData.appearance.bottomLeftRadius;
+          node.bottomRightRadius = classData.appearance.bottomRightRadius;
           if (classData.appearance.strokeWeight !== figma.mixed) {
-            frame.strokeWeight = classData.appearance.strokeWeight;
+            node.strokeWeight = classData.appearance.strokeWeight;
           }
-          frame.strokeAlign = classData.appearance.strokeAlign;
-          frame.dashPattern = [...classData.appearance.dashPattern];
+          node.strokeAlign = classData.appearance.strokeAlign;
+          node.dashPattern = [...classData.appearance.dashPattern];
         }
 
         // Apply style references first
@@ -1072,19 +1128,19 @@ export default function () {
 
           try {
             if (fillStyleId && typeof fillStyleId === 'string') {
-              await frame.setFillStyleIdAsync(fillStyleId);
+              await node.setFillStyleIdAsync(fillStyleId);
               console.log('Applied fill style ID:', fillStyleId);
             }
             if (strokeStyleId && typeof strokeStyleId === 'string') {
-              await frame.setStrokeStyleIdAsync(strokeStyleId);
+              await node.setStrokeStyleIdAsync(strokeStyleId);
               console.log('Applied stroke style ID:', strokeStyleId);
             }
             if (effectStyleId && typeof effectStyleId === 'string') {
-              await frame.setEffectStyleIdAsync(effectStyleId);
+              await node.setEffectStyleIdAsync(effectStyleId);
               console.log('Applied effect style ID:', effectStyleId);
             }
             if (gridStyleId && typeof gridStyleId === 'string') {
-              await frame.setGridStyleIdAsync(gridStyleId);
+              await node.setGridStyleIdAsync(gridStyleId);
               console.log('Applied grid style ID:', gridStyleId);
             }
           } catch (error) {
@@ -1099,8 +1155,8 @@ export default function () {
             'Applying variable references:',
             JSON.stringify(classData.variableReferences, null, 2),
           );
-          console.log('Current frame fills:', frame.fills);
-          console.log('Current frame strokes:', frame.strokes);
+          console.log('Current frame fills:', node.fills);
+          console.log('Current frame strokes:', node.strokes);
 
           try {
             for (const [property, variableId] of Object.entries(classData.variableReferences)) {
@@ -1178,14 +1234,14 @@ export default function () {
                   const subProperty = parts.length > 2 ? parts[2] : null;
 
                   // Assicuriamoci che il frame abbia almeno un fill
-                  if (!frame.fills || !Array.isArray(frame.fills) || frame.fills.length === 0) {
+                  if (!node.fills || !Array.isArray(node.fills) || node.fills.length === 0) {
                     console.log('Frame has no fills, creating default fill');
                     // Se non ci sono fills, creiamo un fill solido di default
-                    frame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 1 }];
+                    node.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 1 }];
                   }
 
                   // Usiamo l'indice 0 se l'indice originale è fuori range
-                  const targetIndex = frame.fills.length > index ? index : 0;
+                  const targetIndex = node.fills.length > index ? index : 0;
                   console.log(
                     `Using target index ${targetIndex} for fill (original index: ${index})`,
                   );
@@ -1195,7 +1251,7 @@ export default function () {
                     console.log(`Applying variable to entire fill at index ${targetIndex}`);
                     try {
                       // Creo una copia dell'array fills per poterlo modificare
-                      const fillsCopy = JSON.parse(JSON.stringify(frame.fills));
+                      const fillsCopy = JSON.parse(JSON.stringify(node.fills));
 
                       // Imposto la variabile direttamente sul fill
                       try {
@@ -1208,7 +1264,7 @@ export default function () {
                         console.log('Modified fill with variable:', fillsCopy[targetIndex]);
 
                         // Assegno l'array modificato al frame
-                        frame.fills = fillsCopy;
+                        node.fills = fillsCopy;
                         console.log(`Applied variable to fills[${targetIndex}]:`, variableId);
                       } catch (err: unknown) {
                         const errorMessage = err instanceof Error ? err.message : String(err);
@@ -1224,10 +1280,10 @@ export default function () {
                     console.log(`Processing fill color at index ${index}`);
 
                     // Verifichiamo che il fill sia di tipo SOLID
-                    if (frame.fills[targetIndex].type === 'SOLID') {
+                    if (node.fills[targetIndex].type === 'SOLID') {
                       console.log(`Fill at index ${targetIndex} is SOLID, applying variable`);
                       // Creo una copia dell'array fills per poterlo modificare
-                      const fillsCopy = JSON.parse(JSON.stringify(frame.fills));
+                      const fillsCopy = JSON.parse(JSON.stringify(node.fills));
                       console.log('Original fill:', fillsCopy[targetIndex]);
 
                       // Uso il metodo helper per impostare la variabile sul fill
@@ -1240,7 +1296,7 @@ export default function () {
                         console.log('Modified fill with variable:', fillsCopy[targetIndex]);
 
                         // Assegno l'array modificato al frame
-                        frame.fills = fillsCopy;
+                        node.fills = fillsCopy;
                         console.log(`Applied variable to fills[${targetIndex}].color:`, variableId);
                       } catch (err: unknown) {
                         const errorMessage = err instanceof Error ? err.message : String(err);
@@ -1283,7 +1339,7 @@ export default function () {
                   try {
                     // Utilizzo setBoundVariable per impostare la variabile sulla proprietà
                     // Cast esplicito a VariableBindableNodeField per evitare errori di tipo
-                    frame.setBoundVariable(property as VariableBindableNodeField, variable);
+                    node.setBoundVariable(property as VariableBindableNodeField, variable);
                     console.log(`Applied variable to ${property} successfully`);
                   } catch (err) {
                     console.error(`Error applying variable to ${property}:`, err);
@@ -1294,7 +1350,7 @@ export default function () {
                   console.log(`Setting bound variable for property ${property}`);
                   // Imposto la variabile sulla proprietà del nodo
                   try {
-                    frame.setBoundVariable(property as VariableBindableNodeField, variable);
+                    node.setBoundVariable(property as VariableBindableNodeField, variable);
                     console.log(`Applied variable to ${property}:`, variableId);
                   } catch (err: unknown) {
                     const errorMessage = err instanceof Error ? err.message : String(err);
@@ -1327,7 +1383,7 @@ export default function () {
             // Applichiamo i fill diretti solo se non ci sono variabili
             if (!hasVariablesInFills) {
               // Utilizziamo un cast esplicito per evitare errori di tipo
-              frame.fills = JSON.parse(JSON.stringify(classData.fills)) as Paint[];
+              node.fills = JSON.parse(JSON.stringify(classData.fills)) as Paint[];
               console.log('Applied direct fills successfully');
             } else {
               console.log('Skipping direct fills application because variables are present');
@@ -1353,7 +1409,7 @@ export default function () {
             // Applichiamo gli stroke diretti solo se non ci sono variabili
             if (!hasVariablesInStrokes) {
               // Utilizziamo un cast esplicito per evitare errori di tipo
-              frame.strokes = JSON.parse(JSON.stringify(classData.strokes)) as Paint[];
+              node.strokes = JSON.parse(JSON.stringify(classData.strokes)) as Paint[];
               console.log('Applied direct strokes successfully');
             } else {
               console.log('Skipping direct strokes application because variables are present');
@@ -1364,12 +1420,110 @@ export default function () {
           }
         }
 
+        // Applica gli effetti diretti se presenti e se non c'è un effectStyleId
+        if (
+          classData.effects &&
+          (!classData.styleReferences?.effectStyleId ||
+            classData.styleReferences.effectStyleId === '')
+        ) {
+          console.log('Applying direct effects:', JSON.stringify(classData.effects, null, 2));
+          console.log(
+            'Current node effects before applying:',
+            JSON.stringify(node.effects, null, 2),
+          );
+          try {
+            // Verifichiamo se ci sono variabili negli effetti
+            const hasVariablesInEffects =
+              classData.variableReferences &&
+              Object.keys(classData.variableReferences).some((key) => key.startsWith('effects.'));
+
+            console.log('Has variables in effects:', hasVariablesInEffects);
+            if (hasVariablesInEffects && classData.variableReferences) {
+              console.log(
+                'Variables in effects:',
+                Object.keys(classData.variableReferences).filter((key) =>
+                  key.startsWith('effects.'),
+                ),
+              );
+            }
+
+            // Applichiamo gli effetti diretti solo se non ci sono variabili
+            if (!hasVariablesInEffects) {
+              try {
+                // Verifichiamo che gli effetti siano un array valido
+                if (Array.isArray(classData.effects)) {
+                  // Cloniamo profondamente gli effetti per evitare problemi di riferimento
+                  const effectsClone = JSON.parse(JSON.stringify(classData.effects)) as Effect[];
+
+                  // Verifichiamo che ogni effetto abbia le proprietà necessarie
+                  const validEffects = effectsClone.every(
+                    (effect) => effect && typeof effect === 'object' && 'type' in effect,
+                  );
+
+                  if (validEffects) {
+                    // Applichiamo gli effetti
+                    node.effects = effectsClone;
+                    console.log('Applied direct effects successfully');
+                    console.log(
+                      'Node effects after applying:',
+                      JSON.stringify(node.effects, null, 2),
+                    );
+                  } else {
+                    console.error('Invalid effects structure:', effectsClone);
+                  }
+                } else {
+                  console.error('Effects is not an array:', classData.effects);
+                }
+              } catch (innerErr) {
+                console.error('Error during effects application:', innerErr);
+              }
+            } else {
+              console.log('Skipping direct effects application because variables are present');
+            }
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            console.error(`Error applying direct effects: ${errorMessage}`);
+          }
+        }
+
+        // Applica i Variable Modes se presenti
+        if (classData.variableModes && Object.keys(classData.variableModes).length > 0) {
+          console.log('Applying variable modes:', classData.variableModes);
+          try {
+            // Per ogni collection ID e mode ID
+            for (const [collectionId, modeId] of Object.entries(classData.variableModes)) {
+              try {
+                // Ottieni la collection dal suo ID
+                const collection =
+                  await figma.variables.getVariableCollectionByIdAsync(collectionId);
+                if (collection) {
+                  // Imposta il mode esplicito per questa collection
+                  node.setExplicitVariableModeForCollection(collection, modeId);
+                  console.log(`Applied variable mode ${modeId} for collection ${collectionId}`);
+                } else {
+                  console.warn(`Collection with ID ${collectionId} not found`);
+                }
+              } catch (modeErr: unknown) {
+                const modeErrorMessage =
+                  modeErr instanceof Error ? modeErr.message : String(modeErr);
+                console.error(
+                  `Error applying variable mode for collection ${collectionId}: ${modeErrorMessage}`,
+                );
+              }
+            }
+            console.log('Applied variable modes successfully');
+          } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            console.error(`Error applying variable modes: ${errorMessage}`);
+          }
+        }
+
         successCount++;
       }
 
       if (shouldNotify) {
         const message =
-          frames.length === 1
+          validNodes.length === 1
             ? 'Class applied successfully'
             : `Class applied to ${successCount} frames successfully`;
         showNotification(message);
@@ -1385,16 +1539,28 @@ export default function () {
 
   async function handleUpdateClass(classToUpdate: SavedClass): Promise<SavedClassResult | null> {
     try {
-      const frame = figma.currentPage.selection[0] as FrameNode;
-      if (!frame || frame.type !== 'FRAME') {
-        throw new Error('No frame selected');
+      const selectedNode = figma.currentPage.selection[0];
+      if (
+        !selectedNode ||
+        (selectedNode.type !== 'FRAME' &&
+          selectedNode.type !== 'COMPONENT' &&
+          selectedNode.type !== 'INSTANCE')
+      ) {
+        throw new Error('No valid node selected. Please select a Frame, Component, or Instance.');
       }
 
-      const frameProperties = await extractFrameProperties(frame);
+      // Cast del nodo selezionato al tipo corretto
+      const node = selectedNode as FrameNode | ComponentNode | InstanceNode;
+
+      // Estrai le proprietà dal nodo selezionato
+      const frameProperties = await extractFrameProperties(node);
       const updatedClass: SavedClass = {
         ...frameProperties,
         name: classToUpdate.name,
         createdAt: classToUpdate.createdAt,
+        // Preserviamo il sourceNodeType originale se presente, altrimenti usiamo il tipo corrente
+        sourceNodeType:
+          classToUpdate.sourceNodeType || (node.type as 'FRAME' | 'COMPONENT' | 'INSTANCE'),
       };
 
       // Verifica che width e height siano definiti
@@ -1451,7 +1617,7 @@ export default function () {
 
       // Preparazione dati di export
       const exportData: ClassExportFormat = {
-        version: '1.0.0',
+        version: '1.2.0', // Aggiornato da 1.1.0 a 1.2.0 per riflettere le modifiche a effetti e autolayout
         exportDate: new Date().toISOString(),
         classes: classesToExport,
         metadata: {
@@ -1516,6 +1682,39 @@ export default function () {
         });
         emit('IMPORT_RESULT', { success: false, error: 'Invalid file format' });
         return;
+      }
+
+      // Gestione della compatibilità con versioni precedenti
+      if (importData.version === '1.0.0' || importData.version === '1.1.0') {
+        console.log(`Importing from version ${importData.version} - ensuring compatibility`);
+
+        for (const cls of importData.classes) {
+          // Nelle versioni precedenti alla 1.1.0, gli effetti potrebbero non essere presenti
+          if (!cls.effects) {
+            console.log('Adding empty effects array for compatibility');
+            cls.effects = [];
+          }
+
+          // Nelle versioni precedenti alla 1.2.0, le proprietà layoutAlign e layoutGrow potrebbero non essere correttamente inizializzate
+          if (cls.layoutMode !== 'NONE' && cls.layoutProperties) {
+            // Assicuriamoci che layoutAlign sia definito
+            if (!cls.layoutProperties.layoutAlign) {
+              console.log('Setting default layoutAlign to INHERIT');
+              cls.layoutProperties.layoutAlign = 'INHERIT';
+            }
+
+            // Assicuriamoci che layoutGrow sia definito
+            if (typeof cls.layoutProperties.layoutGrow !== 'number') {
+              console.log('Setting default layoutGrow to 0');
+              cls.layoutProperties.layoutGrow = 0;
+            }
+          }
+
+          // Nelle versioni precedenti alla 1.2.0, variableModes potrebbe non essere presente
+          if (!cls.variableModes) {
+            cls.variableModes = {};
+          }
+        }
       }
 
       // Carica le classi esistenti

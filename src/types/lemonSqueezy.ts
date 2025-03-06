@@ -107,6 +107,7 @@ export interface LicenseStatus {
   instanceId?: string;
   pendingValidation?: boolean;
   activationDate?: string | null;
+  message?: string;
 }
 
 export interface LicenseEvents {
@@ -129,6 +130,7 @@ export interface LicenseActivationProps {
   error: LemonSqueezyError | null;
   onActivate: (key: string) => void;
   onDeactivate: () => void;
+  isManualOpen?: boolean;
 }
 
 // Generic response type

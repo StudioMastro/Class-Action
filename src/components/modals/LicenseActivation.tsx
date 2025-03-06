@@ -16,6 +16,7 @@ interface LicenseActivationProps {
   error: LicenseError | null;
   onActivate: (licenseKey: string) => void;
   onDeactivate: () => void;
+  isManualOpen?: boolean;
 }
 
 export function LicenseActivation({
@@ -25,6 +26,7 @@ export function LicenseActivation({
   error,
   onActivate,
   onDeactivate,
+  isManualOpen = false,
 }: LicenseActivationProps) {
   const [licenseKey, setLicenseKey] = useState('');
   const [isActivating, setIsActivating] = useState(false);
@@ -43,8 +45,11 @@ export function LicenseActivation({
       setIsDeactivating(false);
       setLocalError(null);
       setShowSuccess(false);
+    } else if (isManualOpen) {
+      // Se la modale viene aperta manualmente, non mostriamo il messaggio di successo
+      setShowSuccess(false);
     }
-  }, [isOpen]);
+  }, [isOpen, isManualOpen]);
 
   // Gestione dei cambiamenti di stato della licenza
   useEffect(() => {
@@ -75,14 +80,13 @@ export function LicenseActivation({
         setLocalError(null);
         setShowSuccess(true);
 
-        // Chiudi il modale dopo 3 secondi SOLO se è appena stata completata un'attivazione
-        // Non chiudere automaticamente se l'utente ha aperto la modale per gestire una licenza già attiva
-        if (isActivating) {
+        // Chiudi il modale dopo un tempo adeguato SOLO se non è stata aperta manualmente
+        if (!isManualOpen) {
           console.log('[DEBUG] 🕒 Starting close timer for success state');
           successTimer = setTimeout(() => {
             console.log('[DEBUG] ⏱️ Success timer triggered, closing modal');
             onClose();
-          }, 3000);
+          }, 8000); // 8 secondi per dare tempo all'utente di vedere il messaggio
         }
         break;
 
@@ -267,6 +271,18 @@ export function LicenseActivation({
       }}
     >
       <div className="flex flex-col gap-4">
+        {/* Success Message - mostrato solo dopo un'attivazione riuscita e non in caso di apertura manuale */}
+        {showSuccess && !isManualOpen && (
+          <div
+            className="px-4 py-2 rounded-md"
+            style={{ backgroundColor: 'var(--figma-color-bg-success-tertiary)' }}
+          >
+            <Text size="sm" weight="bold" className="text-[var(--figma-color-text-success)]">
+              License successfully activated!
+            </Text>
+          </div>
+        )}
+
         {/* Informational message - solo quando la licenza è attiva */}
         {currentStatus.isValid && (
           <Text size="sm" className="text-[var(--figma-color-text)]">
@@ -276,7 +292,7 @@ export function LicenseActivation({
 
         {/* License Info - se la licenza è attiva */}
         {currentStatus.isValid && (
-          <div className="flex flex-col gap-3 p-3 rounded bg-[var(--figma-color-bg-secondary)]">
+          <div className="flex flex-col gap-2 p-3 rounded-md bg-[var(--figma-color-bg-secondary)]">
             <div className="flex flex-col gap-2">
               {/* Status */}
               <div className="flex items-center justify-between">
@@ -410,13 +426,6 @@ export function LicenseActivation({
               </div>
             )}
           </div>
-        )}
-
-        {/* Success Message - solo se l'attivazione è appena avvenuta con successo */}
-        {showSuccess && !currentStatus.isValid && (
-          <Text size="sm" className="text-[var(--figma-color-text)]">
-            Your premium features are now activated! You can now enjoy all premium features.
-          </Text>
         )}
       </div>
     </Modal>

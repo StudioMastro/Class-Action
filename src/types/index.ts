@@ -53,6 +53,8 @@ export interface FrameProperties {
   variableReferences?: Record<string, string>;
   fills?: readonly Paint[] | PluginAPI['mixed'];
   strokes?: readonly Paint[] | PluginAPI['mixed'];
+  effects?: readonly Effect[] | PluginAPI['mixed'];
+  variableModes?: Record<string, string>;
 }
 
 // Appearance properties
@@ -199,6 +201,7 @@ interface StyleProperties {
 export interface ClassData {
   name: string;
   createdAt: number;
+  sourceNodeType?: 'FRAME' | 'COMPONENT' | 'INSTANCE';
 }
 
 // Saved class combines frame properties with metadata

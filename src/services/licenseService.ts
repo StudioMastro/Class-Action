@@ -214,6 +214,115 @@ export class LicenseService {
 
       // Verifica se la risposta è valida
       if (!response.ok) {
+        // Per gli errori 400 Bad Request, proviamo a ottenere maggiori dettagli
+        if (response.status === 400) {
+          try {
+            // Tentiamo di leggere il corpo della risposta per ottenere dettagli sull'errore
+            const errorData = await response.json();
+
+            // Log per debug
+            console.log('[LICENSE] 🔍 Error response data:', JSON.stringify(errorData, null, 2));
+
+            // Verifichiamo se è un errore di licenza già attivata
+            if (errorData && errorData.error) {
+              const errorMessage = errorData.error.toLowerCase();
+
+              if (
+                errorMessage.includes('already activated') ||
+                errorMessage.includes('activation limit') ||
+                errorMessage.includes('license has been activated')
+              ) {
+                throw {
+                  code: 'ACTIVATION_LIMIT_REACHED',
+                  message: 'This license key has already been activated on another device.',
+                  actions: [
+                    'Use a different license key',
+                    'Deactivate the license on another device',
+                    'Contact support for assistance',
+                  ],
+                };
+              }
+
+              // Altri errori specifici possono essere gestiti qui
+              if (errorMessage.includes('invalid') || errorMessage.includes('not found')) {
+                throw {
+                  code: 'INVALID_LICENSE',
+                  message: 'The license key you entered is invalid or does not exist.',
+                  actions: [
+                    'Check the license key and try again',
+                    'Contact support if you believe this is an error',
+                  ],
+                };
+              }
+
+              // Se abbiamo un messaggio di errore ma non è uno dei casi specifici
+              throw {
+                code: 'API_ERROR',
+                message: errorData.error || `Error from LemonSqueezy: ${response.status}`,
+                actions: ['Try again later', 'Contact support'],
+              };
+            }
+          } catch (parseError: unknown) {
+            // Se l'errore non è un JSON valido o non ha la struttura prevista,
+            // continuiamo con l'errore generico
+            if (parseError && typeof parseError === 'object' && 'code' in parseError) {
+              throw parseError; // Rilanciamo l'errore specifico che abbiamo creato
+            }
+          }
+        }
+
+        // Gestione specifica per errore 404 (Not Found)
+        if (response.status === 404) {
+          console.log('[LICENSE] ⚠️ License key not found (404)');
+          throw {
+            code: 'INVALID_LICENSE',
+            message: 'The license key you entered does not exist.',
+            actions: [
+              'Check if you typed the license key correctly',
+              'Make sure you are using a valid license key',
+              'Contact support if you need assistance',
+            ],
+          };
+        }
+
+        // Gestione specifica per errore 401 (Unauthorized)
+        if (response.status === 401) {
+          console.log('[LICENSE] ⚠️ Authorization error (401)');
+          throw {
+            code: 'CONFIG_ERROR',
+            message: 'Authorization failed. The plugin cannot connect to the license server.',
+            actions: ['Contact the plugin developer', 'Try again later'],
+          };
+        }
+
+        // Gestione specifica per errore 429 (Too Many Requests)
+        if (response.status === 429) {
+          console.log('[LICENSE] ⚠️ Rate limit exceeded (429)');
+          throw {
+            code: 'ACTIVATION_LIMIT_REACHED',
+            message: 'Too many license activation attempts. Please try again later.',
+            actions: [
+              'Wait a few minutes before trying again',
+              'Contact support if the problem persists',
+            ],
+          };
+        }
+
+        // Gestione specifica per errori server (500, 502, 503, 504)
+        if (response.status >= 500) {
+          console.log(`[LICENSE] ⚠️ Server error (${response.status})`);
+          throw {
+            code: 'API_ERROR',
+            message: 'The license server is currently experiencing issues.',
+            actions: [
+              'Try again later',
+              'Check the service status',
+              'Contact support if the problem persists',
+            ],
+          };
+        }
+
+        // Errore generico per altri codici di stato
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -223,6 +332,40 @@ export class LicenseService {
       return data as T;
     } catch (error) {
       console.error('[LICENSE] ❌ Error making request:', error);
+
+      // Gestione specifica per errori di rete
+      if (error instanceof Error) {
+        if (
+          error.message.includes('NetworkError') ||
+          error.message.includes('network') ||
+          error.message.includes('Failed to fetch')
+        ) {
+          throw {
+            code: 'NETWORK_ERROR',
+            message:
+              'Unable to connect to the license server. Please check your internet connection.',
+            actions: [
+              'Check your internet connection',
+              'Try again when you are online',
+              'Contact support if you are already online',
+            ],
+          };
+        }
+
+        // Gestione specifica per errori di timeout
+        if (error.message.includes('timeout') || error.message.includes('timed out')) {
+          throw {
+            code: 'NETWORK_ERROR',
+            message: 'The connection to the license server timed out.',
+            actions: [
+              'Check your internet connection',
+              'Try again later',
+              'Contact support if the problem persists',
+            ],
+          };
+        }
+      }
+
       throw this.handleError(error);
     }
   }
@@ -887,6 +1030,30 @@ export class LicenseService {
             activationDate: this.activationDate,
           };
         }
+      }
+
+      // Verifica se l'errore è dovuto a una licenza già attivata su un altro dispositivo
+      if (
+        activationResponse.error &&
+        (activationResponse.error.includes('already activated') ||
+          activationResponse.error.includes('activation limit'))
+      ) {
+        console.log('[LICENSE] ⚠️ License already activated on another device');
+        return {
+          tier: 'free',
+          isValid: false,
+          features: [],
+          status: 'error',
+          error: {
+            code: 'ACTIVATION_LIMIT_REACHED',
+            message: 'This license key has already been activated on another device.',
+            actions: [
+              'Use a different license key',
+              'Deactivate the license on another device',
+              'Contact support',
+            ],
+          },
+        };
       }
 
       // If we get here, something went wrong with the activation

@@ -97,6 +97,9 @@ function Plugin() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
 
+  // Stato per tracciare se la modale è stata aperta manualmente
+  const [isManualOpen, setIsManualOpen] = useState(false);
+
   // Timeout di sicurezza globale
   useEffect(() => {
     console.log('Setting up global safety timeout');
@@ -301,13 +304,26 @@ function Plugin() {
       if (status.isValid && !prevStatus.isValid) {
         console.log('Transitioning from free to premium plan!');
 
-        setShowLicenseActivation(false);
+        // Non chiudiamo immediatamente il modale, lasciamo che sia il timer nel componente a farlo
+        // setShowLicenseActivation(false);
+
+        // Assicuriamoci che isManualOpen sia false quando la licenza viene attivata automaticamente
+        setIsManualOpen(false);
 
         setLicenseError(null);
 
         emit('SHOW_NOTIFICATION', 'License activated successfully! Welcome to Premium!');
 
         emit('LOAD_CLASSES');
+      } else if (status.isValid && prevStatus.isValid && status.status === 'success') {
+        // Caso in cui la licenza era già attiva o è stata riattivata
+        console.log('License was already active or has been reactivated');
+
+        // Non chiudiamo il modale, lasciamo che sia il timer nel componente a farlo
+        setLicenseError(null);
+
+        // Mostriamo comunque una notifica
+        emit('SHOW_NOTIFICATION', 'License is already active!');
       } else if (!status.isValid && prevStatus.isValid && status.status === 'idle') {
         emit('SHOW_NOTIFICATION', 'License deactivated successfully');
 
@@ -755,6 +771,8 @@ function Plugin() {
   const handleLicenseActivationClose = () => {
     setShowLicenseActivation(false);
     setLicenseError(null);
+    // Resettiamo isManualOpen quando la modale viene chiusa
+    setIsManualOpen(false);
     if (licenseStatus.status === 'error') {
       setLicenseStatus((prev) => ({
         ...prev,
@@ -774,6 +792,8 @@ function Plugin() {
       status: prev.status === 'error' ? 'idle' : prev.status,
       error: undefined,
     }));
+    // Impostiamo isManualOpen a true quando la modale viene aperta manualmente
+    setIsManualOpen(true);
     setShowLicenseActivation(true);
   };
 
@@ -842,8 +862,8 @@ function Plugin() {
         </Text>
         {licenseStatus.isValid && (
           <button
+            className="flex items-center gap-1.5 px-2 h-7 rounded-md cursor-pointer bg-[var(--figma-color-bg-warning-tertiary)] text-[var(--figma-color-text-warning)] hover:bg-[var(--figma-color-bg-warning-hover)] hover:text-[var(--figma-color-text-onbrand)] transition-colors group"
             onClick={handleLicenseActivationOpen}
-            className="flex items-center gap-1.5 px-2 h-7 rounded-md cursor-pointer bg-[var(--figma-color-bg-warning-tertiary)] text-[var(--figma-color-text-warning)] hover:bg-[var(--figma-color-bg-warning-hover)] transition-colors"
           >
             <svg
               width="14"
@@ -854,12 +874,14 @@ function Plugin() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-[var(--figma-color-text-warning)]"
+              className="text-[var(--figma-color-text-warning)] group-hover:text-[var(--figma-color-text-onbrand)] transition-colors"
             >
               <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
               <path d="M5 21h14" />
             </svg>
-            <span className="font-bold">Premium</span>
+            <span className="font-bold group-hover:text-[var(--figma-color-text-onbrand)] cursor-pointer">
+              Premium
+            </span>
           </button>
         )}
       </div>
@@ -1303,6 +1325,7 @@ function Plugin() {
         error={licenseError}
         onActivate={handleLicenseActivation}
         onDeactivate={handleDeactivateLicense}
+        isManualOpen={isManualOpen}
       />
 
       <LicenseDeactivationModal
