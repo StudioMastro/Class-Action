@@ -4,7 +4,17 @@
 
 Class Action is a Figma plugin that follows a freemium licensing model. This document outlines the general terms and conditions for using the plugin.
 
+## Figma Community License
+
+As this plugin is distributed through the Figma Community, it is also subject to the [Figma Community Free Resource License](https://www.figma.com/legal/community-free-resource-license/). By downloading and using this plugin, you agree to the terms of that license, which includes:
+
+- A limited, worldwide, non-exclusive, non-transferable, non-sublicensable right to use the plugin solely in connection with your authorized use of the Figma Platform
+- Restrictions on redistribution, reverse engineering, or creating derivative works
+- The plugin is provided "as-is" with no warranties
+
 ## License Tiers
+
+In addition to the Figma Community License, this plugin implements its own freemium licensing model:
 
 ### Free Tier
 

@@ -1,4 +1,4 @@
-# Build e Output
+# Build and Output
 build/
 code.js
 ui.js
@@ -23,7 +23,7 @@ node_modules/
 .npm
 package-lock.json
 
-# Debug e Log
+# Debug and Logs
 *.log
 *.log.*
 npm-debug.log*
@@ -31,7 +31,7 @@ yarn-debug.log*
 yarn-error.log*
 .debug/
 
-# IDE e Editor
+# IDE and Editors
 .vscode/
 .idea/
 *.swp
@@ -42,7 +42,7 @@ yarn-error.log*
 !.cursor/scripts/
 .cursorignore
 
-# Sistema e Environment
+# System and Environment
 .DS_Store
 Thumbs.db
 .env
@@ -67,7 +67,7 @@ coverage/
 # Figma specific
 manifest.json
 
-# Credenziali e Chiavi
+# Credentials and Keys
 *.pem
 *.key
 *.cert
@@ -79,3 +79,9 @@ manifest.json
 *.env.*
 .cursor/
 docs/
+
+# Figma Plugin Build Configuration
+build-figma-plugin.main.js
+!build-figma-plugin.example.js
+build-figma-plugin.manifest.js
+!build-figma-plugin.manifest.example.js
