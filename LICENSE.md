@@ -59,8 +59,7 @@ We respect your privacy. For detailed information about data collection and usag
 
 For licensing inquiries or support:
 
-- Email: support@classaction.plugin
-- Website: https://classaction.plugin/support
+- Email: alessandro.mastro@icloud.com
 
 ---
 
