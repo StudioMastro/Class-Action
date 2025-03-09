@@ -10,6 +10,8 @@ import type { LicenseStatus } from './types/license';
 import { validateClassData, generateChecksum } from './utils/validation';
 import { storageService } from './services/storageService';
 import { licenseService } from './services/licenseService';
+import { analytics } from './analytics';
+import { ANALYTICS_EVENTS } from './analytics/config';
 
 // Notification handler
 let currentNotification: NotificationHandler | null = null;
@@ -40,6 +42,9 @@ export default function () {
       try {
         // Initialize license state
         licenseService.initializeState();
+
+        // Track plugin start event
+        analytics.trackEvent(ANALYTICS_EVENTS.PLUGIN_STARTED);
 
         // Attendiamo che l'UI sia pronta a gestire le richieste API
         // prima di eseguire i test di connettività
@@ -825,6 +830,16 @@ export default function () {
       await storageService.addClass(newClass);
       emit('CLASS_SAVED', newClass);
       showNotification('Class saved successfully');
+
+      // Get current classes before tracking
+      const currentClasses = await loadSavedClasses();
+
+      // Track class saved event
+      analytics.trackEvent(ANALYTICS_EVENTS.CLASS_SAVED, {
+        totalClassCount: currentClasses.length,
+        isPremiumUser: licenseService.hasFeature('unlimited_classes'),
+      });
+
       return { success: true, data: newClass };
     } catch (error) {
       console.error('Error saving class:', error);
@@ -1529,6 +1544,12 @@ export default function () {
         showNotification(message);
       }
 
+      // Track class applied event
+      analytics.trackEvent(ANALYTICS_EVENTS.CLASS_APPLIED, {
+        batchOperation: false,
+        isPremiumUser: licenseService.hasFeature('batch_operations'),
+      });
+
       return true;
     } catch (error) {
       console.error('Error applying class:', error);
@@ -1653,6 +1674,15 @@ export default function () {
         totalClasses: classesToExport.length,
       });
 
+      // Get current classes before tracking
+      const currentClasses = await loadSavedClasses();
+
+      // Track export classes event
+      analytics.trackEvent(ANALYTICS_EVENTS.CLASSES_EXPORTED, {
+        count: selectedClasses ? selectedClasses.length : currentClasses.length,
+        isPremiumUser: licenseService.hasFeature('import_export'),
+      });
+
       return jsonString;
     } catch (error) {
       console.error('Error exporting classes:', error);
@@ -1763,6 +1793,12 @@ export default function () {
         skippedClasses: alreadyExistingClasses,
         message: notificationMessage,
       });
+
+      // Track import classes event
+      analytics.trackEvent(ANALYTICS_EVENTS.CLASSES_IMPORTED, {
+        count: newClasses.length,
+        isPremiumUser: licenseService.hasFeature('import_export'),
+      });
     } catch (error) {
       console.error('Error importing classes:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1823,6 +1859,12 @@ export default function () {
       emit('CLASSES_APPLIED_ALL', { success: false, error: String(error) });
       return false;
     }
+
+    // Track apply all matching classes event
+    analytics.trackEvent(ANALYTICS_EVENTS.APPLY_ALL_MATCHING, {
+      selectionCount: figma.currentPage.selection.length,
+      isPremiumUser: licenseService.hasFeature('batch_operations'),
+    });
   }
 
   async function handleAnalyzeApplyAll() {
@@ -2025,5 +2067,11 @@ export default function () {
     } catch (error) {
       console.error('Error resolving style colors:', error);
     }
+  });
+
+  // Handle analytics consent response
+  on('analytics-consent', function (enabled: boolean) {
+    analytics.setEnabled(enabled);
+    analytics.trackEvent(ANALYTICS_EVENTS.ANALYTICS_PREFERENCE_SET, { enabled });
   });
 }

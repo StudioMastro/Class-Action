@@ -163,6 +163,48 @@ Use `console.log` statements to inspect values in your code.
 
 To open the developer console, search for and run `Show/Hide Console` via the Quick Actions search bar.
 
+### Analytics System
+
+The plugin includes an optional analytics system to collect anonymous usage data. This helps us improve the plugin by understanding how it's used.
+
+#### Features
+
+- **Opt-in only**: Users must explicitly consent to data collection
+- **Anonymous**: No personal information is collected
+- **Transparent**: Users can see what data is collected
+- **Minimal**: Only collects essential usage metrics
+
+#### Data Collected
+
+- Number of classes saved and applied
+- Features used
+- Plugin performance metrics
+
+#### Implementation
+
+1. **Client-side**: The analytics service in `src/analytics/` handles data collection and user consent
+2. **Server-side**: A simple serverless function in `api/analytics.js` receives and processes the data
+3. **Storage**: Data is stored in a database (MongoDB, Firebase, etc.)
+
+#### Deployment
+
+The analytics backend can be deployed to Vercel or similar serverless platforms:
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy the analytics API
+vercel
+```
+
+#### Privacy Considerations
+
+- All data collection is opt-in
+- Users can disable analytics at any time
+- No personally identifiable information is collected
+- Data is used only to improve the plugin
+
 ## See also
 
 - [Create Figma Plugin docs](https://yuanqing.github.io/create-figma-plugin/)

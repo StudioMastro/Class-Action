@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "name": "class-action-analytics",
+  "builds": [{ "src": "api/**/*.js", "use": "@vercel/node" }],
+  "routes": [{ "src": "/analytics", "dest": "/api/analytics.js" }],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
