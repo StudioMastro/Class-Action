@@ -198,17 +198,19 @@ export default function () {
         status: 'error',
         error:
           error instanceof Error
-            ? {
-                code: 'API_ERROR',
-                message: error.message,
-                actions: ['Please try again later or contact support'],
-              }
-            : error,
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error during license deactivation',
       });
     } finally {
       isProcessingLicense = false;
     }
   });
+
+  // Handler per il reset completo dei dati della licenza
+  // Questo listener è stato rimosso per evitare che gli utenti possano resettare manualmente i dati della licenza
+  // La funzionalità di reset è ora gestita internamente dal sistema quando necessario
 
   // Listen for selection changes
   figma.on('selectionchange', () => {

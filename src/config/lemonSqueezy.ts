@@ -1,5 +1,21 @@
 import type { EnvironmentConfig, LemonSqueezyConfig } from '../types/config';
 
+// Importa la configurazione dal file generato durante la build
+// Se il file non esiste (ad esempio durante lo sviluppo), utilizziamo le variabili globali
+let importedConfig: {
+  ENV_CONFIG: EnvironmentConfig;
+  LEMONSQUEEZY_CONFIG: LemonSqueezyConfig;
+} | null = null;
+
+try {
+  // Importa la configurazione dal file generato
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  importedConfig = require('./env-config');
+  console.log('[CONFIG] Loaded configuration from generated file');
+} catch (error) {
+  console.log('[CONFIG] Using global environment variables');
+}
+
 // Definizione delle costanti che verranno sostituite durante la build
 // Queste stringhe verranno sostituite con i valori reali dal build process
 declare const __NODE_ENV__: string;
@@ -9,27 +25,32 @@ declare const __LEMONSQUEEZY_PRODUCT_ID__: string;
 declare const __LEMONSQUEEZY_CHECKOUT_URL__: string;
 
 // Environment configuration
-export const ENV_CONFIG: EnvironmentConfig = {
-  isDevelopment: typeof __NODE_ENV__ === 'undefined' || __NODE_ENV__ !== 'production',
-  logLevel:
-    typeof __NODE_ENV__ !== 'undefined' && __NODE_ENV__ === 'production' ? 'error' : 'debug',
-} as const;
+export const ENV_CONFIG: EnvironmentConfig = importedConfig
+  ? importedConfig.ENV_CONFIG
+  : ({
+      isDevelopment: typeof __NODE_ENV__ === 'undefined' || __NODE_ENV__ !== 'production',
+      logLevel:
+        typeof __NODE_ENV__ !== 'undefined' && __NODE_ENV__ === 'production' ? 'error' : 'debug',
+    } as const);
 
 // LemonSqueezy API configuration - utilizziamo gli endpoint diretti
-export const LEMONSQUEEZY_CONFIG: LemonSqueezyConfig = {
-  // Utilizziamo l'endpoint diretto invece del CORS proxy
-  API_ENDPOINT: 'https://api.lemonsqueezy.com/v1',
+export const LEMONSQUEEZY_CONFIG: LemonSqueezyConfig = importedConfig
+  ? importedConfig.LEMONSQUEEZY_CONFIG
+  : {
+      // Utilizziamo l'endpoint diretto invece del CORS proxy
+      API_ENDPOINT: 'https://api.lemonsqueezy.com/v1',
 
-  // The correct license API endpoint for LemonSqueezy
-  // The base URL should NOT include the final slash
-  LICENSE_API_ENDPOINT: 'https://api.lemonsqueezy.com/v1/licenses',
+      // The correct license API endpoint for LemonSqueezy
+      // The base URL should NOT include the final slash
+      LICENSE_API_ENDPOINT: 'https://api.lemonsqueezy.com/v1/licenses',
 
-  API_KEY: typeof __LEMONSQUEEZY_API_KEY__ !== 'undefined' ? __LEMONSQUEEZY_API_KEY__ : '',
-  STORE_ID: typeof __LEMONSQUEEZY_STORE_ID__ !== 'undefined' ? __LEMONSQUEEZY_STORE_ID__ : '',
-  PRODUCT_ID: typeof __LEMONSQUEEZY_PRODUCT_ID__ !== 'undefined' ? __LEMONSQUEEZY_PRODUCT_ID__ : '',
-  CHECKOUT_URL:
-    typeof __LEMONSQUEEZY_CHECKOUT_URL__ !== 'undefined' ? __LEMONSQUEEZY_CHECKOUT_URL__ : '',
-};
+      API_KEY: typeof __LEMONSQUEEZY_API_KEY__ !== 'undefined' ? __LEMONSQUEEZY_API_KEY__ : '',
+      STORE_ID: typeof __LEMONSQUEEZY_STORE_ID__ !== 'undefined' ? __LEMONSQUEEZY_STORE_ID__ : '',
+      PRODUCT_ID:
+        typeof __LEMONSQUEEZY_PRODUCT_ID__ !== 'undefined' ? __LEMONSQUEEZY_PRODUCT_ID__ : '',
+      CHECKOUT_URL:
+        typeof __LEMONSQUEEZY_CHECKOUT_URL__ !== 'undefined' ? __LEMONSQUEEZY_CHECKOUT_URL__ : '',
+    };
 
 // Validazione della configurazione
 export function validateConfig(): boolean {

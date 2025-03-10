@@ -748,14 +748,12 @@ function Plugin() {
   };
 
   const handleDeactivateLicense = () => {
-    setLicenseError(null);
-    setLicenseStatus((prev) => ({
-      ...prev,
-      status: 'processing',
-      error: undefined,
-    }));
-    emit('DEACTIVATE_LICENSE');
+    if (licenseStatus.status === 'processing') {
+      return;
+    }
+
     setIsDeactivationModalOpen(false);
+    emit('DEACTIVATE_LICENSE');
   };
 
   const handleLicenseActivation = (key: string) => {
@@ -1314,7 +1312,7 @@ function Plugin() {
         featureName={premiumFeatureName}
         checkoutUrl={
           LEMONSQUEEZY_CONFIG.CHECKOUT_URL ||
-          'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c'
+          'https://mastro.lemonsqueezy.com/buy/1edb7f3c-cf47-4a79-b2c6-c7b5980c1cc3'
         }
       />
 
@@ -1326,6 +1324,10 @@ function Plugin() {
         onActivate={handleLicenseActivation}
         onDeactivate={handleDeactivateLicense}
         isManualOpen={isManualOpen}
+        checkoutUrl={
+          LEMONSQUEEZY_CONFIG.CHECKOUT_URL ||
+          'https://mastro.lemonsqueezy.com/buy/1edb7f3c-cf47-4a79-b2c6-c7b5980c1cc3'
+        }
       />
 
       <LicenseDeactivationModal

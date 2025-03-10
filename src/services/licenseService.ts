@@ -72,7 +72,52 @@ export class LicenseService {
       on('CHECK_LICENSE_STATUS', async () => {
         try {
           console.log('[LICENSE] 🔄 Checking license status...');
-          // Implementa la logica per verificare lo stato della licenza
+
+          // Se abbiamo una licenza salvata, verifichiamo che sia valida nell'ambiente corrente
+          if (this.licenseKey && this.instanceId) {
+            console.log('[LICENSE] 🔑 Found stored license, verifying...');
+
+            // Verifica la validità della licenza con l'endpoint corrente
+            try {
+              const validationResponse = await this.validateLicense(this.licenseKey, true);
+
+              if (!validationResponse.valid) {
+                console.log(
+                  '[LICENSE] ❌ Stored license is not valid in current environment, resetting...',
+                );
+                await this.resetLicenseData();
+
+                // Emetti lo stato aggiornato (freemium)
+                emit('LICENSE_STATUS_CHANGED', {
+                  tier: 'free',
+                  isValid: false,
+                  features: [],
+                  status: 'idle',
+                });
+
+                return;
+              }
+
+              // La licenza è valida, emetti lo stato premium
+              const licenseStatus = this.mapResponseToLicenseStatus(validationResponse);
+              emit('LICENSE_STATUS_CHANGED', licenseStatus);
+            } catch (error) {
+              console.error('[LICENSE] ❌ Error validating license during initialization:', error);
+              // In caso di errore di connessione, manteniamo lo stato corrente
+              // ma emettiamo un avviso
+              emit('LICENSE_STATUS_CHANGED', {
+                tier: this.licenseStatusType === 'active' ? 'premium' : 'free',
+                isValid: this.licenseStatusType === 'active',
+                features: this.licenseFeatures,
+                status: 'warning',
+                error: {
+                  code: 'CONNECTION_ERROR',
+                  message: 'Could not verify license. Using cached status.',
+                  actions: ['Check your internet connection', 'Try again later'],
+                },
+              });
+            }
+          }
         } catch (error) {
           console.error('[LICENSE] ❌ Error checking license status:', error);
         }
@@ -1214,6 +1259,18 @@ export class LicenseService {
 
       if (dataString) {
         const data = JSON.parse(dataString as string) as StoredLicenseData;
+
+        // Verifica se i dati della licenza sono validi per l'ambiente corrente
+        const isValidForCurrentEnvironment = await this.verifyLicenseEnvironment(data);
+
+        if (!isValidForCurrentEnvironment) {
+          console.log(
+            '[LICENSE] ⚠️ Stored license data is not valid for current environment, resetting...',
+          );
+          await this.resetLicenseData();
+          return;
+        }
+
         this.licenseKey = data.licenseKey;
         this.instanceId = data.instanceId;
         this.licenseStatusType = data.licenseStatus;
@@ -1222,6 +1279,104 @@ export class LicenseService {
       }
     } catch (error) {
       console.error('Error loading license data:', error);
+    }
+  }
+
+  /**
+   * Verifica se i dati della licenza sono validi per l'ambiente corrente
+   * Questo metodo controlla se la licenza è stata attivata in un ambiente diverso (test vs prod)
+   * e se è ancora valida nell'ambiente corrente
+   */
+  private async verifyLicenseEnvironment(data: StoredLicenseData): Promise<boolean> {
+    try {
+      // Se non c'è una licenza o un'istanza, non c'è nulla da verificare
+      if (!data.licenseKey || !data.instanceId) {
+        return true;
+      }
+
+      // Se la licenza è già marcata come inattiva, è ok
+      if (data.licenseStatus === 'inactive') {
+        return true;
+      }
+
+      // Verifica se l'ambiente è cambiato (da test a prod o viceversa)
+      const isDevelopment = ENV_CONFIG.isDevelopment;
+      const isProdEndpoint = LEMONSQUEEZY_CONFIG.API_ENDPOINT.includes('api.lemonsqueezy.com');
+
+      // Se siamo in ambiente di sviluppo ma usiamo endpoint di produzione, o viceversa,
+      // potrebbe esserci un problema di configurazione
+      if ((isDevelopment && isProdEndpoint) || (!isDevelopment && !isProdEndpoint)) {
+        console.log('[LICENSE] ⚠️ Environment mismatch detected:', {
+          isDevelopment,
+          isProdEndpoint,
+          apiEndpoint: LEMONSQUEEZY_CONFIG.API_ENDPOINT,
+        });
+      }
+
+      // Verifica la validità della licenza con l'endpoint corrente
+      if (data.licenseKey) {
+        try {
+          console.log('[LICENSE] 🔄 Verifying license validity in current environment...');
+          const validationResponse = await this.validateLicense(data.licenseKey, true);
+
+          // Se la licenza non è valida nell'ambiente corrente, resettiamo i dati
+          if (!validationResponse.valid) {
+            console.log(
+              '[LICENSE] ❌ License is not valid in current environment:',
+              validationResponse,
+            );
+            return false;
+          }
+
+          console.log('[LICENSE] ✅ License is valid in current environment');
+          return true;
+        } catch (error) {
+          console.error('[LICENSE] ❌ Error validating license in current environment:', error);
+          // In caso di errore di connessione, manteniamo i dati per evitare problemi offline
+          // ma solo se la licenza era precedentemente valida
+          return data.licenseStatus === 'active';
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[LICENSE] ❌ Error verifying license environment:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Utile per risolvere problemi di licenza persistente
+   * Questo metodo è privato e può essere chiamato solo internamente
+   */
+  private async resetLicenseData(): Promise<void> {
+    try {
+      console.log('[LICENSE] 🧹 Resetting all license data...');
+
+      // Reset dei dati in memoria
+      this.licenseKey = null;
+      this.instanceId = null;
+      this.licenseStatusType = 'inactive';
+      this.licenseFeatures = [];
+      this.activationDate = null;
+
+      // Cancella tutti i dati dallo storage
+      await figma.clientStorage.deleteAsync(this.storageKey);
+      await figma.clientStorage.deleteAsync(STORAGE_KEYS.LICENSE_KEY);
+      await figma.clientStorage.deleteAsync(STORAGE_KEYS.DEVICE_ID);
+      await figma.clientStorage.deleteAsync(STORAGE_KEYS.LAST_VALIDATION);
+
+      console.log('[LICENSE] ✅ License data reset successfully');
+
+      // Emetti un evento di cambio stato della licenza
+      emit('LICENSE_STATUS_CHANGED', {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'idle',
+      });
+    } catch (error) {
+      console.error('[LICENSE] ❌ Error resetting license data:', error);
     }
   }
 }

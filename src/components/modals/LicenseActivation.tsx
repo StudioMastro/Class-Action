@@ -2,12 +2,11 @@
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { Text } from '../common/Text';
-import { Button } from '../common/Button';
 import { TextInput } from '../TextInput';
 import { Modal } from './Modal';
 import { Check } from '../common/icons';
 import type { LicenseStatus, LemonSqueezyError as LicenseError } from '../../types/lemonSqueezy';
-import { LEMONSQUEEZY_CONFIG } from '../../config/lemonSqueezy';
+import { ENV_CONFIG } from '../../config/lemonSqueezy';
 
 interface LicenseActivationProps {
   currentStatus: LicenseStatus;
@@ -17,6 +16,7 @@ interface LicenseActivationProps {
   onActivate: (licenseKey: string) => void;
   onDeactivate: () => void;
   isManualOpen?: boolean;
+  checkoutUrl: string;
 }
 
 export function LicenseActivation({
@@ -27,6 +27,7 @@ export function LicenseActivation({
   onActivate,
   onDeactivate,
   isManualOpen = false,
+  checkoutUrl,
 }: LicenseActivationProps) {
   const [licenseKey, setLicenseKey] = useState('');
   const [isActivating, setIsActivating] = useState(false);
@@ -177,6 +178,15 @@ export function LicenseActivation({
     }
   };
 
+  const handlePurchaseClick = () => {
+    // Apre il checkout in una nuova finestra
+    window.open(checkoutUrl, '_blank');
+
+    // Log per debug
+    console.log('[LICENSE] Opening checkout URL:', checkoutUrl);
+    console.log('[LICENSE] Environment:', ENV_CONFIG.isDevelopment ? 'development' : 'production');
+  };
+
   // Format date for better display
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return 'Never';
@@ -270,95 +280,92 @@ export function LicenseActivation({
         onClick: onClose,
       }}
     >
-      <div className="flex flex-col gap-4">
-        {/* Success Message - mostrato solo dopo un'attivazione riuscita e non in caso di apertura manuale */}
-        {showSuccess && !isManualOpen && (
-          <div
-            className="px-4 py-2 rounded-md"
-            style={{ backgroundColor: 'var(--figma-color-bg-success-tertiary)' }}
-          >
-            <Text size="sm" weight="bold" className="text-[var(--figma-color-text-success)]">
+      <div className="space-y-4">
+        {/* Messaggio di successo */}
+        {showSuccess && (
+          <div className="bg-[var(--figma-color-bg-success-tertiary)] p-4 rounded-md mb-4 text-center">
+            <div className="flex justify-center mb-2">
+              <div className="w-10 h-10 rounded-full bg-[var(--figma-color-bg-success-tertiary)] flex items-center justify-center">
+                <Check className="w-6 h-6 text-[var(--figma-color-text-success)]" />
+              </div>
+            </div>
+            <Text size="lg" className="font-medium text-[var(--figma-color-text)]">
               License successfully activated!
+            </Text>
+            <Text size="sm" className="text-[var(--figma-color-text)] mt-1">
+              You can now enjoy all premium features.
             </Text>
           </div>
         )}
 
-        {/* Informational message - solo quando la licenza è attiva */}
+        {/* Stato della licenza */}
         {currentStatus.isValid && (
-          <Text size="sm" className="text-[var(--figma-color-text)]">
-            Your license is active, you can enjoy all <strong>Premium features!</strong>
-          </Text>
+          <div className="bg-[var(--figma-color-bg-success-tertiary)] p-4 rounded-md mb-4">
+            <Text size="sm" className="text-[var(--figma-color-text)]">
+              Your license is active, you can enjoy all <strong>Premium features!</strong>
+            </Text>
+          </div>
         )}
 
         {/* License Info - se la licenza è attiva */}
         {currentStatus.isValid && (
-          <div className="flex flex-col gap-2 p-3 rounded-md bg-[var(--figma-color-bg-secondary)]">
-            <div className="flex flex-col gap-2">
-              {/* Status */}
-              <div className="flex items-center justify-between">
-                <Text size="xs" weight="bold">
-                  Status
-                </Text>
-                <div className="flex items-center gap-1 p-1 rounded-md bg-[--figma-color-bg-success-tertiary]">
-                  <Check size={16} className="text-[var(--figma-color-text-success)]" />
-                  <Text
-                    size="xs"
-                    mono
-                    weight="bold"
-                    className="text-[var(--figma-color-text-success)]"
-                  >
-                    Active
-                  </Text>
-                </div>
-              </div>
-
-              {/* License Key */}
-              {currentStatus.licenseKey && (
-                <div className="flex items-center justify-between">
-                  <Text size="xs" weight="bold">
-                    License Key
-                  </Text>
-                  <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
-                    {currentStatus.licenseKey.substring(0, 8)}...
-                    {currentStatus.licenseKey.substring(currentStatus.licenseKey.length - 8)}
-                  </Text>
-                </div>
-              )}
-
-              {/* Activations Limit */}
-              {currentStatus.activationLimit !== undefined && (
-                <div className="flex items-center justify-between">
-                  <Text size="xs" weight="bold">
-                    Limit
-                  </Text>
-                  <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
-                    {currentStatus.activationsCount !== undefined
-                      ? `${currentStatus.activationsCount} of ${currentStatus.activationLimit}`
-                      : currentStatus.activationLimit}
-                  </Text>
-                </div>
-              )}
-
-              {/* Activation Date */}
-              <div className="flex items-center justify-between">
-                <Text size="xs" weight="bold">
-                  Activation Date
-                </Text>
-                <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
-                  {getActivationDate()}
-                </Text>
-              </div>
-
-              {/* Expiration Date */}
-              <div className="flex items-center justify-between">
-                <Text size="xs" weight="bold">
-                  Expiring Date
-                </Text>
-                <Text size="xs" mono className="text-[var(--figma-color-text-secondary)]">
-                  {formatDate(currentStatus.expiresAt)}
-                </Text>
-              </div>
+          <div className="space-y-3">
+            {/* Tier */}
+            <div className="flex justify-between items-center">
+              <Text size="sm" className="text-[var(--figma-color-text-secondary)]">
+                Plan
+              </Text>
+              <Text
+                size="sm"
+                className="font-medium text-[var(--figma-color-text)] bg-[var(--figma-color-bg-success-tertiary)] px-2 py-0.5 rounded"
+              >
+                {currentStatus.tier === 'premium' ? 'Premium' : 'Standard'}
+              </Text>
             </div>
+
+            {/* Activation Date */}
+            <div className="flex justify-between items-center">
+              <Text size="sm" className="text-[var(--figma-color-text-secondary)]">
+                Activated On
+              </Text>
+              <Text size="sm" className="font-medium text-[var(--figma-color-text)]">
+                {getActivationDate()}
+              </Text>
+            </div>
+
+            {/* License Key */}
+            {currentStatus.licenseKey && (
+              <div className="flex justify-between items-center">
+                <Text size="sm" className="text-[var(--figma-color-text-secondary)]">
+                  License Key
+                </Text>
+                <Text size="sm" className="font-mono text-[var(--figma-color-text)]">
+                  {currentStatus.licenseKey.substring(0, 8)}...
+                  {currentStatus.licenseKey.substring(currentStatus.licenseKey.length - 8)}
+                </Text>
+              </div>
+            )}
+
+            {/* Features */}
+            {currentStatus.features && currentStatus.features.length > 0 && (
+              <div className="mt-2">
+                <Text size="sm" className="text-[var(--figma-color-text-secondary)] mb-1">
+                  Included Features
+                </Text>
+                <div className="space-y-1">
+                  {currentStatus.features.map((feature, index) => (
+                    <div key={index} className="flex items-center">
+                      <div className="w-4 h-4 rounded-full bg-[var(--figma-color-bg-success-tertiary)] flex items-center justify-center mr-2">
+                        <Check className="w-3 h-3 text-[var(--figma-color-text-success)]" />
+                      </div>
+                      <Text size="sm" className="text-[var(--figma-color-text)]">
+                        {feature}
+                      </Text>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -372,59 +379,59 @@ export function LicenseActivation({
               value={licenseKey}
               onChange={setLicenseKey}
               placeholder="Enter license key..."
-              disabled={isActivating}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isActivating) {
-                  handleActivate();
-                }
-              }}
+              className="mb-2"
             />
+            <Text size="xs" className="text-[var(--figma-color-text-secondary)]">
+              You can find your license key in the purchase confirmation email or in your{' '}
+              <a
+                href="https://app.lemonsqueezy.com/my-orders"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--figma-color-text-brand)] hover:underline"
+              >
+                LemonSqueezy account
+              </a>
+              .
+            </Text>
+          </div>
+        )}
 
-            {/* Link per l'acquisto di una licenza */}
-            <div className="mt-1">
-              <Text size="xs" className="text-[var(--figma-color-text)]">
-                You don't have a license?{' '}
-                <a
-                  href={
-                    LEMONSQUEEZY_CONFIG.CHECKOUT_URL ||
-                    'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c'
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-[var(--figma-color-text-brand)] hover:underline"
-                >
-                  Upgrade to Premium
-                </a>
-              </Text>
-            </div>
-
-            {/* Error Display - sotto l'input */}
-            {activeError && (
-              <div className="p-3 rounded bg-[var(--figma-color-bg-danger)]">
-                <Text size="sm" className="text-[var(--figma-color-text-onbrand)]">
-                  {activeError.message}
-                </Text>
-                {activeError.actions && activeError.actions.length > 0 && (
-                  <ul className="mt-2 text-sm list-disc list-inside">
-                    {activeError.actions.map((action: string, index: number) => (
-                      <li key={index} className="text-[var(--figma-color-text-onbrand)]">
-                        {action}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {activeError.managementUrl && (
-                  <Button
-                    onClick={() => window.open(activeError.managementUrl, '_blank')}
-                    variant="secondary"
-                    size="small"
-                    className="mt-2"
-                  >
-                    Manage License
-                  </Button>
-                )}
-              </div>
+        {/* Error message */}
+        {activeError && (
+          <div className="bg-[var(--figma-color-bg-danger)] p-3 rounded-md">
+            <Text size="sm" weight="bold" className="text-[var(--figma-color-text)]">
+              {activeError.message || 'An error occurred'}
+            </Text>
+            {activeError.actions && activeError.actions.length > 0 && (
+              <ul className="mt-1 list-disc list-inside">
+                {activeError.actions.map((action, index) => (
+                  <li key={index}>
+                    <Text size="xs" className="text-[var(--figma-color-text)]">
+                      {action}
+                    </Text>
+                  </li>
+                ))}
+              </ul>
             )}
+          </div>
+        )}
+
+        {/* Purchase CTA - solo se non è attiva e non è in stato di successo */}
+        {!currentStatus.isValid && !showSuccess && (
+          <div className="pt-4 border-t border-[var(--figma-color-border)]">
+            <Text size="xs" className="text-[var(--figma-color-text-secondary)]">
+              You don't have a license?{' '}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handlePurchaseClick();
+                }}
+                className="text-[var(--figma-color-text-brand)] hover:underline"
+              >
+                Purchase now
+              </a>
+            </Text>
           </div>
         )}
       </div>
