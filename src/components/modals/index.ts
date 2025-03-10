@@ -4,3 +4,4 @@ export * from './ClassDetailsModal';
 export * from './PremiumFeatureModal';
 export * from './LicenseActivation';
 export * from './LicenseDeactivationModal';
+export * from './SettingsModal';

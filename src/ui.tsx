@@ -10,6 +10,7 @@ import {
   PremiumFeatureModal,
   LicenseActivation,
   LicenseDeactivationModal,
+  SettingsModal,
 } from './components/modals';
 import { Button, IconButton, Text } from './components/common';
 import { DropdownItem } from './components/DropdownItem';
@@ -67,6 +68,8 @@ function Plugin() {
   const [premiumFeatureName, setPremiumFeatureName] = useState('');
   const [showLicenseActivation, setShowLicenseActivation] = useState(false);
   const [isApplyAllModalOpen, setIsApplyAllModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [licenseError, setLicenseError] = useState<LicenseError | null>(null);
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>({
@@ -833,6 +836,110 @@ function Plugin() {
     return undefined;
   }, [loadingState, mountTime, minLoadingTimeMs, showLoadingOverlay]);
 
+  // Funzione per gestire l'apertura del modale delle impostazioni
+  const handleOpenSettings = () => {
+    setIsSettingsModalOpen(true);
+    setActiveMenu(null);
+  };
+
+  // Funzione per gestire la chiusura del modale delle impostazioni
+  const handleCloseSettings = () => {
+    setIsSettingsModalOpen(false);
+  };
+
+  // Funzione per controllare lo stato di consenso dell'analytics
+  useEffect(() => {
+    // Invia un messaggio al plugin per ottenere lo stato di consenso dell'analytics
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: 'get-analytics-consent',
+        },
+      },
+      '*',
+    );
+
+    // Ascolta la risposta dal plugin
+    const handleMessage = (event: MessageEvent) => {
+      const { type, enabled } = event.data.pluginMessage || {};
+
+      if (type === 'analytics-consent-status') {
+        setAnalyticsEnabled(enabled);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Aggiungo un effetto per registrare l'handler per l'evento VALIDATE_LICENSE
+  useEffect(() => {
+    // Registra l'handler per l'evento VALIDATE_LICENSE
+    on('VALIDATE_LICENSE', (licenseKey: string) => {
+      console.log('Received VALIDATE_LICENSE event with key:', licenseKey);
+      if (handleLicenseActivation) {
+        handleLicenseActivation(licenseKey);
+      }
+    });
+  }, []);
+
+  // Funzione di test per inviare eventi manualmente
+  const testAnalyticsEvent = () => {
+    console.log('[Test] Sending test analytics event');
+
+    // Invia un evento di test
+    import('./analytics')
+      .then(({ analytics }) => {
+        analytics.trackEvent('test_event', {
+          testData: 'This is a test event',
+          timestamp: new Date().toISOString(),
+        });
+
+        // Forza il flush degli eventi
+        setTimeout(() => {
+          console.log('[Test] Forcing flush of analytics events');
+          analytics.flush();
+        }, 1000);
+      })
+      .catch((error) => {
+        console.error('[Test] Error importing analytics:', error);
+      });
+  };
+
+  // Aggiungo un effetto per registrare l'handler per l'evento TEST_ANALYTICS
+  useEffect(() => {
+    // Registra l'handler per l'evento TEST_ANALYTICS
+    on('TEST_ANALYTICS', () => {
+      console.log('Received TEST_ANALYTICS event');
+      testAnalyticsEvent();
+    });
+  }, []);
+
+  // Aggiungo un pulsante di test nell'interfaccia (solo in modalità sviluppo)
+  const renderTestButton = () => {
+    // Mostra il pulsante solo in modalità sviluppo
+    if (process.env.NODE_ENV !== 'development') return null;
+
+    return (
+      <div style={{ position: 'fixed', bottom: '10px', right: '10px', zIndex: 9999 }}>
+        <button
+          onClick={testAnalyticsEvent}
+          style={{
+            padding: '5px 10px',
+            backgroundColor: '#007AFF',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '12px',
+            cursor: 'pointer',
+          }}
+        >
+          Test Analytics
+        </button>
+      </div>
+    );
+  };
+
   if (showLoadingOverlay) {
     return (
       <div className="flex items-center justify-center h-screen fixed inset-0 bg-[var(--figma-color-bg)] z-50 transition-opacity duration-300 ease-in-out">
@@ -950,6 +1057,7 @@ function Plugin() {
                     style={{
                       backgroundColor: 'var(--figma-color-bg)',
                       border: '1px solid var(--figma-color-border)',
+                      minWidth: '180px',
                     }}
                   >
                     <div className="flex flex-col gap-1">
@@ -1039,6 +1147,29 @@ function Plugin() {
                         }
                       >
                         {'Apply Global'}
+                      </DropdownItem>
+
+                      {/* Settings menu item */}
+                      <DropdownItem
+                        onClick={handleOpenSettings}
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                          </svg>
+                        }
+                      >
+                        Settings
                       </DropdownItem>
                     </div>
                   </div>
@@ -1335,6 +1466,16 @@ function Plugin() {
         hasExcessClasses={savedClasses.length > 5}
         totalClasses={savedClasses.length}
       />
+
+      {isSettingsModalOpen && (
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={handleCloseSettings}
+          initialAnalyticsEnabled={analyticsEnabled}
+        />
+      )}
+
+      {renderTestButton()}
     </div>
   );
 }

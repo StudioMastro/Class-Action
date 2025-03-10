@@ -2074,4 +2074,30 @@ export default function () {
     analytics.setEnabled(enabled);
     analytics.trackEvent(ANALYTICS_EVENTS.ANALYTICS_PREFERENCE_SET, { enabled });
   });
+
+  // Handle get analytics consent status request
+  on('get-analytics-consent', async function () {
+    const isEnabled = analytics.isAnalyticsEnabled();
+    emit('analytics-consent-status', isEnabled);
+  });
+
+  // Aggiungiamo un handler per il test degli eventi di analytics
+  on('TEST_ANALYTICS_FROM_MAIN', () => {
+    console.log('[Main] Received TEST_ANALYTICS_FROM_MAIN event');
+
+    // Invia un evento di test direttamente dal main
+    analytics.trackEvent(ANALYTICS_EVENTS.PLUGIN_STARTED, {
+      testFromMain: true,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Forza il flush degli eventi
+    setTimeout(() => {
+      console.log('[Main] Forcing flush of analytics events');
+      analytics.flush();
+    }, 1000);
+
+    // Notifica l'utente
+    figma.notify('Test analytics event sent from main!', { timeout: 2000 });
+  });
 }

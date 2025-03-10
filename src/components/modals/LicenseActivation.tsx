@@ -172,7 +172,7 @@ export function LicenseActivation({
     window.open(portalUrl, '_blank');
 
     // This condition will never be true, but it prevents the linter from complaining about unused function
-    if (process.env.NODE_ENV === 'never-true-condition') {
+    if (false) {
       handleDeactivate();
     }
   };

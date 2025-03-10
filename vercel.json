@@ -1,9 +1,12 @@
 {
   "version": 2,
-  "name": "class-action-analytics",
-  "builds": [{ "src": "api/**/*.js", "use": "@vercel/node" }],
-  "routes": [{ "src": "/analytics", "dest": "/api/analytics.js" }],
-  "env": {
-    "NODE_ENV": "production"
+  "public": true,
+  "builds": [{ "src": "api/*.js", "use": "@vercel/node" }],
+  "routes": [
+    { "src": "/api/public-analytics", "dest": "/api/public-analytics.js" },
+    { "src": "/api/(.*)", "dest": "/api/$1.js" }
+  ],
+  "github": {
+    "silent": true
   }
 }

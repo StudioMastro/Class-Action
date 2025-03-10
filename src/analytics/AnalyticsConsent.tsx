@@ -1,11 +1,12 @@
-import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { h } from 'preact';
+import { useState } from 'preact/hooks';
+import { JSX } from 'preact';
 
 interface AnalyticsConsentProps {
   onClose: () => void;
 }
 
-export const AnalyticsConsent: React.FC<AnalyticsConsentProps> = ({ onClose }) => {
+export const AnalyticsConsent = ({ onClose }: AnalyticsConsentProps) => {
   const [isEnabled, setIsEnabled] = useState<boolean>(true);
 
   const handleSave = () => {
@@ -55,7 +56,9 @@ export const AnalyticsConsent: React.FC<AnalyticsConsentProps> = ({ onClose }) =
           type="checkbox"
           id="analytics-consent-checkbox"
           checked={isEnabled}
-          onChange={(e) => setIsEnabled(e.target.checked)}
+          onChange={(e: JSX.TargetedEvent<HTMLInputElement>) =>
+            setIsEnabled(e.currentTarget.checked)
+          }
           className="mr-2"
         />
         <label htmlFor="analytics-consent-checkbox">I allow anonymous usage data collection</label>

@@ -20,7 +20,6 @@ export interface AnalyticsEvent {
 }
 
 export class AnalyticsService {
-  private endpoint: string;
   private sessionId: string;
   private isEnabled: boolean | undefined;
   private pluginVersion: string;
@@ -31,7 +30,6 @@ export class AnalyticsService {
   private debug: boolean;
 
   constructor(config = ANALYTICS_CONFIG) {
-    this.endpoint = config.endpoint;
     this.pluginVersion = config.version;
     this.flushInterval = config.flushInterval;
     this.maxQueueSize = config.maxQueueSize;
@@ -54,6 +52,13 @@ export class AnalyticsService {
    */
   private async initializeFromStorage(): Promise<void> {
     try {
+      // Verifica se l'oggetto figma è disponibile
+      if (typeof figma === 'undefined' || !figma.clientStorage) {
+        console.warn('[Analytics] figma object not available, using default settings');
+        this.isEnabled = false;
+        return;
+      }
+
       const enabled = await figma.clientStorage.getAsync('analytics_enabled');
       this.isEnabled = enabled === true;
 
@@ -79,6 +84,13 @@ export class AnalyticsService {
    */
   private async saveAnalyticsPreference(enabled: boolean): Promise<void> {
     try {
+      // Verifica se l'oggetto figma è disponibile
+      if (typeof figma === 'undefined' || !figma.clientStorage) {
+        console.warn('[Analytics] figma object not available, cannot save preference');
+        this.isEnabled = enabled;
+        return;
+      }
+
       await figma.clientStorage.setAsync('analytics_enabled', enabled);
       this.isEnabled = enabled;
 
@@ -101,6 +113,12 @@ export class AnalyticsService {
    * Prompt user for analytics consent
    */
   private promptForConsent(): void {
+    // Verifica se l'oggetto figma è disponibile
+    if (typeof figma === 'undefined') {
+      console.warn('[Analytics] figma object not available, cannot prompt for consent');
+      return;
+    }
+
     figma.notify(
       "To improve Class Action, we'd like to collect anonymous usage data. No personal data is collected.",
       {
@@ -148,7 +166,12 @@ export class AnalyticsService {
    * Track an event
    */
   public trackEvent(eventName: string, eventData?: Record<string, unknown>): void {
-    if (this.isEnabled !== true) return;
+    console.log(`[Analytics Debug] Attempting to track event: ${eventName}`, eventData);
+
+    if (this.isEnabled !== true) {
+      console.log(`[Analytics Debug] Event tracking skipped - analytics not enabled`);
+      return;
+    }
 
     // Filter out any potentially sensitive data
     const sanitizedData = eventData ? this.sanitizeData(eventData) : undefined;
@@ -161,12 +184,15 @@ export class AnalyticsService {
       pluginVersion: this.pluginVersion,
     });
 
+    console.log(`[Analytics Debug] Event added to queue. Queue size: ${this.queue.length}`);
+
     if (this.debug) {
       console.log(`[Analytics] Event tracked: ${eventName}`, sanitizedData);
     }
 
     // Auto flush if queue gets too large
     if (this.queue.length >= this.maxQueueSize) {
+      console.log(`[Analytics Debug] Queue size threshold reached. Triggering flush.`);
       this.flush();
     }
   }
@@ -192,38 +218,95 @@ export class AnalyticsService {
   }
 
   /**
-   * Send collected events to the analytics endpoint
+   * Flush events to the server and local storage
+   *
+   * This method sends the queued events to the analytics server
+   * and also stores them in the local storage for backup.
    */
   public async flush(): Promise<void> {
-    if (this.isEnabled !== true || this.queue.length === 0) return;
+    console.log(
+      `[Analytics Debug] Flush called. Queue size: ${this.queue.length}, Enabled: ${this.isEnabled}`,
+    );
 
-    const events = [...this.queue];
-    this.queue = [];
-
-    if (this.debug) {
-      console.log(`[Analytics] Flushing ${events.length} events`);
+    if (this.isEnabled !== true || this.queue.length === 0) {
+      console.log(`[Analytics Debug] Flush skipped - analytics not enabled or queue empty`);
+      return;
     }
 
     try {
-      const response = await fetch(this.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ events }),
-      });
+      // Clone the queue for sending
+      const eventsToSend = [...this.queue];
 
-      if (!response.ok) {
-        throw new Error(`Analytics API responded with status: ${response.status}`);
-      }
+      console.log(
+        `[Analytics Debug] Preparing to send ${eventsToSend.length} events to endpoint: ${ANALYTICS_CONFIG.endpoint}`,
+      );
 
       if (this.debug) {
-        console.log(`[Analytics] Flush successful`);
+        console.log(
+          `[Analytics] Flushing ${eventsToSend.length} events to server and local storage`,
+        );
+      }
+
+      // 1. Send to server endpoint
+      try {
+        console.log(`[Analytics Debug] Sending request to: ${ANALYTICS_CONFIG.endpoint}`);
+
+        const response = await fetch(ANALYTICS_CONFIG.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': ANALYTICS_CONFIG.apiKey,
+          },
+          body: JSON.stringify(eventsToSend),
+        });
+
+        console.log(`[Analytics Debug] Response status: ${response.status}`);
+
+        if (!response.ok) {
+          console.error(`[Analytics] Server responded with status: ${response.status}`);
+        } else if (this.debug) {
+          console.log('[Analytics] Successfully sent events to server');
+        }
+      } catch (error) {
+        console.error('[Analytics] Failed to send events to server:', error);
+        // Continue with local storage even if server send fails
+      }
+
+      // 2. Store in local storage (as backup and for user transparency)
+      try {
+        // Verifica se l'oggetto figma è disponibile
+        if (typeof figma === 'undefined' || !figma.clientStorage) {
+          console.warn(
+            '[Analytics] figma object not available, cannot store events in local storage',
+          );
+          // Clear the queue anyway to prevent it from growing indefinitely
+          this.queue = [];
+          return;
+        }
+
+        // Get existing events
+        const existingEvents: AnalyticsEvent[] =
+          (await figma.clientStorage.getAsync('analytics_events')) || [];
+
+        // Add new events
+        const updatedEvents = [...existingEvents, ...eventsToSend];
+
+        // Store back to client storage
+        await figma.clientStorage.setAsync('analytics_events', updatedEvents);
+
+        if (this.debug) {
+          console.log(
+            `[Analytics] Stored ${eventsToSend.length} events in local storage. Total: ${updatedEvents.length}`,
+          );
+        }
+
+        // Clear the queue after successful storage
+        this.queue = [];
+      } catch (storageError) {
+        console.error('[Analytics] Failed to store events in local storage:', storageError);
       }
     } catch (error) {
-      console.error('[Analytics] Failed to send data:', error);
-      // Put events back in the queue
-      this.queue = [...events, ...this.queue];
+      console.error('[Analytics] Error during flush operation:', error);
     }
   }
 
@@ -244,6 +327,49 @@ export class AnalyticsService {
    */
   public isAnalyticsEnabled(): boolean {
     return this.isEnabled === true;
+  }
+
+  /**
+   * Export collected analytics data
+   *
+   * This function exports all analytics data stored in the client storage.
+   * It can be used for debugging or to manually send the data to a backend service.
+   */
+  public async exportAnalyticsData(): Promise<AnalyticsEvent[]> {
+    try {
+      // Flush any pending events
+      await this.flush();
+
+      // Get all stored events
+      const events = (await figma.clientStorage.getAsync('analytics_events')) || [];
+
+      if (this.debug) {
+        console.log(`[Analytics] Exported ${events.length} events`);
+      }
+
+      return events;
+    } catch (error) {
+      console.error('[Analytics] Failed to export analytics data:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Clear all stored analytics data
+   *
+   * This function clears all analytics data stored in the client storage.
+   * It can be used to free up storage space or to reset the analytics data.
+   */
+  public async clearAnalyticsData(): Promise<void> {
+    try {
+      await figma.clientStorage.setAsync('analytics_events', []);
+
+      if (this.debug) {
+        console.log('[Analytics] Cleared all analytics data');
+      }
+    } catch (error) {
+      console.error('[Analytics] Failed to clear analytics data:', error);
+    }
   }
 }
 

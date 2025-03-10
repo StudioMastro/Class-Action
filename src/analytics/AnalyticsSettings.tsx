@@ -1,15 +1,16 @@
-import * as React from 'react';
-import { useState, useEffect } from 'react';
+/** @jsx h */
+import { h } from 'preact';
+import { useState, useEffect } from 'preact/hooks';
 
 interface AnalyticsSettingsProps {
   initialEnabled?: boolean;
   onSettingChange?: (enabled: boolean) => void;
 }
 
-export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({
+export const AnalyticsSettings = ({
   initialEnabled = false,
   onSettingChange,
-}) => {
+}: AnalyticsSettingsProps) => {
   const [isEnabled, setIsEnabled] = useState<boolean>(initialEnabled);
 
   useEffect(() => {
@@ -17,8 +18,9 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({
     setIsEnabled(initialEnabled);
   }, [initialEnabled]);
 
-  const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.checked;
+  const handleToggle = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const newValue = target.checked;
     setIsEnabled(newValue);
 
     if (onSettingChange) {

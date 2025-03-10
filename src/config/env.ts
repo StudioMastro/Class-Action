@@ -7,6 +7,21 @@ interface EnvVariable {
   validate?: (value: string) => boolean;
 }
 
+// Funzione sicura per accedere alle variabili d'ambiente
+const getEnvValue = (key: string, defaultValue?: string): string | undefined => {
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key];
+    }
+  } catch (e) {
+    // Ignora l'errore in ambiente Figma
+  }
+  return defaultValue;
+};
+
+// Verifica se siamo in ambiente di sviluppo
+const isDevelopment = getEnvValue('NODE_ENV', 'development') === 'development';
+
 const ENV_VARIABLES: EnvVariable[] = [
   {
     key: 'LEMONSQUEEZY_API_KEY',
@@ -40,7 +55,7 @@ function validateEnvVariables(): void {
   const errors: string[] = [];
 
   ENV_VARIABLES.forEach((variable) => {
-    const value = process.env[variable.key] || variable.default;
+    const value = getEnvValue(variable.key, variable.default);
 
     if (!value && variable.required) {
       errors.push(`Missing required environment variable: ${variable.key}`);
@@ -53,7 +68,7 @@ function validateEnvVariables(): void {
   });
 
   if (errors.length > 0) {
-    if (process.env.NODE_ENV === 'development') {
+    if (isDevelopment) {
       logger.warn('Environment validation errors:', errors);
     } else {
       throw new Error(`Environment validation failed:\n${errors.join('\n')}`);
@@ -64,13 +79,13 @@ function validateEnvVariables(): void {
 export function initializeEnv(): void {
   validateEnvVariables();
 
-  if (process.env.NODE_ENV === 'development') {
+  if (isDevelopment) {
     logger.debug(
       'Environment initialized with variables:',
       ENV_VARIABLES.reduce(
         (acc, { key }) => ({
           ...acc,
-          [key]: key.includes('API_KEY') ? '***' : process.env[key],
+          [key]: key.includes('API_KEY') ? '***' : getEnvValue(key),
         }),
         {},
       ),

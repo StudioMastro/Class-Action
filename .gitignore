@@ -85,3 +85,5 @@ build-figma-plugin.main.js
 !build-figma-plugin.example.js
 build-figma-plugin.manifest.js
 !build-figma-plugin.manifest.example.js
+firebase-service-account.json
+.vercel

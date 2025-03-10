@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Class Action Analytics Dashboard</title>
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+        <!-- Chart.js for visualizations -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Tailwind CSS for styling -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+                .chart-container {
+                        position: relative;
+                        height: 300px;
+                        width: 100%;
+                        margin-bottom: 2rem;
+                }
+        </style>
+</head>
+
+<body class="bg-gray-100">
+        <!-- Login Screen -->
+        <div id="login-screen" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-80 z-50">
+                <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+                        <h2 class="text-2xl font-bold mb-6 text-center">Class Action Analytics</h2>
+                        <div class="mb-4">
+                                <label for="email" class="block text-gray-700 mb-2">Email</label>
+                                <input type="email" id="email"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        placeholder="Enter your email">
+                        </div>
+                        <div class="mb-6">
+                                <label for="password" class="block text-gray-700 mb-2">Password</label>
+                                <input type="password" id="password"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        placeholder="Enter your password">
+                        </div>
+                        <button id="login-button"
+                                class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Login</button>
+                        <p id="login-error" class="text-red-500 mt-2 text-center hidden"></p>
+                </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div id="dashboard" class="hidden">
+                <header class="bg-white shadow">
+                        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
+                                <h1 class="text-3xl font-bold text-gray-900">Class Action Analytics Dashboard</h1>
+                                <button id="logout-button"
+                                        class="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300">Logout</button>
+                        </div>
+                </header>
+
+                <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+                        <!-- Date Range Selector -->
+                        <div class="bg-white p-4 rounded-lg shadow mb-6">
+                                <div class="flex flex-wrap items-center gap-4">
+                                        <div>
+                                                <label for="start-date"
+                                                        class="block text-sm font-medium text-gray-700">Start
+                                                        Date</label>
+                                                <input type="date" id="start-date"
+                                                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                        </div>
+                                        <div>
+                                                <label for="end-date"
+                                                        class="block text-sm font-medium text-gray-700">End Date</label>
+                                                <input type="date" id="end-date"
+                                                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                                        </div>
+                                        <div class="self-end">
+                                                <button id="apply-date-filter"
+                                                        class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Apply</button>
+                                        </div>
+                                        <div class="self-end">
+                                                <button id="reset-filters"
+                                                        class="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300">Reset</button>
+                                        </div>
+                                </div>
+                        </div>
+
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                        <h3 class="text-lg font-medium text-gray-900 mb-2">Total Events</h3>
+                                        <p id="total-events" class="text-3xl font-bold">0</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                        <h3 class="text-lg font-medium text-gray-900 mb-2">Unique Users</h3>
+                                        <p id="unique-users" class="text-3xl font-bold">0</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                        <h3 class="text-lg font-medium text-gray-900 mb-2">Classes Created</h3>
+                                        <p id="classes-created" class="text-3xl font-bold">0</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                        <h3 class="text-lg font-medium text-gray-900 mb-2">Classes Applied</h3>
+                                        <p id="classes-applied" class="text-3xl font-bold">0</p>
+                                </div>
+                        </div>
+
+                        <!-- Charts -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                <!-- Events Over Time Chart -->
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                        <h3 class="text-lg font-medium text-gray-900 mb-4">Events Over Time</h3>
+                                        <div class="chart-container">
+                                                <canvas id="events-over-time-chart"></canvas>
+                                        </div>
+                                </div>
+
+                                <!-- Event Types Chart -->
+                                <div class="bg-white p-6 rounded-lg shadow">
+                                        <h3 class="text-lg font-medium text-gray-900 mb-4">Event Types</h3>
+                                        <div class="chart-container">
+                                                <canvas id="event-types-chart"></canvas>
+                                        </div>
+                                </div>
+                        </div>
+
+                        <!-- Recent Events Table -->
+                        <div class="bg-white p-6 rounded-lg shadow">
+                                <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-lg font-medium text-gray-900">Recent Events</h3>
+                                        <button id="export-data"
+                                                class="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600">Export
+                                                Data</button>
+                                </div>
+                                <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                                <thead class="bg-gray-50">
+                                                        <tr>
+                                                                <th
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Event</th>
+                                                                <th
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Timestamp</th>
+                                                                <th
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Session ID</th>
+                                                                <th
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Plugin Version</th>
+                                                                <th
+                                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Details</th>
+                                                        </tr>
+                                                </thead>
+                                                <tbody id="events-table-body" class="bg-white divide-y divide-gray-200">
+                                                        <!-- Events will be populated here -->
+                                                </tbody>
+                                        </table>
+                                </div>
+                                <div class="mt-4 flex justify-between items-center">
+                                        <div>
+                                                <span id="pagination-info">Showing 0 of 0 events</span>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                                <button id="prev-page"
+                                                        class="bg-gray-200 text-gray-800 py-1 px-3 rounded-md hover:bg-gray-300 disabled:opacity-50">Previous</button>
+                                                <button id="next-page"
+                                                        class="bg-gray-200 text-gray-800 py-1 px-3 rounded-md hover:bg-gray-300 disabled:opacity-50">Next</button>
+                                        </div>
+                                </div>
+                        </div>
+                </main>
+        </div>
+
+        <!-- Event Details Modal -->
+        <div id="event-details-modal"
+                class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-80 z-50 hidden">
+                <div class="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full">
+                        <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Event Details</h3>
+                                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                </button>
+                        </div>
+                        <div id="event-details-content" class="overflow-auto max-h-96">
+                                <!-- Event details will be populated here -->
+                        </div>
+                        <div class="mt-6 flex justify-end">
+                                <button id="close-details-button"
+                                        class="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300">Close</button>
+                        </div>
+                </div>
+        </div>
+
+        <script>
+                // Firebase configuration
+                const firebaseConfig = {
+                        apiKey: "AIzaSyDJQZcTgZzGFnxjdxZz-Yx9jDUdWsQR4Yw",
+                        authDomain: "class-action-analytics.firebaseapp.com",
+                        projectId: "class-action-analytics",
+                        storageBucket: "class-action-analytics.appspot.com",
+                        messagingSenderId: "1234567890",
+                        appId: "1:1234567890:web:abcdef1234567890"
+                };
+
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+
+                // Authentication state
+                let currentUser = null;
+
+                // Dashboard data
+                let allEvents = [];
+                let filteredEvents = [];
+                let currentPage = 1;
+                const eventsPerPage = 20;
+
+                // Charts
+                let eventsOverTimeChart = null;
+                let eventTypesChart = null;
+
+                // DOM Elements
+                const loginScreen = document.getElementById('login-screen');
+                const dashboard = document.getElementById('dashboard');
+                const loginButton = document.getElementById('login-button');
+                const logoutButton = document.getElementById('logout-button');
+                const loginError = document.getElementById('login-error');
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+
+                const startDateInput = document.getElementById('start-date');
+                const endDateInput = document.getElementById('end-date');
+                const applyDateFilterButton = document.getElementById('apply-date-filter');
+                const resetFiltersButton = document.getElementById('reset-filters');
+
+                const totalEventsElement = document.getElementById('total-events');
+                const uniqueUsersElement = document.getElementById('unique-users');
+                const classesCreatedElement = document.getElementById('classes-created');
+                const classesAppliedElement = document.getElementById('classes-applied');
+
+                const eventsTableBody = document.getElementById('events-table-body');
+                const paginationInfo = document.getElementById('pagination-info');
+                const prevPageButton = document.getElementById('prev-page');
+                const nextPageButton = document.getElementById('next-page');
+                const exportDataButton = document.getElementById('export-data');
+
+                const eventDetailsModal = document.getElementById('event-details-modal');
+                const closeModalButton = document.getElementById('close-modal');
+                const closeDetailsButton = document.getElementById('close-details-button');
+                const eventDetailsContent = document.getElementById('event-details-content');
+
+                // Initialize date inputs to last 30 days
+                const today = new Date();
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(today.getDate() - 30);
+
+                startDateInput.valueAsDate = thirtyDaysAgo;
+                endDateInput.valueAsDate = today;
+
+                // Authentication
+                loginButton.addEventListener('click', () => {
+                        const email = emailInput.value;
+                        const password = passwordInput.value;
+
+                        if (!email || !password) {
+                                showLoginError('Please enter both email and password');
+                                return;
+                        }
+
+                        auth.signInWithEmailAndPassword(email, password)
+                                .then((userCredential) => {
+                                        // Login successful
+                                        currentUser = userCredential.user;
+                                        hideLoginError();
+                                        showDashboard();
+                                        loadData();
+                                })
+                                .catch((error) => {
+                                        // Login failed
+                                        showLoginError(error.message);
+                                });
+                });
+
+                logoutButton.addEventListener('click', () => {
+                        auth.signOut()
+                                .then(() => {
+                                        currentUser = null;
+                                        showLoginScreen();
+                                })
+                                .catch((error) => {
+                                        console.error('Logout error:', error);
+                                });
+                });
+
+                // Check authentication state on page load
+                auth.onAuthStateChanged((user) => {
+                        if (user) {
+                                currentUser = user;
+                                showDashboard();
+                                loadData();
+                        } else {
+                                currentUser = null;
+                                showLoginScreen();
+                        }
+                });
+
+                // Filter events
+                applyDateFilterButton.addEventListener('click', () => {
+                        applyFilters();
+                });
+
+                resetFiltersButton.addEventListener('click', () => {
+                        resetFilters();
+                });
+
+                // Pagination
+                prevPageButton.addEventListener('click', () => {
+                        if (currentPage > 1) {
+                                currentPage--;
+                                displayEvents();
+                        }
+                });
+
+                nextPageButton.addEventListener('click', () => {
+                        const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
+                        if (currentPage < totalPages) {
+                                currentPage++;
+                                displayEvents();
+                        }
+                });
+
+                // Export data
+                exportDataButton.addEventListener('click', () => {
+                        exportData();
+                });
+
+                // Modal
+                closeModalButton.addEventListener('click', () => {
+                        hideEventDetailsModal();
+                });
+
+                closeDetailsButton.addEventListener('click', () => {
+                        hideEventDetailsModal();
+                });
+
+                // Load data from Firestore
+                function loadData() {
+                        const startDate = startDateInput.valueAsDate;
+                        const endDate = endDateInput.valueAsDate;
+
+                        if (startDate && endDate) {
+                                // Add one day to end date to include the entire day
+                                const adjustedEndDate = new Date(endDate);
+                                adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+
+                                db.collection('analytics')
+                                        .where('timestamp', '>=', startDate.getTime())
+                                        .where('timestamp', '<', adjustedEndDate.getTime())
+                                        .orderBy('timestamp', 'desc')
+                                        .get()
+                                        .then((querySnapshot) => {
+                                                allEvents = [];
+                                                querySnapshot.forEach((doc) => {
+                                                        allEvents.push({
+                                                                id: doc.id,
+                                                                ...doc.data()
+                                                        });
+                                                });
+
+                                                filteredEvents = [...allEvents];
+                                                currentPage = 1;
+
+                                                updateDashboard();
+                                        })
+                                        .catch((error) => {
+                                                console.error('Error loading data:', error);
+                                        });
+                        }
+                }
+
+                // Update dashboard with current data
+                function updateDashboard() {
+                        updateSummaryCards();
+                        updateCharts();
+                        displayEvents();
+                }
+
+                // Update summary cards
+                function updateSummaryCards() {
+                        // Total events
+                        totalEventsElement.textContent = filteredEvents.length;
+
+                        // Unique users (sessions)
+                        const uniqueSessions = new Set(filteredEvents.map(event => event.sessionId)).size;
+                        uniqueUsersElement.textContent = uniqueSessions;
+
+                        // Classes created
+                        const classesCreated = filteredEvents.filter(event => event.eventName === 'class_saved').length;
+                        classesCreatedElement.textContent = classesCreated;
+
+                        // Classes applied
+                        const classesApplied = filteredEvents.filter(event => event.eventName === 'class_applied').length;
+                        classesAppliedElement.textContent = classesApplied;
+                }
+
+                // Update charts
+                function updateCharts() {
+                        updateEventsOverTimeChart();
+                        updateEventTypesChart();
+                }
+
+                // Update events over time chart
+                function updateEventsOverTimeChart() {
+                        // Group events by day
+                        const eventsByDay = {};
+
+                        filteredEvents.forEach(event => {
+                                const date = new Date(event.timestamp);
+                                const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD
+
+                                if (!eventsByDay[dateString]) {
+                                        eventsByDay[dateString] = 0;
+                                }
+
+                                eventsByDay[dateString]++;
+                        });
+
+                        // Sort dates
+                        const sortedDates = Object.keys(eventsByDay).sort();
+
+                        // Prepare chart data
+                        const labels = sortedDates;
+                        const data = sortedDates.map(date => eventsByDay[date]);
+
+                        // Create or update chart
+                        const ctx = document.getElementById('events-over-time-chart').getContext('2d');
+
+                        if (eventsOverTimeChart) {
+                                eventsOverTimeChart.data.labels = labels;
+                                eventsOverTimeChart.data.datasets[0].data = data;
+                                eventsOverTimeChart.update();
+                        } else {
+                                eventsOverTimeChart = new Chart(ctx, {
+                                        type: 'line',
+                                        data: {
+                                                labels: labels,
+                                                datasets: [{
+                                                        label: 'Events',
+                                                        data: data,
+                                                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                                        borderColor: 'rgba(59, 130, 246, 1)',
+                                                        borderWidth: 2,
+                                                        tension: 0.1
+                                                }]
+                                        },
+                                        options: {
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                scales: {
+                                                        y: {
+                                                                beginAtZero: true,
+                                                                ticks: {
+                                                                        precision: 0
+                                                                }
+                                                        }
+                                                }
+                                        }
+                                });
+                        }
+                }
+
+                // Update event types chart
+                function updateEventTypesChart() {
+                        // Group events by type
+                        const eventsByType = {};
+
+                        filteredEvents.forEach(event => {
+                                if (!eventsByType[event.eventName]) {
+                                        eventsByType[event.eventName] = 0;
+                                }
+
+                                eventsByType[event.eventName]++;
+                        });
+
+                        // Prepare chart data
+                        const labels = Object.keys(eventsByType);
+                        const data = labels.map(type => eventsByType[type]);
+
+                        // Generate colors
+                        const backgroundColors = labels.map((_, index) => {
+                                const hue = (index * 137) % 360; // Golden angle approximation for good distribution
+                                return `hsla(${hue}, 70%, 60%, 0.7)`;
+                        });
+
+                        // Create or update chart
+                        const ctx = document.getElementById('event-types-chart').getContext('2d');
+
+                        if (eventTypesChart) {
+                                eventTypesChart.data.labels = labels;
+                                eventTypesChart.data.datasets[0].data = data;
+                                eventTypesChart.data.datasets[0].backgroundColor = backgroundColors;
+                                eventTypesChart.update();
+                        } else {
+                                eventTypesChart = new Chart(ctx, {
+                                        type: 'doughnut',
+                                        data: {
+                                                labels: labels,
+                                                datasets: [{
+                                                        data: data,
+                                                        backgroundColor: backgroundColors,
+                                                        borderWidth: 1
+                                                }]
+                                        },
+                                        options: {
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                plugins: {
+                                                        legend: {
+                                                                position: 'right'
+                                                        }
+                                                }
+                                        }
+                                });
+                        }
+                }
+
+                // Display events in table
+                function displayEvents() {
+                        // Calculate pagination
+                        const startIndex = (currentPage - 1) * eventsPerPage;
+                        const endIndex = Math.min(startIndex + eventsPerPage, filteredEvents.length);
+                        const eventsToDisplay = filteredEvents.slice(startIndex, endIndex);
+
+                        // Update pagination info
+                        paginationInfo.textContent = `Showing ${startIndex + 1}-${endIndex} of ${filteredEvents.length} events`;
+
+                        // Update pagination buttons
+                        prevPageButton.disabled = currentPage === 1;
+                        nextPageButton.disabled = endIndex >= filteredEvents.length;
+
+                        // Clear table
+                        eventsTableBody.innerHTML = '';
+
+                        // Add events to table
+                        eventsToDisplay.forEach(event => {
+                                const row = document.createElement('tr');
+
+                                // Event name
+                                const eventNameCell = document.createElement('td');
+                                eventNameCell.className = 'px-6 py-4 whitespace-nowrap';
+                                eventNameCell.textContent = event.eventName;
+                                row.appendChild(eventNameCell);
+
+                                // Timestamp
+                                const timestampCell = document.createElement('td');
+                                timestampCell.className = 'px-6 py-4 whitespace-nowrap';
+                                timestampCell.textContent = new Date(event.timestamp).toLocaleString();
+                                row.appendChild(timestampCell);
+
+                                // Session ID
+                                const sessionIdCell = document.createElement('td');
+                                sessionIdCell.className = 'px-6 py-4 whitespace-nowrap';
+                                sessionIdCell.textContent = event.sessionId.substring(0, 8) + '...';
+                                row.appendChild(sessionIdCell);
+
+                                // Plugin version
+                                const versionCell = document.createElement('td');
+                                versionCell.className = 'px-6 py-4 whitespace-nowrap';
+                                versionCell.textContent = event.pluginVersion;
+                                row.appendChild(versionCell);
+
+                                // Details button
+                                const detailsCell = document.createElement('td');
+                                detailsCell.className = 'px-6 py-4 whitespace-nowrap';
+
+                                const detailsButton = document.createElement('button');
+                                detailsButton.className = 'text-blue-500 hover:text-blue-700';
+                                detailsButton.textContent = 'View Details';
+                                detailsButton.addEventListener('click', () => {
+                                        showEventDetails(event);
+                                });
+
+                                detailsCell.appendChild(detailsButton);
+                                row.appendChild(detailsCell);
+
+                                eventsTableBody.appendChild(row);
+                        });
+                }
+
+                // Apply filters
+                function applyFilters() {
+                        loadData();
+                }
+
+                // Reset filters
+                function resetFilters() {
+                        const today = new Date();
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+                        startDateInput.valueAsDate = thirtyDaysAgo;
+                        endDateInput.valueAsDate = today;
+
+                        loadData();
+                }
+
+                // Export data
+                function exportData() {
+                        // Create CSV content
+                        let csvContent = 'data:text/csv;charset=utf-8,';
+
+                        // Add headers
+                        csvContent += 'Event Name,Timestamp,Session ID,Plugin Version,Event Data\n';
+
+                        // Add data
+                        filteredEvents.forEach(event => {
+                                const row = [
+                                        event.eventName,
+                                        new Date(event.timestamp).toISOString(),
+                                        event.sessionId,
+                                        event.pluginVersion,
+                                        JSON.stringify(event.eventData || {})
+                                ];
+
+                                csvContent += row.join(',') + '\n';
+                        });
+
+                        // Create download link
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement('a');
+                        link.setAttribute('href', encodedUri);
+                        link.setAttribute('download', `class-action-analytics-${new Date().toISOString().split('T')[0]}.csv`);
+                        document.body.appendChild(link);
+
+                        // Trigger download
+                        link.click();
+
+                        // Clean up
+                        document.body.removeChild(link);
+                }
+
+                // Show event details
+                function showEventDetails(event) {
+                        // Format event details as JSON
+                        const formattedDetails = JSON.stringify(event, null, 2);
+
+                        // Create pre element for formatted JSON
+                        const pre = document.createElement('pre');
+                        pre.className = 'bg-gray-100 p-4 rounded overflow-auto';
+                        pre.textContent = formattedDetails;
+
+                        // Clear and update modal content
+                        eventDetailsContent.innerHTML = '';
+                        eventDetailsContent.appendChild(pre);
+
+                        // Show modal
+                        eventDetailsModal.classList.remove('hidden');
+                }
+
+                // Hide event details modal
+                function hideEventDetailsModal() {
+                        eventDetailsModal.classList.add('hidden');
+                }
+
+                // Show login error
+                function showLoginError(message) {
+                        loginError.textContent = message;
+                        loginError.classList.remove('hidden');
+                }
+
+                // Hide login error
+                function hideLoginError() {
+                        loginError.classList.add('hidden');
+                }
+
+                // Show login screen
+                function showLoginScreen() {
+                        loginScreen.classList.remove('hidden');
+                        dashboard.classList.add('hidden');
+                }
+
+                // Show dashboard
+                function showDashboard() {
+                        loginScreen.classList.add('hidden');
+                        dashboard.classList.remove('hidden');
+                }
+        </script>
+</body>
+
+</html>

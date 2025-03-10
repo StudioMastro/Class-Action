@@ -6,14 +6,19 @@
  */
 
 // Environment-specific configuration
-const isProd = process.env.NODE_ENV === 'production';
+// Utilizziamo una soluzione sicura per verificare l'ambiente
+const isProd =
+  typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production';
 
 // Analytics endpoints
 export const ANALYTICS_CONFIG = {
-  // The endpoint where analytics events will be sent
+  // Endpoint centralizzato per l'invio dei dati di analytics
   endpoint: isProd
-    ? 'https://api.classaction.app/analytics'
-    : 'https://dev-api.classaction.app/analytics',
+    ? 'https://class-action-analytics.vercel.app/api/test-analytics'
+    : 'http://localhost:3000/analytics',
+
+  // API key per l'autenticazione con il backend
+  apiKey: 'class-action-analytics-key',
 
   // How often to automatically flush events (in milliseconds)
   flushInterval: 60000, // 1 minute
@@ -41,7 +46,7 @@ export const ANALYTICS_EVENTS = {
   CLASS_DELETED: 'class_deleted',
 
   // Batch operations
-  APPLY_ALL_MATCHING: 'apply_all_matching_classes',
+  APPLY_ALL_MATCHING: 'apply_all_matching',
   APPLY_CLASS_TO_ALL: 'apply_class_to_all',
 
   // Import/Export
@@ -51,9 +56,14 @@ export const ANALYTICS_EVENTS = {
   // License
   LICENSE_ACTIVATED: 'license_activated',
   LICENSE_DEACTIVATED: 'license_deactivated',
+  LICENSE_VALIDATION: 'license_validation',
 
   // Analytics
   ANALYTICS_PREFERENCE_SET: 'analytics_preference_set',
+
+  // Feature usage
+  PREMIUM_FEATURE_ACCESSED: 'premium_feature_accessed',
+  PREMIUM_FEATURE_BLOCKED: 'premium_feature_blocked',
 
   // Errors
   ERROR_OCCURRED: 'error_occurred',
