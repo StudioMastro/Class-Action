@@ -134,11 +134,15 @@ export function PremiumFeatureModal({
             style={{ backgroundColor: 'var(--figma-color-bg-success-tertiary)' }}
           >
             <div className="flex flex-col gap-1">
-              <Text size="sm" weight="bold" className="text-[var(--figma-color-text-success)]">
+              <Text size="sm" weight="bold">
                 Special Launch Offer!
               </Text>
               <Text size="sm">
-                Get Premium for just <strong>€29/year</strong> (regular price <s>€39/year</s>)
+                Get Premium for just <strong>€9/year</strong>.
+              </Text>
+              <Text size="sm" className="text-[var(--figma-color-text-success)]">
+                Use promo code <strong className="font-mono">E5MJEZMA</strong> for{' '}
+                <strong>50% discount</strong>!
               </Text>
             </div>
           </div>

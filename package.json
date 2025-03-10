@@ -51,6 +51,7 @@
     "prebuild": "npm run clean",
     "build": "npm run build:css && build-figma-plugin --typecheck --minify",
     "build:css": "cross-env NODE_ENV=production tailwindcss -i ./src/input.css -o ./src/output.css --minify",
+    "build:prod": "cross-env NODE_ENV=production npm run build",
     "watch": "concurrently \"npm:watch:css\" \"npm:watch:plugin\"",
     "watch:plugin": "build-figma-plugin --typecheck --watch",
     "watch:css": "tailwindcss --input ./src/input.css --output ./src/output.css --watch",
