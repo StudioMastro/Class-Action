@@ -24,6 +24,35 @@ This document outlines the build process for the Figma Plugin Project. It covers
 - Configure environment-specific settings (development, staging, production) in the build process
 - Use the `build-figma-plugin.*.js` configuration files to customize the build process for different environments
 
+## Environment Management
+- **Build Modes:** The project supports two build modes:
+  - **Development Mode:** Used during development for faster builds and debugging
+  - **Production Mode:** Used for creating optimized builds for distribution
+
+- **Build Commands:**
+  - Development: `npm run build:dev` or `npm run watch` (for auto-rebuilds)
+  - Production: `npm run build` or `npm run build:prod`
+
+- **Environment Variables:**
+  - Environment variables are managed through `.env` files:
+    - `.env.development`: Contains development-specific variables
+    - `.env`: Contains production variables
+  - The correct file is automatically loaded based on the build mode
+  - Required variables for production:
+    - `LEMONSQUEEZY_API_KEY`: API key for LemonSqueezy
+    - `LEMONSQUEEZY_STORE_ID`: Store ID for LemonSqueezy
+    - `LEMONSQUEEZY_PRODUCT_ID`: Product ID for LemonSqueezy
+    - `LEMONSQUEEZY_CHECKOUT_URL`: Checkout URL for LemonSqueezy
+
+- **Configuration System:**
+  - `build-config.js`: Central configuration for environment variables and validation
+    - Implements a caching mechanism to ensure configuration is loaded only once
+    - Uses a singleton pattern to prevent duplicate environment loading
+    - Provides consistent configuration across multiple imports
+  - `build-figma-plugin.main.js`: Configuration for the main build process
+  - `build-figma-plugin.manifest.js`: Configuration for the manifest generation
+  - Both configuration files import and use the same cached configuration instance
+
 ## License Management Integration
 - Ensure the license management system is properly integrated into the build process
 - Include necessary license validation and activation endpoints in the plugin
@@ -45,14 +74,18 @@ This document outlines the build process for the Figma Plugin Project. It covers
 - Ensure proper typing for Preact components to maintain TypeScript strict mode compliance
 
 ## Build Steps
-1. **Transpilation:** Convert TypeScript code to JavaScript using a compiler (tsc or through the bundler). Ensure that strict type checking is enabled
-2. **Bundling:** Bundle the code using the chosen build tool. Ensure that external dependencies are correctly managed and that the final bundle is optimized for size and performance
-3. **Minification:** Apply minification and dead code elimination for production builds
-4. **Asset Management:** Copy static assets (images, fonts, etc.) to the appropriate output directories
-5. **Manifest Generation:** Automatically generate or validate the Figma Plugin manifest
-6. **Testing the Build:** Run automated tests (unit, integration) as part of the build pipeline to validate the output
-7. **Verification:** Inspect the final build output to ensure compliance with Figma's plugin requirements
-8. **License Validation:** Verify that license-related functionality works correctly in the built plugin
+1. **Environment Setup:** Set the `NODE_ENV` environment variable to either `development` or `production`
+2. **Configuration Loading:** Load the build configuration from the appropriate `.env` file
+   - Configuration is loaded only once and cached for subsequent imports
+   - The same configuration instance is used across all build processes
+3. **Configuration Validation:** Validate the configuration (stricter validation for production builds)
+4. **Transpilation:** Convert TypeScript code to JavaScript using a compiler (tsc or through the bundler)
+5. **Bundling:** Bundle the code using the chosen build tool
+6. **Minification:** Apply minification and dead code elimination for production builds
+7. **Asset Management:** Copy static assets (images, fonts, etc.) to the appropriate output directories
+8. **Manifest Generation:** Automatically generate or validate the Figma Plugin manifest
+9. **Testing the Build:** Run automated tests (unit, integration) as part of the build pipeline
+10. **Verification:** Inspect the final build output to ensure compliance with Figma's plugin requirements
 
 ## CI/CD Integration
 - Integrate the build process into the CI/CD pipeline to automate testing and deployment
@@ -67,6 +100,16 @@ This document outlines the build process for the Figma Plugin Project. It covers
 - **License Validation Failures:** Check API endpoints, request parameters, and error handling
 - **CSS Purging Problems:** Verify Tailwind configuration and ensure proper class usage patterns
 - **Manifest Generation Errors:** Check for invalid plugin configuration or missing required fields
+- **Environment Variables Issues:**
+  - Check that you have the correct `.env` files in the project root
+  - Verify that all required variables are defined in the file
+  - Make sure the values are correct
+  - Check the console output during the build process to see which environment is being used
+- **Duplicate Configuration Loading:**
+  - If you see environment variables being loaded multiple times in the build output
+  - Check that the caching mechanism in `build-config.js` is working correctly
+  - Ensure that all configuration files are importing the same instance of the configuration
+  - Verify that the `cachedConfig` variable is being properly utilized
 
 ## Additional Considerations from Figma Official Documentation
 

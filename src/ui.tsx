@@ -1312,10 +1312,7 @@ function Plugin() {
         isOpen={isPremiumFeatureModalOpen}
         onClose={() => setIsPremiumFeatureModalOpen(false)}
         featureName={premiumFeatureName}
-        checkoutUrl={
-          LEMONSQUEEZY_CONFIG.CHECKOUT_URL ||
-          'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c'
-        }
+        checkoutUrl={LEMONSQUEEZY_CONFIG.CHECKOUT_URL}
       />
 
       <LicenseActivation

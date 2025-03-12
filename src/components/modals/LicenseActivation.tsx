@@ -385,10 +385,7 @@ export function LicenseActivation({
               <Text size="xs" className="text-[var(--figma-color-text)]">
                 You don't have a license?{' '}
                 <a
-                  href={
-                    LEMONSQUEEZY_CONFIG.CHECKOUT_URL ||
-                    'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c'
-                  }
+                  href={LEMONSQUEEZY_CONFIG.CHECKOUT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-bold text-[var(--figma-color-text-brand)] hover:underline"

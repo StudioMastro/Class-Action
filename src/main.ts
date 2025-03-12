@@ -66,8 +66,9 @@ export default function () {
     const storedKey = await figma.clientStorage.getAsync('licenseKey');
     if (storedKey) {
       console.log('[UI_READY_FOR_API] Found stored license key, running validation');
-      // Emettiamo un evento per far eseguire la validazione all'UI
-      emit('VALIDATE_LICENSE', storedKey);
+      // Invece di emettere un evento, chiamiamo direttamente la funzione
+      const status = await checkLicenseStatus();
+      console.log('[UI_READY_FOR_API] License status checked:', status);
     }
   });
 
@@ -96,7 +97,7 @@ export default function () {
       });
 
       // Proceed with activation
-      const activationResult = await licenseService.handleActivate(licenseKey, isUiReadyForApi);
+      const activationResult = await licenseService.handleActivate(licenseKey);
       console.log('[License] Activation result:', activationResult);
 
       // Log the raw activation result for debugging
@@ -265,21 +266,9 @@ export default function () {
         };
       }
 
-      // Verifichiamo se l'UI è pronta a gestire le richieste API
-      if (!isUiReadyForApi) {
-        console.log('[CheckLicenseStatus] UI not ready for API requests, deferring validation');
-        // Restituiamo uno stato temporaneo
-        return {
-          tier: 'free',
-          isValid: false,
-          features: [],
-          status: 'idle',
-          pendingValidation: true, // Indichiamo che la validazione è in sospeso
-        };
-      }
-
+      // Non è più necessario verificare se l'UI è pronta, il meccanismo di retry se ne occuperà
       console.log('[CheckLicenseStatus] Found stored key, validating...');
-      const status = await licenseService.handleValidate(storedKey, isUiReadyForApi);
+      const status = await licenseService.handleValidate(storedKey);
       console.log('[CheckLicenseStatus] Validation result:', status);
 
       // Log the activation date for debugging
@@ -1985,7 +1974,7 @@ export default function () {
 
   on('VALIDATE_LICENSE', async (licenseKey: string) => {
     try {
-      const status = await licenseService.handleValidate(licenseKey, isUiReadyForApi);
+      const status = await licenseService.handleValidate(licenseKey);
       emit('LICENSE_STATUS_CHANGED', status);
     } catch (error) {
       console.error('Error validating license:', error);
