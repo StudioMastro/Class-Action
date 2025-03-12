@@ -32,7 +32,11 @@ yarn-error.log*
 .debug/
 
 # IDE and Editors
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
@@ -77,8 +81,18 @@ manifest.json
 *.pfx
 *.env
 *.env.*
-.cursor/
-docs/
+.cursor/*
+!.cursor/rules/
+!.cursor/scripts/
+docs/*
+!docs/README.md
+!docs/build_process.md
+!docs/cursor_rules.md
+!docs/figma_plugin.md
+!docs/license_error_messages.md
+!docs/licensing.md
+!docs/plugin_future_enhancements.md
+!docs/react_components.md
 
 # Figma Plugin Build Configuration
 build-figma-plugin.main.js
