@@ -24,6 +24,7 @@ export class LicenseService {
   private licenseFeatures: string[] = [];
   private storageKey = 'license_data';
   private activationDate: string | null = null;
+  private freemiumStatus: LicenseStatus;
 
   constructor() {
     try {
@@ -37,6 +38,13 @@ export class LicenseService {
     }
     // Carica i dati della licenza dallo storage all'inizializzazione
     this.loadLicenseData();
+    // Inizializza freemiumStatus nel costruttore
+    this.freemiumStatus = {
+      tier: 'free',
+      isValid: false,
+      features: [],
+      status: 'idle',
+    };
   }
 
   public static getInstance(): LicenseService {
@@ -48,32 +56,50 @@ export class LicenseService {
 
   public initializeState(): void {
     try {
-      const freemiumStatus: LicenseStatus = {
+      console.log('Initializing freemium state...');
+
+      // Reimposta lo stato iniziale
+      this.freemiumStatus = {
         tier: 'free',
         isValid: false,
         features: [],
         status: 'idle',
       };
 
-      console.log('[LICENSE] 🔄 Initializing in freemium state:', {
-        tier: freemiumStatus.tier,
-        features: freemiumStatus.features,
-        status: freemiumStatus.status,
-      });
+      // Emetti l'evento di cambio stato
+      emit('LICENSE_STATUS_CHANGED', this.freemiumStatus);
 
-      emit('LICENSE_STATUS_CHANGED', freemiumStatus);
+      console.log('Freemium state initialized:', this.freemiumStatus);
+    } catch (error) {
+      console.error('Error initializing license state:', error);
+      // Imposta comunque uno stato predefinito in caso di errore
+      this.freemiumStatus = {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'error',
+      };
+      // Tenta di emettere l'evento anche in caso di errore
+      try {
+        emit('LICENSE_STATUS_CHANGED', this.freemiumStatus);
+      } catch (emitError) {
+        console.error('Failed to emit LICENSE_STATUS_CHANGED event:', emitError);
+      }
+    }
 
-      // Registra il listener per gli eventi di validazione della licenza
+    // Registra il listener per il controllo della licenza
+    try {
       on('CHECK_LICENSE_STATUS', async () => {
         try {
-          console.log('[LICENSE] 🔄 Checking license status...');
-          // Implementa la logica per verificare lo stato della licenza
+          console.log('Checking license status...');
+          // Utilizziamo un metodo esistente invece di checkLicenseStatus
+          await this.getLicenseStatus();
         } catch (error) {
-          console.error('[LICENSE] ❌ Error checking license status:', error);
+          console.error('Error checking license status:', error);
         }
       });
     } catch (error) {
-      console.error('[LICENSE] ❌ Error initializing license state:', error);
+      console.error('Failed to register CHECK_LICENSE_STATUS listener:', error);
     }
   }
 

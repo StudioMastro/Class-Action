@@ -24,6 +24,12 @@ function showNotification(message: string, options: { error?: boolean; timeout?:
   return currentNotification;
 }
 
+// Dichiarazione delle variabili globali che verranno sostituite durante la build
+// Nota: queste variabili sono ora gestite centralmente nel file src/config/lemonSqueezy.ts
+// declare const __PRODUCTION_CHECKOUT_URL__: string;
+// declare const __LEMONSQUEEZY_CHECKOUT_URL__: string;
+// declare const __NODE_ENV__: string;
+
 export default function () {
   // Initialize the UI with fixed dimensions
   showUI({ width: 320, height: 480 });
@@ -31,27 +37,34 @@ export default function () {
   let isInitialized = false;
   let isProcessingLicense = false;
   // Flag per tracciare se l'UI è pronta a gestire le richieste API
-  let isUiReadyForApi = false;
+  // let isUiReadyForApi = false;
 
   // Register all event handlers
   on('UI_READY', async function () {
     console.log('UI is ready, initializing plugin...');
     if (!isInitialized) {
       try {
-        // Initialize license state
-        licenseService.initializeState();
-
-        // Attendiamo che l'UI sia pronta a gestire le richieste API
-        // prima di eseguire i test di connettività
-        if (!isUiReadyForApi) {
-          console.log('Waiting for UI to be ready for API requests...');
+        // Inizializza lo stato della licenza in modo sicuro
+        try {
+          licenseService.initializeState();
+        } catch (licenseError) {
+          console.error('Error initializing license state:', licenseError);
+          // Continua comunque con l'inizializzazione
         }
 
-        // Il resto dell'inizializzazione continua normalmente
+        // Imposta il flag di inizializzazione
         isInitialized = true;
-        await initialize();
+
+        // Continua con l'inizializzazione
+        try {
+          await initialize();
+        } catch (initError) {
+          console.error('Error during initialization:', initError);
+          // Mostra una notifica ma continua comunque
+          showNotification('Some features may not be available.', { error: true });
+        }
       } catch (error) {
-        console.error('Error during initialization:', error);
+        console.error('Critical error during initialization:', error);
         showNotification('Error initializing plugin. Please try again.', { error: true });
       }
     }
@@ -60,15 +73,26 @@ export default function () {
   // Nuovo handler per quando l'UI è pronta a gestire le richieste API
   on('UI_READY_FOR_API', async function () {
     console.log('UI is ready for API requests');
-    isUiReadyForApi = true;
+    // Rimuoviamo questa riga che causa l'errore del linter
+    // isUiReadyForApi = true;
 
     // Verifichiamo se c'è una validazione della licenza in sospeso
-    const storedKey = await figma.clientStorage.getAsync('licenseKey');
-    if (storedKey) {
-      console.log('[UI_READY_FOR_API] Found stored license key, running validation');
-      // Invece di emettere un evento, chiamiamo direttamente la funzione
-      const status = await checkLicenseStatus();
-      console.log('[UI_READY_FOR_API] License status checked:', status);
+    try {
+      const storedKey = await figma.clientStorage.getAsync('licenseKey');
+      if (storedKey) {
+        console.log('[UI_READY_FOR_API] Found stored license key, running validation');
+        try {
+          // Invece di emettere un evento, chiamiamo direttamente la funzione
+          const status = await getLicenseStatus();
+          console.log('[UI_READY_FOR_API] License status checked:', status);
+        } catch (licenseError) {
+          console.error('[UI_READY_FOR_API] Error checking license status:', licenseError);
+          // Continua comunque
+        }
+      }
+    } catch (error) {
+      console.error('[UI_READY_FOR_API] Error accessing client storage:', error);
+      // Continua comunque
     }
   });
 
@@ -251,13 +275,13 @@ export default function () {
   }
 
   // Semplifichiamo la gestione della licenza per lo sviluppo
-  async function checkLicenseStatus(): Promise<LicenseStatus> {
+  async function getLicenseStatus(): Promise<LicenseStatus> {
     try {
-      console.log('[CheckLicenseStatus] Validating license status...');
+      console.log('[GetLicenseStatus] Validating license status...');
       const storedKey = await figma.clientStorage.getAsync('licenseKey');
 
       if (!storedKey) {
-        console.log('[CheckLicenseStatus] No stored license key found');
+        console.log('[GetLicenseStatus] No stored license key found');
         return {
           tier: 'free',
           isValid: false,
@@ -267,17 +291,17 @@ export default function () {
       }
 
       // Non è più necessario verificare se l'UI è pronta, il meccanismo di retry se ne occuperà
-      console.log('[CheckLicenseStatus] Found stored key, validating...');
+      console.log('[GetLicenseStatus] Found stored key, validating...');
       const status = await licenseService.handleValidate(storedKey);
-      console.log('[CheckLicenseStatus] Validation result:', status);
+      console.log('[GetLicenseStatus] Validation result:', status);
 
       // Log the activation date for debugging
-      console.log('[CheckLicenseStatus] Activation date:', status.activationDate);
+      console.log('[GetLicenseStatus] Activation date:', status.activationDate);
 
       emit('LICENSE_STATUS_CHANGED', status);
       return status;
     } catch (error) {
-      console.error('[CheckLicenseStatus] Error:', error);
+      console.error('[GetLicenseStatus] Error:', error);
       const freemiumStatus: LicenseStatus = {
         tier: 'free',
         isValid: false,
@@ -285,8 +309,8 @@ export default function () {
         status: 'error',
         error: {
           code: 'API_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to check license status',
-          actions: ['Please try again later'],
+          message: 'Failed to validate license',
+          actions: ['Try again later', 'Contact support'],
         },
       };
       emit('LICENSE_STATUS_CHANGED', freemiumStatus);
@@ -307,7 +331,7 @@ export default function () {
   on('APPLY_CLASS_TO_ALL', handleApplyClassToAll);
   on('CHECK_SELECTION', checkSelection);
   on('LOAD_CLASSES', loadSavedClasses);
-  on('CHECK_LICENSE_STATUS', checkLicenseStatus);
+  on('CHECK_LICENSE_STATUS', getLicenseStatus);
   on('SHOW_ERROR', (error: string | { message: string }) => {
     const errorMessage = typeof error === 'string' ? error : error.message;
     showNotification(errorMessage, { error: true });
@@ -2013,6 +2037,29 @@ export default function () {
       emit('RESOLVED_STYLE_COLORS', { resolvedColors });
     } catch (error) {
       console.error('Error resolving style colors:', error);
+    }
+  });
+
+  // Handler for opening external URLs
+  on('OPEN_EXTERNAL_URL', async function (url: string) {
+    console.log('Opening external URL:', url);
+
+    try {
+      // Verifica che l'URL sia valido
+      if (typeof url === 'string' && url.startsWith('https://')) {
+        await figma.openExternal(url);
+        console.log('External URL opened successfully');
+      } else {
+        // Se l'URL non è valido, utilizziamo un URL di fallback
+        console.error('Invalid URL provided:', url);
+        const fallbackUrl = 'https://mastro.lemonsqueezy.com';
+        console.log('Attempting to open fallback URL:', fallbackUrl);
+        await figma.openExternal(fallbackUrl);
+      }
+    } catch (error) {
+      console.error('Error opening external URL:', error);
+      // Notifica l'utente dell'errore
+      showNotification('Failed to open external URL. Please try again.', { error: true });
     }
   });
 }

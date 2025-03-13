@@ -11,8 +11,8 @@ export type LicenseStatusType = 'active' | 'inactive' | 'invalid' | 'expired';
  * Informazioni sul dispositivo
  */
 export interface DeviceInfo {
-  browser: string;
-  os: string;
+  deviceId: string;
+  deviceName: string;
 }
 
 /**
@@ -62,6 +62,8 @@ export interface LemonSqueezyError {
 
 /**
  * Risposta generica dell'API LemonSqueezy
+ *
+ * @deprecated Utilizzare i tipi specifici da lemonSqueezy.ts
  */
 export type LemonSqueezyResponse =
   | LemonSqueezyActivationResponse
@@ -70,6 +72,8 @@ export type LemonSqueezyResponse =
 
 /**
  * Risposta dell'API LemonSqueezy per l'attivazione
+ *
+ * @deprecated Utilizzare LemonSqueezyActivationResponse da lemonSqueezy.ts
  */
 export interface LemonSqueezyActivationResponse {
   activated: boolean;
@@ -109,6 +113,8 @@ export interface LemonSqueezyActivationResponse {
 
 /**
  * Risposta dell'API LemonSqueezy per la validazione
+ *
+ * @deprecated Utilizzare LemonSqueezyValidationResponse da lemonSqueezy.ts
  */
 export interface LemonSqueezyValidationResponse {
   valid: boolean;
@@ -134,6 +140,8 @@ export interface LemonSqueezyValidationResponse {
 
 /**
  * Risposta dell'API LemonSqueezy per la disattivazione
+ *
+ * @deprecated Utilizzare LemonSqueezyDeactivationResponse da lemonSqueezy.ts
  */
 export interface LemonSqueezyDeactivationResponse {
   deactivated: boolean;

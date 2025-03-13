@@ -9,6 +9,76 @@ const fs = require('fs');
 
 // Variabile per memorizzare la configurazione già caricata
 let cachedConfig = null;
+// Variabile per memorizzare l'URL di checkout di produzione
+let productionCheckoutUrl = null;
+// Variabile per memorizzare l'ID del plugin
+let pluginId = null;
+
+/**
+ * Ottiene l'ID del plugin dal file .env.plugin
+ * @returns {string} ID del plugin
+ */
+function getPluginId() {
+  // Se l'ID è già stato caricato, restituiscilo
+  if (pluginId) {
+    return pluginId;
+  }
+
+  // Carica il file .env.plugin
+  const pluginEnvPath = path.resolve(process.cwd(), '.env.plugin');
+  if (fs.existsSync(pluginEnvPath)) {
+    const pluginEnvConfig = dotenv.parse(fs.readFileSync(pluginEnvPath));
+    pluginId = pluginEnvConfig.FIGMA_PLUGIN_ID || '';
+
+    if (pluginId) {
+      console.log(`✅ Loaded plugin ID from .env.plugin: ${pluginId}`);
+    } else {
+      console.warn('⚠️ Plugin ID not found in .env.plugin');
+      // Fallback all'ID nel package.json
+      pluginId = 'class-action';
+    }
+  } else {
+    console.warn('⚠️ Plugin .env.plugin file not found');
+    // Fallback all'ID nel package.json
+    pluginId = 'class-action';
+  }
+
+  return pluginId;
+}
+
+/**
+ * Ottiene l'URL di checkout di produzione dal file .env
+ * @returns {string} URL di checkout di produzione
+ */
+function getProductionCheckoutUrl() {
+  // Se l'URL è già stato caricato, restituiscilo
+  if (productionCheckoutUrl) {
+    return productionCheckoutUrl;
+  }
+
+  // Carica il file .env di produzione
+  const envPath = path.resolve(process.cwd(), '.env');
+  if (fs.existsSync(envPath)) {
+    const envConfig = dotenv.parse(fs.readFileSync(envPath));
+    productionCheckoutUrl = envConfig.LEMONSQUEEZY_CHECKOUT_URL || '';
+
+    if (productionCheckoutUrl) {
+      console.log(`✅ Loaded production checkout URL from .env: ${productionCheckoutUrl}`);
+    } else {
+      console.warn('⚠️ Production checkout URL not found in .env');
+      // Fallback a un URL hardcoded
+      productionCheckoutUrl =
+        'https://mastro.lemonsqueezy.com/buy/1edb7f3c-cf47-4a79-b2c6-c7b5980c1cc3';
+    }
+  } else {
+    console.warn('⚠️ Production .env file not found');
+    // Fallback a un URL hardcoded
+    productionCheckoutUrl =
+      'https://mastro.lemonsqueezy.com/buy/1edb7f3c-cf47-4a79-b2c6-c7b5980c1cc3';
+  }
+
+  return productionCheckoutUrl;
+}
 
 /**
  * Determina l'ambiente corrente e carica le variabili d'ambiente appropriate
@@ -41,6 +111,9 @@ function loadEnvironment() {
   // Carica le variabili d'ambiente
   dotenv.config({ path: envPath });
 
+  // Carica l'ID del plugin
+  const pluginId = getPluginId();
+
   // Valori di default per lo sviluppo
   const defaultConfig = {
     NODE_ENV: 'development',
@@ -49,6 +122,7 @@ function loadEnvironment() {
     LEMONSQUEEZY_PRODUCT_ID: 'test_product',
     LEMONSQUEEZY_CHECKOUT_URL:
       'https://mastro.lemonsqueezy.com/buy/35279b0a-132c-4e10-8408-c6d1409eb28c',
+    FIGMA_PLUGIN_ID: pluginId,
   };
 
   // Configurazione effettiva con fallback ai valori di default
@@ -60,6 +134,7 @@ function loadEnvironment() {
       process.env.LEMONSQUEEZY_PRODUCT_ID || defaultConfig.LEMONSQUEEZY_PRODUCT_ID,
     LEMONSQUEEZY_CHECKOUT_URL:
       process.env.LEMONSQUEEZY_CHECKOUT_URL || defaultConfig.LEMONSQUEEZY_CHECKOUT_URL,
+    FIGMA_PLUGIN_ID: defaultConfig.FIGMA_PLUGIN_ID,
     isDevelopment,
     environment,
   };
@@ -125,6 +200,7 @@ function logConfig(config) {
   console.log(`  - LEMONSQUEEZY_STORE_ID: ${config.LEMONSQUEEZY_STORE_ID}`);
   console.log(`  - LEMONSQUEEZY_PRODUCT_ID: ${config.LEMONSQUEEZY_PRODUCT_ID}`);
   console.log(`  - LEMONSQUEEZY_CHECKOUT_URL: ${config.LEMONSQUEEZY_CHECKOUT_URL}`);
+  console.log(`  - FIGMA_PLUGIN_ID: ${config.FIGMA_PLUGIN_ID}`);
 }
 
 // Esporta la configurazione
@@ -132,4 +208,6 @@ module.exports = {
   loadEnvironment,
   validateConfig,
   logConfig,
+  getProductionCheckoutUrl,
+  getPluginId,
 };

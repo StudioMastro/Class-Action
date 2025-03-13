@@ -23,9 +23,52 @@ const LEMONSQUEEZY_CONFIG = {
   ],
 };
 
+// Funzione per caricare la configurazione da build-config.js se disponibile
+function loadBuildConfig() {
+  try {
+    // Tenta di importare build-config.js
+    const buildConfig = require('../../../build-config');
+
+    // Carica l'ambiente
+    const config = buildConfig.loadEnvironment();
+
+    if (config) {
+      console.log('[TEST] Configurazione caricata da build-config.js');
+
+      // Aggiorna la configurazione con i valori reali
+      LEMONSQUEEZY_CONFIG.API_KEY = config.LEMONSQUEEZY_API_KEY || '';
+      LEMONSQUEEZY_CONFIG.STORE_ID = config.LEMONSQUEEZY_STORE_ID || '';
+      LEMONSQUEEZY_CONFIG.PRODUCT_ID = config.LEMONSQUEEZY_PRODUCT_ID || '';
+      LEMONSQUEEZY_CONFIG.CHECKOUT_URL = config.LEMONSQUEEZY_CHECKOUT_URL || '';
+
+      // Ottieni l'URL di checkout di produzione
+      try {
+        const prodCheckoutUrl = buildConfig.getProductionCheckoutUrl();
+        if (prodCheckoutUrl) {
+          console.log(`✅ Loaded production checkout URL from .env: ${prodCheckoutUrl}`);
+          console.log(`[TEST] URL di checkout: ${prodCheckoutUrl}`);
+        }
+      } catch (error) {
+        console.warn(`[TEST] Errore nel caricamento dell'URL di checkout: ${error.message}`);
+      }
+
+      return true;
+    }
+  } catch (error) {
+    console.log('[TEST] Impossibile caricare build-config.js, utilizzo configurazione di default');
+    console.log(`[TEST] Errore: ${error.message}`);
+  }
+
+  return false;
+}
+
 // Funzione per testare la connettività con gli endpoint di LemonSqueezy
 async function testConnectivity() {
   console.log('[TEST] Testing connectivity to LemonSqueezy endpoints');
+
+  // Tenta di caricare la configurazione da build-config.js
+  const configLoaded = loadBuildConfig();
+  console.log(`[TEST] Configurazione centralizzata caricata: ${configLoaded ? 'Sì' : 'No'}`);
 
   try {
     // Test dell'endpoint API
@@ -47,6 +90,9 @@ async function testConnectivity() {
     // Verifica della configurazione
     console.log('\n[TEST] Configuration check:');
     console.log(`- API Key configured: ${LEMONSQUEEZY_CONFIG.API_KEY ? 'Yes' : 'No'}`);
+    console.log(`- Store ID configured: ${LEMONSQUEEZY_CONFIG.STORE_ID ? 'Yes' : 'No'}`);
+    console.log(`- Product ID configured: ${LEMONSQUEEZY_CONFIG.PRODUCT_ID ? 'Yes' : 'No'}`);
+    console.log(`- Checkout URL configured: ${LEMONSQUEEZY_CONFIG.CHECKOUT_URL ? 'Yes' : 'No'}`);
     console.log('- Allowed domains:');
     LEMONSQUEEZY_CONFIG.ALLOWED_DOMAINS.forEach((domain) => {
       console.log(`  - ${domain}`);
@@ -95,6 +141,128 @@ function testActivationRequestFormat() {
   }
 }
 
+// Funzione per testare l'URL di checkout
+async function testCheckoutUrl() {
+  console.log('\n[TEST] Testing checkout URL configuration');
+
+  try {
+    // Verifica se l'URL di checkout è configurato
+    if (!LEMONSQUEEZY_CONFIG.CHECKOUT_URL) {
+      console.warn('[TEST] Checkout URL not configured in LEMONSQUEEZY_CONFIG');
+
+      // Tenta di ottenere l'URL di checkout da build-config.js
+      try {
+        const buildConfig = require('../../../build-config');
+        const checkoutUrl = buildConfig.getProductionCheckoutUrl();
+
+        if (checkoutUrl) {
+          console.log(`[TEST] Checkout URL loaded from build-config.js: ${checkoutUrl}`);
+
+          // Verifica che l'URL sia valido
+          try {
+            const parsedUrl = new URL(checkoutUrl);
+
+            // Verifica che l'URL sia un dominio LemonSqueezy
+            if (!parsedUrl.hostname.includes('lemonsqueezy.com')) {
+              console.warn(
+                `[TEST] Warning: Checkout URL does not point to lemonsqueezy.com: ${parsedUrl.hostname}`,
+              );
+            } else {
+              console.log(`[TEST] Checkout URL is valid and points to lemonsqueezy.com`);
+            }
+
+            // Test di connettività all'URL di checkout
+            try {
+              const response = await fetch(checkoutUrl, { method: 'HEAD' });
+              console.log(
+                `[TEST] Checkout URL connectivity: Status ${response.status} (${response.statusText})`,
+              );
+
+              return {
+                success: true,
+                message: '[TEST] Checkout URL is valid and reachable',
+              };
+            } catch (error) {
+              console.error(`[TEST] Error connecting to checkout URL: ${error.message}`);
+              return {
+                success: false,
+                message: `[TEST] Checkout URL connectivity test failed: ${error.message}`,
+              };
+            }
+          } catch (error) {
+            console.error(`[TEST] Invalid checkout URL: ${error.message}`);
+            return {
+              success: false,
+              message: `[TEST] Invalid checkout URL: ${error.message}`,
+            };
+          }
+        } else {
+          console.warn('[TEST] No checkout URL found in build-config.js');
+          return {
+            success: false,
+            message: '[TEST] No checkout URL found',
+          };
+        }
+      } catch (error) {
+        console.error(`[TEST] Error loading checkout URL from build-config.js: ${error.message}`);
+        return {
+          success: false,
+          message: `[TEST] Error loading checkout URL: ${error.message}`,
+        };
+      }
+    } else {
+      console.log(
+        `[TEST] Checkout URL configured in LEMONSQUEEZY_CONFIG: ${LEMONSQUEEZY_CONFIG.CHECKOUT_URL}`,
+      );
+
+      // Verifica che l'URL sia valido
+      try {
+        const parsedUrl = new URL(LEMONSQUEEZY_CONFIG.CHECKOUT_URL);
+
+        // Verifica che l'URL sia un dominio LemonSqueezy
+        if (!parsedUrl.hostname.includes('lemonsqueezy.com')) {
+          console.warn(
+            `[TEST] Warning: Checkout URL does not point to lemonsqueezy.com: ${parsedUrl.hostname}`,
+          );
+        } else {
+          console.log(`[TEST] Checkout URL is valid and points to lemonsqueezy.com`);
+        }
+
+        // Test di connettività all'URL di checkout
+        try {
+          const response = await fetch(LEMONSQUEEZY_CONFIG.CHECKOUT_URL, { method: 'HEAD' });
+          console.log(
+            `[TEST] Checkout URL connectivity: Status ${response.status} (${response.statusText})`,
+          );
+
+          return {
+            success: true,
+            message: '[TEST] Checkout URL is valid and reachable',
+          };
+        } catch (error) {
+          console.error(`[TEST] Error connecting to checkout URL: ${error.message}`);
+          return {
+            success: false,
+            message: `[TEST] Checkout URL connectivity test failed: ${error.message}`,
+          };
+        }
+      } catch (error) {
+        console.error(`[TEST] Invalid checkout URL: ${error.message}`);
+        return {
+          success: false,
+          message: `[TEST] Invalid checkout URL: ${error.message}`,
+        };
+      }
+    }
+  } catch (error) {
+    console.error('[TEST] Error during checkout URL test:', error.message);
+    return {
+      success: false,
+      message: `[TEST] Checkout URL test failed: ${error.message}`,
+    };
+  }
+}
+
 // Funzione per eseguire tutti i test
 async function runAllTests() {
   console.log('Starting LemonSqueezy tests...\n');
@@ -105,16 +273,22 @@ async function runAllTests() {
   // Test del formato della richiesta
   const formatResult = testActivationRequestFormat();
 
+  // Test dell'URL di checkout
+  const checkoutUrlResult = await testCheckoutUrl();
+
   // Riepilogo dei test
   console.log('\n[TEST] Test summary:');
   console.log(`- Connectivity test: ${connectivityResult.success ? 'SUCCESS' : 'FAILED'}`);
   console.log(`  ${connectivityResult.message}`);
   console.log(`- Format test: ${formatResult.success ? 'SUCCESS' : 'FAILED'}`);
   console.log(`  ${formatResult.message}`);
+  console.log(`- Checkout URL test: ${checkoutUrlResult?.success ? 'SUCCESS' : 'FAILED'}`);
+  console.log(`  ${checkoutUrlResult?.message || 'No checkout URL test performed'}`);
 
   return {
     connectivity: connectivityResult,
     format: formatResult,
+    checkoutUrl: checkoutUrlResult,
   };
 }
 
@@ -122,6 +296,7 @@ async function runAllTests() {
 module.exports = {
   testConnectivity,
   testActivationRequestFormat,
+  testCheckoutUrl,
   runAllTests,
 };
 

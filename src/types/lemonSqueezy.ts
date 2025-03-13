@@ -34,8 +34,9 @@ export interface LemonSqueezyLicenseKey {
 }
 
 export interface LemonSqueezyInstance {
-  id: number;
-  identifier: string;
+  id: string | number;
+  identifier?: string;
+  name?: string;
   created_at: string;
 }
 
@@ -52,6 +53,11 @@ export interface LemonSqueezyMeta {
   customer_email: string;
 }
 
+/**
+ * Risposta dell'API LemonSqueezy per la validazione
+ *
+ * Documentazione ufficiale: https://docs.lemonsqueezy.com/api/license-api/validate-license-key
+ */
 export interface LemonSqueezyValidationResponse {
   valid: boolean;
   error: string | null;
@@ -60,6 +66,9 @@ export interface LemonSqueezyValidationResponse {
   meta: LemonSqueezyMeta;
 }
 
+/**
+ * Informazioni sulla licenza nella risposta di attivazione
+ */
 export interface LemonSqueezyLicense {
   status: LemonSqueezyLicenseStatus;
   key: string;
@@ -70,25 +79,29 @@ export interface LemonSqueezyLicense {
   features: string[];
 }
 
+/**
+ * Risposta dell'API LemonSqueezy per l'attivazione
+ *
+ * Documentazione ufficiale: https://docs.lemonsqueezy.com/api/license-api/activate-license-key
+ */
 export interface LemonSqueezyActivationResponse {
-  success: boolean;
-  data: {
-    license: LemonSqueezyLicense;
-    instance?: {
-      identifier: string;
-    };
-  };
+  activated: boolean;
+  error: string | null;
+  license_key: LemonSqueezyLicenseKey;
+  instance: LemonSqueezyInstance;
+  meta: LemonSqueezyMeta;
 }
 
+/**
+ * Risposta dell'API LemonSqueezy per la disattivazione
+ *
+ * Documentazione ufficiale: https://docs.lemonsqueezy.com/api/license-api/deactivate-license-key
+ */
 export interface LemonSqueezyDeactivationResponse {
   deactivated: boolean;
   error: string | null;
   license_key: LemonSqueezyLicenseKey;
-  instance: {
-    id: string;
-    name: string;
-    created_at: string;
-  } | null;
+  instance: LemonSqueezyInstance | null;
   meta: LemonSqueezyMeta;
 }
 

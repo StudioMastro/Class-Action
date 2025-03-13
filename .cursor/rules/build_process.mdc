@@ -24,6 +24,22 @@ This document outlines the build process for the Figma Plugin Project. It covers
 - Configure environment-specific settings (development, staging, production) in the build process
 - Use the `build-figma-plugin.*.js` configuration files to customize the build process for different environments
 
+## Plugin ID Management
+- **Plugin ID Storage:** The plugin ID is stored in a dedicated `.env.plugin` file:
+  ```
+  FIGMA_PLUGIN_ID="your-plugin-id"
+  ```
+- **Automatic Integration:** The ID is automatically inserted into the `manifest.json` during the build process
+- **Implementation:** The `build-config.js` file reads the ID from `.env.plugin` and provides it to `build-figma-plugin.manifest.js`
+- **Fallback Mechanism:** If the `.env.plugin` file is missing or the ID is not found, the system falls back to a default ID
+- **Security:** The `.env.plugin` file is excluded from Git to prevent accidental exposure of the plugin ID
+
+## Dynamic Page Loading Support
+- **Feature:** The plugin supports Figma's dynamic page loading feature, which improves performance when working with large files
+- **Implementation:** The `documentAccess: "dynamic-page"` setting is automatically added to the `manifest.json` during the build process
+- **Configuration:** This setting is managed in `build-figma-plugin.manifest.js` and applied consistently across all builds
+- **Benefits:** Prevents unnecessary loading of additional pages in multi-page Figma files, resulting in better performance
+
 ## Environment Management
 - **Build Modes:** The project supports two build modes:
   - **Development Mode:** Used during development for faster builds and debugging
@@ -37,6 +53,7 @@ This document outlines the build process for the Figma Plugin Project. It covers
   - Environment variables are managed through `.env` files:
     - `.env.development`: Contains development-specific variables
     - `.env`: Contains production variables
+    - `.env.plugin`: Contains the Figma Plugin ID
   - The correct file is automatically loaded based on the build mode
   - Required variables for production:
     - `LEMONSQUEEZY_API_KEY`: API key for LemonSqueezy
@@ -49,9 +66,13 @@ This document outlines the build process for the Figma Plugin Project. It covers
     - Implements a caching mechanism to ensure configuration is loaded only once
     - Uses a singleton pattern to prevent duplicate environment loading
     - Provides consistent configuration across multiple imports
+    - Manages the plugin ID and provides it to other configuration files
   - `build-figma-plugin.main.js`: Configuration for the main build process
   - `build-figma-plugin.manifest.js`: Configuration for the manifest generation
-  - Both configuration files import and use the same cached configuration instance
+    - Adds the plugin ID to the manifest
+    - Adds the dynamic page loading support
+    - Configures network access for the plugin
+  - All configuration files import and use the same cached configuration instance
 
 ## License Management Integration
 - Ensure the license management system is properly integrated into the build process
@@ -75,15 +96,19 @@ This document outlines the build process for the Figma Plugin Project. It covers
 
 ## Build Steps
 1. **Environment Setup:** Set the `NODE_ENV` environment variable to either `development` or `production`
-2. **Configuration Loading:** Load the build configuration from the appropriate `.env` file
+2. **Configuration Loading:** Load the build configuration from the appropriate `.env` files
    - Configuration is loaded only once and cached for subsequent imports
    - The same configuration instance is used across all build processes
+   - Plugin ID is loaded from `.env.plugin`
 3. **Configuration Validation:** Validate the configuration (stricter validation for production builds)
 4. **Transpilation:** Convert TypeScript code to JavaScript using a compiler (tsc or through the bundler)
 5. **Bundling:** Bundle the code using the chosen build tool
 6. **Minification:** Apply minification and dead code elimination for production builds
 7. **Asset Management:** Copy static assets (images, fonts, etc.) to the appropriate output directories
 8. **Manifest Generation:** Automatically generate or validate the Figma Plugin manifest
+   - Insert the plugin ID from `.env.plugin`
+   - Add dynamic page loading support
+   - Configure network access
 9. **Testing the Build:** Run automated tests (unit, integration) as part of the build pipeline
 10. **Verification:** Inspect the final build output to ensure compliance with Figma's plugin requirements
 
@@ -105,6 +130,10 @@ This document outlines the build process for the Figma Plugin Project. It covers
   - Verify that all required variables are defined in the file
   - Make sure the values are correct
   - Check the console output during the build process to see which environment is being used
+- **Plugin ID Issues:**
+  - Verify that the `.env.plugin` file exists and contains the correct plugin ID
+  - Check the build logs to confirm that the plugin ID is being loaded correctly
+  - Ensure that the plugin ID is being properly inserted into the manifest
 - **Duplicate Configuration Loading:**
   - If you see environment variables being loaded multiple times in the build output
   - Check that the caching mechanism in `build-config.js` is working correctly

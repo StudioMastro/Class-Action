@@ -17,7 +17,6 @@ import { SearchInput } from './components/SearchInput';
 import { TextInput } from './components/TextInput';
 import type { SavedClass, ImportResult } from './types';
 import type { LicenseStatus, LemonSqueezyError as LicenseError } from './types/lemonSqueezy';
-import { LEMONSQUEEZY_CONFIG } from './config/lemonSqueezy';
 import {
   Info,
   Edit as Rename,
@@ -1312,7 +1311,6 @@ function Plugin() {
         isOpen={isPremiumFeatureModalOpen}
         onClose={() => setIsPremiumFeatureModalOpen(false)}
         featureName={premiumFeatureName}
-        checkoutUrl={LEMONSQUEEZY_CONFIG.CHECKOUT_URL}
       />
 
       <LicenseActivation

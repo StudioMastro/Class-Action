@@ -34,16 +34,17 @@ export class LicenseManager {
   }
 
   /**
-   * Attiva una licenza
-   * @param licenseKey - Chiave di licenza da attivare
-   * @returns Promise con il risultato dell'attivazione
+   * Attiva una licenza con la chiave fornita
+   * @param licenseKey Chiave di licenza da attivare
+   * @returns Risultato dell'attivazione
    */
   public async activateLicense(licenseKey: string): Promise<LicenseActivationResult> {
     try {
       const endpoint = getEndpoint('ACTIVATE');
+      const instanceName = await this.getInstanceName();
       const data = {
         license_key: licenseKey,
-        instance_name: this.getInstanceName(),
+        instance_name: instanceName,
       };
 
       const response = await this.makeRequest<LemonSqueezyActivationResponse>(endpoint, data);
@@ -51,7 +52,7 @@ export class LicenseManager {
       if (response.activated) {
         // Salva la chiave di licenza e l'instance_id
         this.licenseKey = licenseKey;
-        this.instanceId = response.instance?.id || null;
+        this.instanceId = response.instance?.id?.toString() || null;
         this.licenseStatus = 'active';
         this.licenseFeatures = this.extractFeatures(response);
 
@@ -246,57 +247,53 @@ export class LicenseManager {
   }
 
   /**
-   * Genera un nome per l'istanza basato su informazioni del dispositivo
+   * Genera un nome descrittivo per l'istanza della licenza
    * @returns Nome dell'istanza
    */
-  private getInstanceName(): string {
-    // Genera un nome istanza basato su informazioni del dispositivo
-    // Questo è importante per identificare l'istanza nel pannello LemonSqueezy
-    const deviceInfo = this.getDeviceInfo();
-    return `Figma Plugin - ${deviceInfo.browser} - ${deviceInfo.os} - ${new Date().toISOString()}`;
+  private async getInstanceName(): Promise<string> {
+    try {
+      // Genera un nome istanza basato su informazioni del dispositivo
+      // Questo è importante per identificare l'istanza nel pannello LemonSqueezy
+      const deviceInfo = await this.getDeviceInfo();
+      return `Figma Plugin - ${deviceInfo.deviceName} - ${new Date().toISOString()}`;
+    } catch (error) {
+      console.error('[LICENSE] ❌ Error generating instance name:', error);
+      return `Figma Plugin - ${Date.now()}`;
+    }
   }
 
   /**
    * Ottiene informazioni sul dispositivo
    * @returns Informazioni sul dispositivo
    */
-  private getDeviceInfo(): DeviceInfo {
-    // Implementazione semplificata per ottenere informazioni sul browser e sistema operativo
-    const userAgent = navigator.userAgent;
-    let browser = 'Unknown Browser';
-    let os = 'Unknown OS';
+  private async getDeviceInfo(): Promise<DeviceInfo> {
+    try {
+      const deviceId = await this.generateDeviceIdentifier();
+      const deviceName = this.generateDeviceName(deviceId);
 
-    // Determina il browser
-    if (userAgent.indexOf('Chrome') > -1) {
-      browser = 'Chrome';
-    } else if (userAgent.indexOf('Safari') > -1) {
-      browser = 'Safari';
-    } else if (userAgent.indexOf('Firefox') > -1) {
-      browser = 'Firefox';
-    } else if (userAgent.indexOf('MSIE') > -1 || userAgent.indexOf('Trident') > -1) {
-      browser = 'Internet Explorer';
-    } else if (userAgent.indexOf('Edge') > -1) {
-      browser = 'Edge';
+      return {
+        deviceId,
+        deviceName,
+      };
+    } catch (error) {
+      console.error('[LICENSE] ❌ Error getting device info:', error);
+      // Fallback a un identificatore generico
+      const fallbackId = `figma-plugin-${Date.now()}`;
+      return {
+        deviceId: fallbackId,
+        deviceName: `Figma Plugin - ${Date.now()}`,
+      };
     }
+  }
 
-    // Determina il sistema operativo
-    if (userAgent.indexOf('Windows') > -1) {
-      os = 'Windows';
-    } else if (userAgent.indexOf('Mac') > -1) {
-      os = 'macOS';
-    } else if (userAgent.indexOf('Linux') > -1) {
-      os = 'Linux';
-    } else if (userAgent.indexOf('Android') > -1) {
-      os = 'Android';
-    } else if (
-      userAgent.indexOf('iOS') > -1 ||
-      userAgent.indexOf('iPhone') > -1 ||
-      userAgent.indexOf('iPad') > -1
-    ) {
-      os = 'iOS';
+  private generateDeviceName(deviceId: string): string {
+    try {
+      // Genera un nome descrittivo per il dispositivo
+      return `Figma Plugin - ${new Date().toISOString()}`;
+    } catch (error) {
+      console.error('[LICENSE] ❌ Error generating device name:', error);
+      return `Figma Plugin - ${deviceId}`;
     }
-
-    return { browser, os };
   }
 
   /**
@@ -413,6 +410,21 @@ export class LicenseManager {
       }
     } catch (error) {
       console.error('Error loading license data:', error);
+    }
+  }
+
+  /**
+   * Genera un identificatore univoco per il dispositivo
+   * @returns Identificatore del dispositivo
+   */
+  private async generateDeviceIdentifier(): Promise<string> {
+    try {
+      // Implementazione semplificata per generare un identificatore univoco
+      // In un ambiente reale, dovresti utilizzare una combinazione di informazioni sul dispositivo
+      return `figma-plugin-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    } catch (error) {
+      console.error('[LICENSE] ❌ Error generating device identifier:', error);
+      return `figma-plugin-${Date.now()}`;
     }
   }
 }

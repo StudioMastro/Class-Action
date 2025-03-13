@@ -6,6 +6,7 @@ import { Button } from '../common/Button';
 import { TextInput } from '../TextInput';
 import { Modal } from './Modal';
 import { Check } from '../common/icons';
+import { emit } from '@create-figma-plugin/utilities';
 import type { LicenseStatus, LemonSqueezyError as LicenseError } from '../../types/lemonSqueezy';
 import { LEMONSQUEEZY_CONFIG } from '../../config/lemonSqueezy';
 
@@ -169,7 +170,7 @@ export function LicenseActivation({
     // Create an unsigned URL to the LemonSqueezy Customer Portal
     // This is a simpler approach than signed URLs which would require a backend
     const portalUrl = `https://app.lemonsqueezy.com/my-orders?license_key=${encodeURIComponent(currentStatus.licenseKey || '')}`;
-    window.open(portalUrl, '_blank');
+    emit('OPEN_EXTERNAL_URL', portalUrl);
 
     // This condition will never be true, but it prevents the linter from complaining about unused function
     if (process.env.NODE_ENV === 'never-true-condition') {
@@ -384,14 +385,18 @@ export function LicenseActivation({
             <div className="mt-1">
               <Text size="xs" className="text-[var(--figma-color-text)]">
                 You don't have a license?{' '}
-                <a
-                  href={LEMONSQUEEZY_CONFIG.CHECKOUT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-[var(--figma-color-text-brand)] hover:underline"
+                <button
+                  onClick={() => {
+                    console.log(
+                      '[DEBUG] Upgrade to Premium clicked with URL:',
+                      LEMONSQUEEZY_CONFIG.CHECKOUT_URL,
+                    );
+                    emit('OPEN_EXTERNAL_URL', LEMONSQUEEZY_CONFIG.CHECKOUT_URL);
+                  }}
+                  className="font-bold text-[var(--figma-color-text-brand)] hover:underline bg-transparent border-none p-0 cursor-pointer"
                 >
                   Upgrade to Premium
-                </a>
+                </button>
               </Text>
             </div>
 
@@ -412,7 +417,7 @@ export function LicenseActivation({
                 )}
                 {activeError.managementUrl && (
                   <Button
-                    onClick={() => window.open(activeError.managementUrl, '_blank')}
+                    onClick={() => emit('OPEN_EXTERNAL_URL', activeError.managementUrl)}
                     variant="secondary"
                     size="small"
                     className="mt-2"
