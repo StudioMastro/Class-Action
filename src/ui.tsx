@@ -29,6 +29,7 @@ import {
 } from './components/common/icons';
 import { ClassCounter } from './components/ClassCounter';
 import { makeApiRequest } from './ui/services/apiService';
+import { MAX_CLASSES } from './config/featureFlags';
 
 // Definizione dei possibili stati di caricamento
 type LoadingState = {
@@ -445,7 +446,7 @@ function Plugin() {
       return;
     }
 
-    if (licenseStatus.tier === 'free' && savedClasses.length >= 5) {
+    if (licenseStatus.tier === 'free' && savedClasses.length >= MAX_CLASSES.FREE) {
       emit(
         'SHOW_ERROR',
         'You have reached the maximum number of classes for the free plan. Upgrade to Premium for unlimited classes.',
@@ -913,7 +914,7 @@ function Plugin() {
         {!licenseStatus.isValid && (
           <ClassCounter
             currentClasses={savedClasses.length}
-            maxClasses={5}
+            maxClasses={MAX_CLASSES.FREE}
             isPremium={licenseStatus.tier === 'premium'}
             onUpgradeClick={() => handlePremiumFeatureClick('Unlimited Classes')}
             onActivateClick={handleLicenseActivationOpen}

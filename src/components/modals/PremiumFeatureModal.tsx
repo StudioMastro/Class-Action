@@ -163,7 +163,14 @@ export function PremiumFeatureModal({ isOpen, onClose, featureName }: PremiumFea
                 Special Launch Offer!
               </Text>
               <Text size="sm">
-                Get Premium for just <strong>€29/year</strong> (regular price €39/year)
+                Get Premium for just <strong>€9/year.</strong>
+              </Text>
+              <Text size="xs">
+                Use code{' '}
+                <span className="font-mono font-bold bg-[var(--figma-color-bg)] px-1.5 rounded text-[var(--figma-color-text-success)]">
+                  E5MJEZMA
+                </span>{' '}
+                for <strong>50% off</strong> until <strong>May 31, 2025.</strong>
               </Text>
             </div>
           </div>

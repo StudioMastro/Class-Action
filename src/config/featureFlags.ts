@@ -6,7 +6,7 @@
 
 // Maximum number of classes allowed for each tier
 export const MAX_CLASSES = {
-  FREE: 10,
+  FREE: 5,
   PREMIUM: Infinity,
 } as const;
 
