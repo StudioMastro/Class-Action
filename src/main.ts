@@ -130,9 +130,15 @@ export default function () {
       // Log the activation date specifically for debugging
       console.log('[License] Activation date:', activationResult.activationDate);
 
-      // Save the license key regardless of validity
-      // This allows us to validate it again later
-      await figma.clientStorage.setAsync('licenseKey', licenseKey);
+      // Salva la chiave di licenza SOLO se l'attivazione è avvenuta con successo
+      if (activationResult.isValid) {
+        console.log('[License] Activation successful, saving license key to storage');
+        await figma.clientStorage.setAsync('licenseKey', licenseKey);
+      } else {
+        console.log('[License] Activation failed, NOT saving invalid license key');
+        // Se c'è un errore di attivazione, assicuriamoci di rimuovere eventuali chiavi precedenti
+        await figma.clientStorage.deleteAsync('licenseKey');
+      }
 
       // Emit the actual activation result status
       // If there's an error, we want to show it in the modal
@@ -153,7 +159,9 @@ export default function () {
         }, 500);
       } else if (activationResult.status !== 'error') {
         // Only show this if it's not an error (which will be shown in the modal)
-        showNotification('License processed. Please check premium features availability.');
+        showNotification(
+          'Your license has been processed. Please check premium features availability.',
+        );
       }
     } catch (error) {
       console.error('[License] Error during activation:', error);
@@ -166,7 +174,7 @@ export default function () {
           error instanceof Error
             ? {
                 code: 'API_ERROR',
-                message: error.message,
+                message: 'We encountered an unexpected issue during license activation.',
                 actions: ['Please try again later or contact support'],
               }
             : error,
@@ -292,14 +300,38 @@ export default function () {
 
       // Non è più necessario verificare se l'UI è pronta, il meccanismo di retry se ne occuperà
       console.log('[GetLicenseStatus] Found stored key, validating...');
-      const status = await licenseService.handleValidate(storedKey);
-      console.log('[GetLicenseStatus] Validation result:', status);
+      try {
+        const status = await licenseService.handleValidate(storedKey);
+        console.log('[GetLicenseStatus] Validation result:', status);
 
-      // Log the activation date for debugging
-      console.log('[GetLicenseStatus] Activation date:', status.activationDate);
+        // Log the activation date for debugging
+        console.log('[GetLicenseStatus] Activation date:', status.activationDate);
 
-      emit('LICENSE_STATUS_CHANGED', status);
-      return status;
+        // Se la validazione fallisce, rimuoviamo la chiave dallo storage
+        if (!status.isValid) {
+          console.log('[GetLicenseStatus] License is no longer valid, removing from storage');
+          await figma.clientStorage.deleteAsync('licenseKey');
+        }
+
+        emit('LICENSE_STATUS_CHANGED', status);
+        return status;
+      } catch (validationError) {
+        console.error('[GetLicenseStatus] Validation error:', validationError);
+        // In caso di errore durante la validazione, rimuoviamo la chiave dallo storage
+        console.log('[GetLicenseStatus] Removing invalid license key from storage');
+        await figma.clientStorage.deleteAsync('licenseKey');
+
+        // Restituiamo lo stato freemium
+        const freemiumStatus: LicenseStatus = {
+          tier: 'free',
+          isValid: false,
+          features: [],
+          status: 'idle',
+        };
+
+        emit('LICENSE_STATUS_CHANGED', freemiumStatus);
+        return freemiumStatus;
+      }
     } catch (error) {
       console.error('[GetLicenseStatus] Error:', error);
       const freemiumStatus: LicenseStatus = {
@@ -309,8 +341,8 @@ export default function () {
         status: 'error',
         error: {
           code: 'API_ERROR',
-          message: 'Failed to validate license',
-          actions: ['Try again later', 'Contact support'],
+          message: "We couldn't verify your license status.",
+          actions: ['Try again later', 'Contact support if the problem persists'],
         },
       };
       emit('LICENSE_STATUS_CHANGED', freemiumStatus);
