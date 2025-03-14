@@ -57,6 +57,8 @@
     "watch": "cross-env NODE_ENV=development concurrently \"npm:watch:css\" \"npm:watch:plugin\"",
     "watch:plugin": "build-figma-plugin --typecheck --watch",
     "watch:css": "tailwindcss --input ./src/input.css --output ./src/output.css --watch",
+    "watch:prod": "cross-env NODE_ENV=production concurrently \"npm:watch:css:prod\" \"npm:watch:plugin\"",
+    "watch:css:prod": "cross-env NODE_ENV=production tailwindcss --input ./src/input.css --output ./src/output.css --watch",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
     "test": "jest",

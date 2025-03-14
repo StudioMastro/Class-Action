@@ -25,5 +25,11 @@
     "types": ["node", "jest", "@figma/plugin-typings"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "jest.config.ts"],
-  "exclude": ["node_modules", "build", "dist", "src/__tests__/diagnostics/*.js"]
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "src/__tests__/diagnostics/*.js",
+    "src/config/env-config.js"
+  ]
 }
