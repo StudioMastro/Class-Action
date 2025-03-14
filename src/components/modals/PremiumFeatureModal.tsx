@@ -2,23 +2,49 @@
 import { h } from 'preact';
 import { Modal } from './Modal';
 import { Text } from '../common/Text';
+import { emit } from '@create-figma-plugin/utilities';
+import { LEMONSQUEEZY_CONFIG } from '../../config/lemonSqueezy';
+import { NotificationCard } from '../common';
+
+// Dichiarazione delle variabili globali che verranno sostituite durante la build
+declare const __PRODUCTION_CHECKOUT_URL__: string;
 
 interface PremiumFeatureModalProps {
   isOpen: boolean;
   onClose: () => void;
   featureName: string;
-  checkoutUrl: string;
 }
 
-export function PremiumFeatureModal({
-  isOpen,
-  onClose,
-  featureName,
-  checkoutUrl,
-}: PremiumFeatureModalProps) {
+export function PremiumFeatureModal({ isOpen, onClose, featureName }: PremiumFeatureModalProps) {
+  // Utilizziamo direttamente l'URL di checkout da LEMONSQUEEZY_CONFIG
+  const checkoutUrl = LEMONSQUEEZY_CONFIG.CHECKOUT_URL;
+
+  // Log del valore di checkoutUrl per debug
+  console.log('[DEBUG] PremiumFeatureModal checkoutUrl:', checkoutUrl);
+  console.log('[DEBUG] LEMONSQUEEZY_CONFIG:', LEMONSQUEEZY_CONFIG);
+
   const handleUpgradeClick = () => {
-    // Apre il checkout in una nuova finestra
-    window.open(checkoutUrl, '_blank');
+    // Verifica che l'URL sia valido prima di inviarlo
+    if (!checkoutUrl || typeof checkoutUrl !== 'string' || !checkoutUrl.startsWith('https://')) {
+      console.error('[DEBUG] Invalid checkout URL:', checkoutUrl);
+      // Utilizziamo l'URL di produzione come fallback
+      const prodUrl =
+        typeof __PRODUCTION_CHECKOUT_URL__ !== 'undefined' ? __PRODUCTION_CHECKOUT_URL__ : '';
+      if (prodUrl && prodUrl.startsWith('https://')) {
+        console.log('[DEBUG] Using production checkout URL as fallback:', prodUrl);
+        emit('OPEN_EXTERNAL_URL', prodUrl);
+      } else {
+        // Fallback hardcoded in caso di problemi
+        const fallbackUrl =
+          'https://mastro.lemonsqueezy.com/buy/1edb7f3c-cf47-4a79-b2c6-c7b5980c1cc3';
+        console.log('[DEBUG] Using hardcoded fallback URL:', fallbackUrl);
+        emit('OPEN_EXTERNAL_URL', fallbackUrl);
+      }
+    } else {
+      // Utilizziamo emit per aprire l'URL esterno tramite figma.openExternal
+      console.log('[DEBUG] handleUpgradeClick called with URL:', checkoutUrl);
+      emit('OPEN_EXTERNAL_URL', checkoutUrl);
+    }
     onClose();
   };
 
@@ -129,23 +155,20 @@ export function PremiumFeatureModal({
             </div>
           </div>
 
-          <div
-            className="mt-2 px-4 py-3 rounded-md"
-            style={{ backgroundColor: 'var(--figma-color-bg-success-tertiary)' }}
-          >
-            <div className="flex flex-col gap-1">
-              <Text size="sm" weight="bold">
-                Special Launch Offer!
-              </Text>
-              <Text size="sm">
-                Get Premium for just <strong>€9/year</strong>.
-              </Text>
-              <Text size="sm" className="text-[var(--figma-color-text-success)]">
-                Use promo code <strong className="font-mono">E5MJEZMA</strong> for{' '}
-                <strong>50% discount</strong>!
+          <NotificationCard type="success" title="Special Launch Offer!">
+            <Text size="sm">
+              Get Premium for just <strong>€9/year.</strong>
+            </Text>
+            <div className="mt-1">
+              <Text size="xs">
+                Use code{' '}
+                <span className="font-mono font-bold bg-[var(--figma-color-bg)] px-1.5 rounded text-[var(--figma-color-text-success)]">
+                  E5MJEZMA
+                </span>{' '}
+                for <strong>50% off</strong> until <strong>May 31, 2025.</strong>
               </Text>
             </div>
-          </div>
+          </NotificationCard>
         </div>
       </div>
     </Modal>

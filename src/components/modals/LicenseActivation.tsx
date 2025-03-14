@@ -5,8 +5,10 @@ import { Text } from '../common/Text';
 import { TextInput } from '../TextInput';
 import { Modal } from './Modal';
 import { Check } from '../common/icons';
+import { emit } from '@create-figma-plugin/utilities';
 import type { LicenseStatus, LemonSqueezyError as LicenseError } from '../../types/lemonSqueezy';
-import { ENV_CONFIG } from '../../config/lemonSqueezy';
+import { LEMONSQUEEZY_CONFIG } from '../../config/lemonSqueezy';
+import { NotificationCard } from '../common/NotificationCard';
 
 interface LicenseActivationProps {
   currentStatus: LicenseStatus;
@@ -170,7 +172,7 @@ export function LicenseActivation({
     // Create an unsigned URL to the LemonSqueezy Customer Portal
     // This is a simpler approach than signed URLs which would require a backend
     const portalUrl = `https://app.lemonsqueezy.com/my-orders?license_key=${encodeURIComponent(currentStatus.licenseKey || '')}`;
-    window.open(portalUrl, '_blank');
+    emit('OPEN_EXTERNAL_URL', portalUrl);
 
     // This condition will never be true, but it prevents the linter from complaining about unused function
     if (process.env.NODE_ENV === 'never-true-condition') {
@@ -280,24 +282,13 @@ export function LicenseActivation({
         onClick: onClose,
       }}
     >
-      <div className="space-y-4">
-        {/* Messaggio di successo */}
-        {showSuccess && (
-          <div className="bg-[var(--figma-color-bg-success-tertiary)] p-4 rounded-md mb-4 text-center">
-            <div className="flex justify-center mb-2">
-              <div className="w-10 h-10 rounded-full bg-[var(--figma-color-bg-success-tertiary)] flex items-center justify-center">
-                <Check className="w-6 h-6 text-[var(--figma-color-text-success)]" />
-              </div>
-            </div>
-            <Text size="lg" className="font-medium text-[var(--figma-color-text)]">
-              License successfully activated!
-            </Text>
-            <Text size="sm" className="text-[var(--figma-color-text)] mt-1">
-              You can now enjoy all premium features.
-            </Text>
-          </div>
+      <div className="flex flex-col gap-1">
+        {/* Success Message - mostrato solo dopo un'attivazione riuscita e non in caso di apertura manuale */}
+        {showSuccess && !isManualOpen && (
+          <NotificationCard type="success" title="License successfully activated!" />
+        
         )}
-
+        
         {/* Stato della licenza */}
         {currentStatus.isValid && (
           <div className="bg-[var(--figma-color-bg-success-tertiary)] p-4 rounded-md mb-4">
@@ -396,22 +387,53 @@ export function LicenseActivation({
           </div>
         )}
 
-        {/* Error message */}
-        {activeError && (
-          <div className="bg-[var(--figma-color-bg-danger)] p-3 rounded-md">
-            <Text size="sm" weight="bold" className="text-[var(--figma-color-text)]">
-              {activeError.message || 'An error occurred'}
-            </Text>
-            {activeError.actions && activeError.actions.length > 0 && (
-              <ul className="mt-1 list-disc list-inside">
-                {activeError.actions.map((action, index) => (
-                  <li key={index}>
-                    <Text size="xs" className="text-[var(--figma-color-text)]">
-                      {action}
-                    </Text>
-                  </li>
-                ))}
-              </ul>
+            {/* Link per l'acquisto di una licenza */}
+            <div className="mt-1">
+              <Text size="xs" className="text-[var(--figma-color-text)]">
+                You don't have a license?{' '}
+                <button
+                  onClick={() => {
+                    console.log(
+                      '[DEBUG] Upgrade to Premium clicked with URL:',
+                      LEMONSQUEEZY_CONFIG.CHECKOUT_URL,
+                    );
+                    emit('OPEN_EXTERNAL_URL', LEMONSQUEEZY_CONFIG.CHECKOUT_URL);
+                  }}
+                  className="font-bold text-[var(--figma-color-text-brand)] hover:underline bg-transparent border-none p-0 cursor-pointer"
+                >
+                  Upgrade to Premium
+                </button>
+              </Text>
+            </div>
+
+            {/* Error Display - sotto l'input */}
+            {activeError && (
+              <NotificationCard
+                type="error"
+                title={activeError.message}
+                actions={
+                  activeError.managementUrl && (
+                    <Button
+                      onClick={() => emit('OPEN_EXTERNAL_URL', activeError.managementUrl)}
+                      variant="secondary"
+                      size="small"
+                    >
+                      Manage License
+                    </Button>
+                  )
+                }
+              >
+                {activeError.actions && activeError.actions.length > 0 && (
+                  <ul className="mt-1 text-sm list-disc list-inside">
+                    {activeError.actions.map((action: string, index: number) => (
+                      <li key={index} className="text-[var(--figma-color-text-onbrand)]">
+                        {action}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </NotificationCard>
+
             )}
           </div>
         )}

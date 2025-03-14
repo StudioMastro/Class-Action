@@ -1,0 +1,155 @@
+---
+description: Build Process Guidelines for the Figma Plugin Project
+globs: build-figma-plugin.*.js, tsconfig.json, package.json, tailwind.config.js, postcss.config.js
+alwaysApply: false
+---
+# Build Process Guidelines
+
+## Overview
+This document outlines the build process for the Figma Plugin Project. It covers the steps required to compile, bundle, and prepare the plugin for deployment, leveraging @create-figma-plugin/build. It also includes guidelines on integrating Tailwind CSS, Preact, and the license management system where applicable.
+
+## Build Tools and Configurations
+- **Bundler/Compiler:** Use the build tools provided by @create-figma-plugin/build for fast and efficient transpilation and bundling
+- **Language:** Ensure all code is written in TypeScript in strict mode
+- **CSS Framework:** Integrate Tailwind CSS for styling, ensuring proper configuration for purging unused styles in production
+- **UI Library:** Use Preact where needed for lightweight UI components, ensuring proper aliasing if required
+- **TypeScript Configuration:** Ensure `tsconfig.json` is properly configured with:
+  - `"strict": true` for strict type checking
+  - Appropriate `outDir` to prevent overwriting source files
+  - Necessary exclusions for JavaScript files that shouldn't be processed
+
+## Create Figma Plugin Integration
+- Follow the guidelines from @create-figma-plugin/build to set up the initial project structure
+- Ensure the plugin manifest is properly generated and validated as per Figma requirements
+- Configure environment-specific settings (development, staging, production) in the build process
+- Use the `build-figma-plugin.*.js` configuration files to customize the build process for different environments
+
+## Plugin ID Management
+- **Plugin ID Storage:** The plugin ID is stored in a dedicated `.env.plugin` file:
+  ```
+  FIGMA_PLUGIN_ID="your-plugin-id"
+  ```
+- **Automatic Integration:** The ID is automatically inserted into the `manifest.json` during the build process
+- **Implementation:** The `build-config.js` file reads the ID from `.env.plugin` and provides it to `build-figma-plugin.manifest.js`
+- **Fallback Mechanism:** If the `.env.plugin` file is missing or the ID is not found, the system falls back to a default ID
+- **Security:** The `.env.plugin` file is excluded from Git to prevent accidental exposure of the plugin ID
+
+## Dynamic Page Loading Support
+- **Feature:** The plugin supports Figma's dynamic page loading feature, which improves performance when working with large files
+- **Implementation:** The `documentAccess: "dynamic-page"` setting is automatically added to the `manifest.json` during the build process
+- **Configuration:** This setting is managed in `build-figma-plugin.manifest.js` and applied consistently across all builds
+- **Benefits:** Prevents unnecessary loading of additional pages in multi-page Figma files, resulting in better performance
+
+## Environment Management
+- **Build Modes:** The project supports two build modes:
+  - **Development Mode:** Used during development for faster builds and debugging
+  - **Production Mode:** Used for creating optimized builds for distribution
+
+- **Build Commands:**
+  - Development: `npm run build:dev` or `npm run watch` (for auto-rebuilds)
+  - Production: `npm run build` or `npm run build:prod`
+
+- **Environment Variables:**
+  - Environment variables are managed through `.env` files:
+    - `.env.development`: Contains development-specific variables
+    - `.env`: Contains production variables
+    - `.env.plugin`: Contains the Figma Plugin ID
+  - The correct file is automatically loaded based on the build mode
+  - Required variables for production:
+    - `LEMONSQUEEZY_API_KEY`: API key for LemonSqueezy
+    - `LEMONSQUEEZY_STORE_ID`: Store ID for LemonSqueezy
+    - `LEMONSQUEEZY_PRODUCT_ID`: Product ID for LemonSqueezy
+    - `LEMONSQUEEZY_CHECKOUT_URL`: Checkout URL for LemonSqueezy
+
+- **Configuration System:**
+  - `build-config.js`: Central configuration for environment variables and validation
+    - Implements a caching mechanism to ensure configuration is loaded only once
+    - Uses a singleton pattern to prevent duplicate environment loading
+    - Provides consistent configuration across multiple imports
+    - Manages the plugin ID and provides it to other configuration files
+  - `build-figma-plugin.main.js`: Configuration for the main build process
+  - `build-figma-plugin.manifest.js`: Configuration for the manifest generation
+    - Adds the plugin ID to the manifest
+    - Adds the dynamic page loading support
+    - Configures network access for the plugin
+  - All configuration files import and use the same cached configuration instance
+
+## License Management Integration
+- Ensure the license management system is properly integrated into the build process
+- Include necessary license validation and activation endpoints in the plugin
+- Configure proper error handling for license-related operations
+- Implement feature toggling based on license tier (free vs premium)
+- Ensure license data is securely stored and transmitted
+- Include appropriate license status indicators in the UI
+
+## Tailwind CSS Integration
+- Configure Tailwind CSS by importing its base, components, and utilities into your main stylesheet
+- Use PurgeCSS (or Tailwind's built-in purge feature) to remove unused styles in production builds
+- Extract commonly used utility combinations into reusable components when necessary, to enhance maintainability
+- Ensure Tailwind's configuration is optimized for the plugin's specific needs
+
+## Preact Integration
+- If using Preact, ensure that the JSX pragma is correctly set up (via Babel or TypeScript configuration) to use Preact's `h` and `Fragment`
+- Verify proper module aliasing if React is used elsewhere in the project, ensuring consistency with Preact
+- Optimize the bundle by leveraging code-splitting and lazy loading (using React.lazy and Suspense when applicable)
+- Ensure proper typing for Preact components to maintain TypeScript strict mode compliance
+
+## Build Steps
+1. **Environment Setup:** Set the `NODE_ENV` environment variable to either `development` or `production`
+2. **Configuration Loading:** Load the build configuration from the appropriate `.env` files
+   - Configuration is loaded only once and cached for subsequent imports
+   - The same configuration instance is used across all build processes
+   - Plugin ID is loaded from `.env.plugin`
+3. **Configuration Validation:** Validate the configuration (stricter validation for production builds)
+4. **Transpilation:** Convert TypeScript code to JavaScript using a compiler (tsc or through the bundler)
+5. **Bundling:** Bundle the code using the chosen build tool
+6. **Minification:** Apply minification and dead code elimination for production builds
+7. **Asset Management:** Copy static assets (images, fonts, etc.) to the appropriate output directories
+8. **Manifest Generation:** Automatically generate or validate the Figma Plugin manifest
+   - Insert the plugin ID from `.env.plugin`
+   - Add dynamic page loading support
+   - Configure network access
+9. **Testing the Build:** Run automated tests (unit, integration) as part of the build pipeline
+10. **Verification:** Inspect the final build output to ensure compliance with Figma's plugin requirements
+
+## CI/CD Integration
+- Integrate the build process into the CI/CD pipeline to automate testing and deployment
+- Ensure that the build stage verifies type safety, code quality (linting, formatting), and bundle size limits
+- Implement automated testing for license management functionality
+- Configure different deployment targets based on build environment (development, staging, production)
+- Set up proper versioning and release management
+
+## Troubleshooting Common Build Issues
+- **TypeScript Compilation Errors:** Ensure proper configuration in `tsconfig.json`, especially regarding file exclusions and output directory
+- **Bundle Size Issues:** Analyze and optimize dependencies, implement code splitting where appropriate
+- **License Validation Failures:** Check API endpoints, request parameters, and error handling
+- **CSS Purging Problems:** Verify Tailwind configuration and ensure proper class usage patterns
+- **Manifest Generation Errors:** Check for invalid plugin configuration or missing required fields
+- **Environment Variables Issues:**
+  - Check that you have the correct `.env` files in the project root
+  - Verify that all required variables are defined in the file
+  - Make sure the values are correct
+  - Check the console output during the build process to see which environment is being used
+- **Plugin ID Issues:**
+  - Verify that the `.env.plugin` file exists and contains the correct plugin ID
+  - Check the build logs to confirm that the plugin ID is being loaded correctly
+  - Ensure that the plugin ID is being properly inserted into the manifest
+- **Duplicate Configuration Loading:**
+  - If you see environment variables being loaded multiple times in the build output
+  - Check that the caching mechanism in `build-config.js` is working correctly
+  - Ensure that all configuration files are importing the same instance of the configuration
+  - Verify that the `cachedConfig` variable is being properly utilized
+
+## Additional Considerations from Figma Official Documentation
+
+- **Plugin Linter:** Figma provides a set of TypeScript ESLint rules to automatically catch and fix issues in plugin code
+- **TypeScript Compilation:** Since Figma plugins run in the browser, they require a JavaScript output
+- **Dynamic Page Loading:** For plugins that support Figma's dynamic page loading feature, additional manifest configuration is needed
+- **Advanced Manifest Customization:** Utilize custom build configuration files to modify the manifest output before deployment
+- **Performance Optimization:** Follow Figma's guidelines for optimizing plugin performance, especially for operations on large files
+
+## References
+- @docs/README.mdc - Project documentation overview
+- @rules/figma_plugin.mdc - Figma plugin specific guidelines
+- @rules/react_components.mdc - React component guidelines
+- @types/license.ts - License management type definitions

@@ -122,6 +122,33 @@ Love Class Action? Rate us on the Figma Community platform and spread the word!
 - [Node.js](https://nodejs.org) – v20
 - [Figma desktop app](https://figma.com/downloads/)
 
+### Plugin ID Configuration
+
+The plugin uses a dedicated `.env.plugin` file to store the Figma Plugin ID, which is automatically inserted into the `manifest.json` during the build process:
+
+1. Create a `.env.plugin` file in the project root:
+
+   ```bash
+   echo 'FIGMA_PLUGIN_ID="your-plugin-id"' > .env.plugin
+   ```
+
+2. Replace `your-plugin-id` with your actual Figma Plugin ID.
+
+This ensures that your plugin ID is consistently applied to all builds, regardless of the environment (development or production). The system will:
+
+- Read the plugin ID from `.env.plugin` during build
+- Automatically insert it into the `manifest.json`
+- Fall back to `class-action` if no ID is found
+- Log the plugin ID being used during the build process
+
+> **Note**: The `.env.plugin` file is ignored by Git to prevent your plugin ID from being committed to the repository.
+
+### Dynamic Page Loading Support
+
+The plugin is configured to support Figma's dynamic page loading feature, which improves performance when working with large files with multiple pages. This is done by adding the `documentAccess: "dynamic-page"` setting to the manifest.json during the build process.
+
+This setting is automatically added to all builds through the `build-figma-plugin.manifest.js` configuration file, ensuring that your plugin is always optimized for performance.
+
 ### Build Configuration
 
 The plugin uses custom build configuration files for the Figma Plugin build process:

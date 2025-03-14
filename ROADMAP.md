@@ -49,7 +49,14 @@ This document outlines the planned updates and features for Class Action. Please
 
 ## Recently Released
 
-### v1.0.5 (Current)
+### v1.0.6 (Current)
+
+- ✅ Standardized notification system with consistent UI
+- ✅ Improved user feedback with clear error and success messages
+- ✅ Enhanced UI layout for better visibility of important information
+- ✅ Optimized text display in notification components
+
+### v1.0.5
 
 - ✅ License management system integration
 - ✅ Feature toggling based on license tier

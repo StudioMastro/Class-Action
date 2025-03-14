@@ -17,11 +17,6 @@ import {
 
 export class LicenseService {
   private static instance: LicenseService;
-  private readonly MAX_ATTEMPTS = 5;
-  private readonly ATTEMPT_WINDOW = 3600000; // 1 ora
-  private activationAttempts = new Map<string, number>();
-  private validationInProgress = false;
-  private activationInProgress = false;
   private connectionTestCache: { timestamp: number; result: boolean } | null = null;
   private licenseKey: string | null = null;
   private instanceId: string | null = null;
@@ -29,6 +24,7 @@ export class LicenseService {
   private licenseFeatures: string[] = [];
   private storageKey = 'license_data';
   private activationDate: string | null = null;
+  private freemiumStatus: LicenseStatus;
 
   constructor() {
     try {
@@ -42,6 +38,13 @@ export class LicenseService {
     }
     // Carica i dati della licenza dallo storage all'inizializzazione
     this.loadLicenseData();
+    // Inizializza freemiumStatus nel costruttore
+    this.freemiumStatus = {
+      tier: 'free',
+      isValid: false,
+      features: [],
+      status: 'idle',
+    };
   }
 
   public static getInstance(): LicenseService {
@@ -53,77 +56,50 @@ export class LicenseService {
 
   public initializeState(): void {
     try {
-      const freemiumStatus: LicenseStatus = {
+      console.log('Initializing freemium state...');
+
+      // Reimposta lo stato iniziale
+      this.freemiumStatus = {
         tier: 'free',
         isValid: false,
         features: [],
         status: 'idle',
       };
 
-      console.log('[LICENSE] 🔄 Initializing in freemium state:', {
-        tier: freemiumStatus.tier,
-        features: freemiumStatus.features,
-        status: freemiumStatus.status,
-      });
+      // Emetti l'evento di cambio stato
+      emit('LICENSE_STATUS_CHANGED', this.freemiumStatus);
 
-      emit('LICENSE_STATUS_CHANGED', freemiumStatus);
+      console.log('Freemium state initialized:', this.freemiumStatus);
+    } catch (error) {
+      console.error('Error initializing license state:', error);
+      // Imposta comunque uno stato predefinito in caso di errore
+      this.freemiumStatus = {
+        tier: 'free',
+        isValid: false,
+        features: [],
+        status: 'error',
+      };
+      // Tenta di emettere l'evento anche in caso di errore
+      try {
+        emit('LICENSE_STATUS_CHANGED', this.freemiumStatus);
+      } catch (emitError) {
+        console.error('Failed to emit LICENSE_STATUS_CHANGED event:', emitError);
+      }
+    }
 
-      // Registra il listener per gli eventi di validazione della licenza
+    // Registra il listener per il controllo della licenza
+    try {
       on('CHECK_LICENSE_STATUS', async () => {
         try {
-          console.log('[LICENSE] 🔄 Checking license status...');
-
-          // Se abbiamo una licenza salvata, verifichiamo che sia valida nell'ambiente corrente
-          if (this.licenseKey && this.instanceId) {
-            console.log('[LICENSE] 🔑 Found stored license, verifying...');
-
-            // Verifica la validità della licenza con l'endpoint corrente
-            try {
-              const validationResponse = await this.validateLicense(this.licenseKey, true);
-
-              if (!validationResponse.valid) {
-                console.log(
-                  '[LICENSE] ❌ Stored license is not valid in current environment, resetting...',
-                );
-                await this.resetLicenseData();
-
-                // Emetti lo stato aggiornato (freemium)
-                emit('LICENSE_STATUS_CHANGED', {
-                  tier: 'free',
-                  isValid: false,
-                  features: [],
-                  status: 'idle',
-                });
-
-                return;
-              }
-
-              // La licenza è valida, emetti lo stato premium
-              const licenseStatus = this.mapResponseToLicenseStatus(validationResponse);
-              emit('LICENSE_STATUS_CHANGED', licenseStatus);
-            } catch (error) {
-              console.error('[LICENSE] ❌ Error validating license during initialization:', error);
-              // In caso di errore di connessione, manteniamo lo stato corrente
-              // ma emettiamo un avviso
-              emit('LICENSE_STATUS_CHANGED', {
-                tier: this.licenseStatusType === 'active' ? 'premium' : 'free',
-                isValid: this.licenseStatusType === 'active',
-                features: this.licenseFeatures,
-                status: 'warning',
-                error: {
-                  code: 'CONNECTION_ERROR',
-                  message: 'Could not verify license. Using cached status.',
-                  actions: ['Check your internet connection', 'Try again later'],
-                },
-              });
-            }
-          }
+          console.log('Checking license status...');
+          // Utilizziamo un metodo esistente invece di checkLicenseStatus
+          await this.getLicenseStatus();
         } catch (error) {
-          console.error('[LICENSE] ❌ Error checking license status:', error);
+          console.error('Error checking license status:', error);
         }
       });
     } catch (error) {
-      console.error('[LICENSE] ❌ Error initializing license state:', error);
+      console.error('Failed to register CHECK_LICENSE_STATUS listener:', error);
     }
   }
 
@@ -200,6 +176,7 @@ export class LicenseService {
     try {
       // Verifica se l'UI è pronta
       if (!uiReady) {
+        console.warn('[LICENSE] ⚠️ UI is not ready to handle API requests, deferring request');
         throw new Error('UI is not ready to handle API requests');
       }
 
@@ -247,6 +224,14 @@ export class LicenseService {
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
 
+      // Log della richiesta per debug
+      console.log('[LICENSE] 🔍 Making API request to:', url);
+      console.log('[LICENSE] 🔍 Request data:', {
+        method: 'POST',
+        headers: { ...headers, Authorization: headers.Authorization ? '***' : undefined },
+        body: requestBody.substring(0, 100) + (requestBody.length > 100 ? '...' : ''),
+      });
+
       // Opzioni della richiesta
       const options: RequestInit = {
         method: 'POST',
@@ -260,158 +245,111 @@ export class LicenseService {
       // Verifica se la risposta è valida
       if (!response.ok) {
         // Per gli errori 400 Bad Request, proviamo a ottenere maggiori dettagli
-        if (response.status === 400) {
+        if (response.status === 400 || response.status === 404) {
           try {
             // Tentiamo di leggere il corpo della risposta per ottenere dettagli sull'errore
-            const errorData = await response.json();
+            const errorText = await response.text();
+            console.log('[LICENSE] 🔍 Raw error response text:', errorText);
+
+            let errorData;
+
+            try {
+              errorData = JSON.parse(errorText);
+              // Log completo della risposta di errore per diagnostica
+              console.log('[LICENSE] 🔍 Full error response data (parsed):', errorData);
+            } catch (e) {
+              errorData = { error: errorText };
+              // Log del testo di errore non-JSON
+              console.log('[LICENSE] 🔍 Non-JSON error text:', errorText);
+            }
 
             // Log per debug
-            console.log('[LICENSE] 🔍 Error response data:', JSON.stringify(errorData, null, 2));
+            console.error('[LICENSE] ❌ Error response data:', JSON.stringify(errorData, null, 2));
+            console.error('[LICENSE] ❌ Error status:', response.status, response.statusText);
 
-            // Verifichiamo se è un errore di licenza già attivata
-            if (errorData && errorData.error) {
-              const errorMessage = errorData.error.toLowerCase();
+            // Verifica se la risposta contiene informazioni sullo stato della licenza
+            if (errorData && typeof errorData === 'object') {
+              // Controlla se c'è un campo status o state nella risposta
+              if ('status' in errorData) {
+                console.log('[LICENSE] 🔍 License status in error response:', errorData.status);
 
-              if (
-                errorMessage.includes('already activated') ||
-                errorMessage.includes('activation limit') ||
-                errorMessage.includes('license has been activated')
-              ) {
-                throw {
-                  code: 'ACTIVATION_LIMIT_REACHED',
-                  message: 'This license key has already been activated on another device.',
-                  actions: [
-                    'Use a different license key',
-                    'Deactivate the license on another device',
-                    'Contact support for assistance',
-                  ],
-                };
+                // Gestisci i diversi stati della licenza
+                if (errorData.status === 'disabled') {
+                  throw new Error(`License key is disabled: ${JSON.stringify(errorData)}`);
+                } else if (errorData.status === 'expired') {
+                  throw new Error(`License key has expired: ${JSON.stringify(errorData)}`);
+                } else if (errorData.status === 'inactive') {
+                  throw new Error(`License key is inactive: ${JSON.stringify(errorData)}`);
+                }
               }
 
-              // Altri errori specifici possono essere gestiti qui
-              if (errorMessage.includes('invalid') || errorMessage.includes('not found')) {
-                throw {
-                  code: 'INVALID_LICENSE',
-                  message: 'The license key you entered is invalid or does not exist.',
-                  actions: [
-                    'Check the license key and try again',
-                    'Contact support if you believe this is an error',
-                  ],
-                };
+              // Controlla se c'è un messaggio che contiene informazioni sullo stato
+              if ('message' in errorData && typeof errorData.message === 'string') {
+                const message = errorData.message.toLowerCase();
+                console.log('[LICENSE] 🔍 Checking message for status info:', message);
+
+                if (message.includes('disabled')) {
+                  throw new Error(`License key is disabled: ${JSON.stringify(errorData)}`);
+                } else if (message.includes('expired')) {
+                  throw new Error(`License key has expired: ${JSON.stringify(errorData)}`);
+                } else if (message.includes('inactive')) {
+                  throw new Error(`License key is inactive: ${JSON.stringify(errorData)}`);
+                }
               }
 
-              // Se abbiamo un messaggio di errore ma non è uno dei casi specifici
-              throw {
-                code: 'API_ERROR',
-                message: errorData.error || `Error from LemonSqueezy: ${response.status}`,
-                actions: ['Try again later', 'Contact support'],
-              };
+              // Controlla se c'è un campo error che contiene informazioni sullo stato
+              if ('error' in errorData && typeof errorData.error === 'string') {
+                const errorMsg = errorData.error.toLowerCase();
+                console.log('[LICENSE] 🔍 Checking error field for status info:', errorMsg);
+
+                if (errorMsg.includes('disabled')) {
+                  throw new Error(`License key is disabled: ${JSON.stringify(errorData)}`);
+                } else if (errorMsg.includes('expired')) {
+                  throw new Error(`License key has expired: ${JSON.stringify(errorData)}`);
+                } else if (errorMsg.includes('inactive')) {
+                  throw new Error(`License key is inactive: ${JSON.stringify(errorData)}`);
+                }
+              }
             }
-          } catch (parseError: unknown) {
-            // Se l'errore non è un JSON valido o non ha la struttura prevista,
-            // continuiamo con l'errore generico
-            if (parseError && typeof parseError === 'object' && 'code' in parseError) {
-              throw parseError; // Rilanciamo l'errore specifico che abbiamo creato
+
+            if (response.status === 404) {
+              throw new Error(
+                `API endpoint not found: ${url}. Please check your API configuration.`,
+              );
             }
+
+            throw new Error(
+              errorData.error ||
+                errorData.message ||
+                `API error: ${response.status} ${response.statusText}`,
+            );
+          } catch (parseError) {
+            console.error('[LICENSE] ❌ Error parsing error response:', parseError);
+            throw new Error(`API error: ${response.status} ${response.statusText}`);
           }
         }
 
-        // Gestione specifica per errore 404 (Not Found)
-        if (response.status === 404) {
-          console.log('[LICENSE] ⚠️ License key not found (404)');
-          throw {
-            code: 'INVALID_LICENSE',
-            message: 'The license key you entered does not exist.',
-            actions: [
-              'Check if you typed the license key correctly',
-              'Make sure you are using a valid license key',
-              'Contact support if you need assistance',
-            ],
-          };
-        }
-
-        // Gestione specifica per errore 401 (Unauthorized)
-        if (response.status === 401) {
-          console.log('[LICENSE] ⚠️ Authorization error (401)');
-          throw {
-            code: 'CONFIG_ERROR',
-            message: 'Authorization failed. The plugin cannot connect to the license server.',
-            actions: ['Contact the plugin developer', 'Try again later'],
-          };
-        }
-
-        // Gestione specifica per errore 429 (Too Many Requests)
-        if (response.status === 429) {
-          console.log('[LICENSE] ⚠️ Rate limit exceeded (429)');
-          throw {
-            code: 'ACTIVATION_LIMIT_REACHED',
-            message: 'Too many license activation attempts. Please try again later.',
-            actions: [
-              'Wait a few minutes before trying again',
-              'Contact support if the problem persists',
-            ],
-          };
-        }
-
-        // Gestione specifica per errori server (500, 502, 503, 504)
-        if (response.status >= 500) {
-          console.log(`[LICENSE] ⚠️ Server error (${response.status})`);
-          throw {
-            code: 'API_ERROR',
-            message: 'The license server is currently experiencing issues.',
-            actions: [
-              'Try again later',
-              'Check the service status',
-              'Contact support if the problem persists',
-            ],
-          };
-        }
-
-        // Errore generico per altri codici di stato
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
-      // Parsa la risposta come JSON
-      const data = await response.json();
+      // Leggi la risposta
+      const responseText = await response.text();
+      let responseData: T;
 
-      return data as T;
+      try {
+        responseData = JSON.parse(responseText) as T;
+      } catch (error) {
+        console.error('[LICENSE] ❌ Error parsing response:', error);
+        throw new Error('Invalid JSON response from API');
+      }
+
+      // Log della risposta per debug
+      console.log('[LICENSE] ✅ API response:', JSON.stringify(responseData, null, 2));
+
+      return responseData;
     } catch (error) {
-      console.error('[LICENSE] ❌ Error making request:', error);
-
-      // Gestione specifica per errori di rete
-      if (error instanceof Error) {
-        if (
-          error.message.includes('NetworkError') ||
-          error.message.includes('network') ||
-          error.message.includes('Failed to fetch')
-        ) {
-          throw {
-            code: 'NETWORK_ERROR',
-            message:
-              'Unable to connect to the license server. Please check your internet connection.',
-            actions: [
-              'Check your internet connection',
-              'Try again when you are online',
-              'Contact support if you are already online',
-            ],
-          };
-        }
-
-        // Gestione specifica per errori di timeout
-        if (error.message.includes('timeout') || error.message.includes('timed out')) {
-          throw {
-            code: 'NETWORK_ERROR',
-            message: 'The connection to the license server timed out.',
-            actions: [
-              'Check your internet connection',
-              'Try again later',
-              'Contact support if the problem persists',
-            ],
-          };
-        }
-      }
-
-      throw this.handleError(error);
+      console.error('[LICENSE] ❌ Error making API request:', error);
+      throw error;
     }
   }
 
@@ -440,151 +378,6 @@ export class LicenseService {
         message: 'Invalid LemonSqueezy configuration',
         actions: ['Check your configuration settings'],
       } as LemonSqueezyError;
-    }
-  }
-
-  private async validateLicense(
-    licenseKey: string,
-    uiReady: boolean = false,
-  ): Promise<LemonSqueezyValidationResponse> {
-    try {
-      await this.validateConfiguration();
-      await this.ensureValidConnection();
-
-      if (this.validationInProgress) {
-        throw new Error('License validation already in progress');
-      }
-
-      this.validationInProgress = true;
-
-      // Only include instance_id if it's a non-empty string
-      const data = {
-        license_key: licenseKey,
-        // Only include instance_id if it exists and is not empty
-        ...(this.instanceId ? { instance_id: this.instanceId } : {}),
-        // Aggiungiamo esplicitamente store_id e product_id, anche se sono vuoti
-        // Questo è necessario per l'API di LemonSqueezy
-        store_id: LEMONSQUEEZY_CONFIG.STORE_ID || '155794', // Valore di fallback
-        product_id: LEMONSQUEEZY_CONFIG.PRODUCT_ID || '453124', // Valore di fallback
-      };
-
-      console.log('[LICENSE] 🔍 Validation data:', {
-        license_key: licenseKey ? '***' : 'missing',
-        instance_id: this.instanceId ? `${this.instanceId.substring(0, 4)}...` : 'missing',
-        store_id: data.store_id,
-        product_id: data.product_id,
-      });
-
-      const response = await this.makeRequest<LemonSqueezyValidationResponse>(
-        'validate',
-        data,
-        uiReady,
-      );
-
-      this.validationInProgress = false;
-
-      // Log the response to help with debugging
-      console.log(
-        '[LICENSE] 🔍 Validation response:',
-        JSON.stringify(
-          {
-            valid: response.valid,
-            hasLicenseKey: !!response.license_key,
-            hasInstance: !!response.instance,
-            instanceId:
-              response.instance && response.instance.id
-                ? `${response.instance.id.substring(0, 4)}...`
-                : 'missing',
-            activationDate:
-              response.instance && response.instance.created_at
-                ? response.instance.created_at
-                : 'missing',
-          },
-          null,
-          2,
-        ),
-      );
-
-      // If the response doesn't include the license key, add it
-      if (response.valid && response.license_key && !response.license_key.key) {
-        response.license_key.key = licenseKey;
-      }
-
-      // If we have an instance in the response with a created_at date, update our stored activation date
-      if (response.instance && response.instance.created_at) {
-        this.activationDate = response.instance.created_at as string;
-        console.log(
-          '[LICENSE] ✅ Updated activation date from validation response:',
-          this.activationDate,
-        );
-        // Save the updated license data
-        this.saveLicenseData();
-      }
-
-      return response;
-    } catch (error) {
-      this.validationInProgress = false;
-      console.error('[LICENSE] ❌ Error validating license:', error);
-      throw this.handleError(error);
-    }
-  }
-
-  private async activateLicense(
-    licenseKey: string,
-    uiReady: boolean = false,
-  ): Promise<LemonSqueezyActivationResponse> {
-    try {
-      await this.validateConfiguration();
-      await this.ensureValidConnection();
-
-      if (this.activationInProgress) {
-        throw new Error('License activation already in progress');
-      }
-
-      this.activationInProgress = true;
-
-      // Verifica se abbiamo raggiunto il limite di tentativi di attivazione
-      const canActivate = await this.checkRateLimit(licenseKey);
-      if (!canActivate) {
-        throw new Error('Activation limit reached');
-      }
-
-      // Ottieni le informazioni sul dispositivo
-      const deviceInfo = await this.getDeviceInfo();
-
-      // Prepara i dati per l'attivazione
-      const data = {
-        license_key: licenseKey,
-        instance_name: deviceInfo.deviceName,
-        instance_identifier: deviceInfo.deviceId,
-        // Aggiungiamo esplicitamente store_id e product_id, anche se sono vuoti
-        // Questo è necessario per l'API di LemonSqueezy
-        store_id: LEMONSQUEEZY_CONFIG.STORE_ID || '155794', // Valore di fallback
-        product_id: LEMONSQUEEZY_CONFIG.PRODUCT_ID || '453124', // Valore di fallback
-      };
-
-      console.log('[LICENSE] 🔑 Activation data:', {
-        license_key: licenseKey ? '***' : 'missing',
-        instance_name: deviceInfo.deviceName,
-        instance_identifier: `${deviceInfo.deviceId.substring(0, 4)}...`,
-        store_id: data.store_id,
-        product_id: data.product_id,
-      });
-
-      // Effettua la richiesta di attivazione
-      const response = await this.makeRequest<LemonSqueezyActivationResponse>(
-        'activate',
-        data,
-        uiReady,
-      );
-
-      this.activationInProgress = false;
-
-      return response;
-    } catch (error) {
-      this.activationInProgress = false;
-      console.error('[LICENSE] ❌ Error activating license:', error);
-      throw this.handleError(error);
     }
   }
 
@@ -663,8 +456,11 @@ export class LicenseService {
               status: 'error',
               error: {
                 code: 'INVALID_LICENSE',
-                message: response.error || 'Invalid license',
-                actions: ['Check your license key', 'Contact support'],
+                message: 'The license key you entered is invalid or has expired.',
+                actions: [
+                  'Check the license key and try again',
+                  'Contact support if you believe this is an error',
+                ],
               },
             };
           }
@@ -692,8 +488,11 @@ export class LicenseService {
               status: 'error',
               error: {
                 code: 'INVALID_LICENSE',
-                message: 'License is not active',
-                actions: ['Check your license key', 'Contact support'],
+                message: 'The license key you entered is invalid or has expired.',
+                actions: [
+                  'Check the license key and try again',
+                  'Contact support if you believe this is an error',
+                ],
               },
             };
           }
@@ -752,8 +551,8 @@ export class LicenseService {
             status: 'error',
             error: {
               code: 'API_ERROR',
-              message: 'Error processing validation response',
-              actions: ['Try again later', 'Contact support'],
+              message: 'We encountered an issue while processing your license information.',
+              actions: ['Try again later', 'Contact support if the problem persists'],
             },
           };
         }
@@ -776,8 +575,8 @@ export class LicenseService {
               status: 'error',
               error: {
                 code: 'API_ERROR',
-                message: response.error || 'Failed to activate license',
-                actions: ['Check your license key', 'Contact support'],
+                message: 'We encountered an issue while processing your license activation.',
+                actions: ['Try again later', 'Contact support if the problem persists'],
               },
             };
           }
@@ -804,8 +603,11 @@ export class LicenseService {
               status: 'error',
               error: {
                 code: 'INVALID_LICENSE',
-                message: 'Failed to activate license',
-                actions: ['Check your license key', 'Contact support'],
+                message: 'The license key you entered is invalid or has expired.',
+                actions: [
+                  'Check the license key and try again',
+                  'Contact support if you believe this is an error',
+                ],
               },
             };
           }
@@ -845,8 +647,8 @@ export class LicenseService {
             status: 'error',
             error: {
               code: 'API_ERROR',
-              message: 'Error processing activation response',
-              actions: ['Try again later', 'Contact support'],
+              message: 'We encountered an issue while processing your license activation.',
+              actions: ['Try again later', 'Contact support if the problem persists'],
             },
           };
         }
@@ -859,8 +661,8 @@ export class LicenseService {
         status: 'error',
         error: {
           code: 'API_ERROR',
-          message: 'Invalid response from LemonSqueezy API',
-          actions: ['Try again later', 'Contact support'],
+          message: 'We received an unexpected response from the license server.',
+          actions: ['Try again later', 'Contact support if the problem persists'],
         },
       };
     } catch (error) {
@@ -872,17 +674,14 @@ export class LicenseService {
         status: 'error',
         error: {
           code: 'API_ERROR',
-          message: 'Error mapping response to license status',
-          actions: ['Try again later', 'Contact support'],
+          message: 'We encountered an issue while processing your license information.',
+          actions: ['Try again later', 'Contact support if the problem persists'],
         },
       };
     }
   }
 
-  public async handleValidate(
-    licenseKey: string,
-    uiReady: boolean = false,
-  ): Promise<LicenseStatus> {
+  public async handleValidate(licenseKey: string): Promise<LicenseStatus> {
     try {
       // Se non abbiamo una chiave di licenza, restituiamo lo stato freemium
       if (!licenseKey) {
@@ -904,8 +703,16 @@ export class LicenseService {
         this.activationDate,
       );
 
-      // Valida la licenza
-      const validationResponse = await this.validateLicense(licenseKey, uiReady);
+      // Valida la licenza usando il meccanismo di retry
+      const deviceInfo = await this.getDeviceInfo();
+      const validationResponse = await this.makeRequestWithRetry<LemonSqueezyValidationResponse>(
+        'validate',
+        {
+          license_key: licenseKey,
+          instance_identifier: deviceInfo.deviceId,
+        },
+      );
+
       const status = this.mapResponseToLicenseStatus(validationResponse);
 
       console.log(
@@ -996,10 +803,45 @@ export class LicenseService {
     }
   }
 
-  public async handleActivate(
-    licenseKey: string,
-    uiReady: boolean = false,
-  ): Promise<LicenseStatus> {
+  /**
+   * Effettua una richiesta API con meccanismo di retry
+   * Utile quando l'UI potrebbe non essere ancora pronta
+   */
+  private async makeRequestWithRetry<T extends LemonSqueezyResponse>(
+    endpoint: string,
+    requestData: Record<string, string>,
+    maxRetries = 3,
+    retryDelay = 1000,
+  ): Promise<T> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Tentiamo di fare la richiesta
+        return await this.makeRequest<T>(endpoint, requestData, true);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Se l'errore è dovuto all'UI non pronta e non siamo all'ultimo tentativo
+        if (lastError.message.includes('UI is not ready') && attempt < maxRetries - 1) {
+          console.log(
+            `[LICENSE] 🔄 Retry attempt ${attempt + 1}/${maxRetries} after ${retryDelay}ms`,
+          );
+          // Attendiamo prima di riprovare
+          await new Promise((resolve) => setTimeout(resolve, retryDelay * (attempt + 1)));
+          continue;
+        }
+
+        // Per altri tipi di errori o se siamo all'ultimo tentativo, rilanciamo l'errore
+        throw lastError;
+      }
+    }
+
+    // Se arriviamo qui, significa che abbiamo esaurito i tentativi
+    throw lastError || new Error('Failed to make API request after multiple attempts');
+  }
+
+  public async handleActivate(licenseKey: string): Promise<LicenseStatus> {
     try {
       // Se non abbiamo una chiave di licenza, restituiamo lo stato freemium
       if (!licenseKey) {
@@ -1010,8 +852,8 @@ export class LicenseService {
           status: 'error',
           error: {
             code: 'INVALID_LICENSE',
-            message: 'No license key provided',
-            actions: ['Enter a license key', 'Contact support'],
+            message: 'Please enter a license key to activate premium features.',
+            actions: ['Enter your license key', "Purchase a license if you don't have one"],
           },
         };
       }
@@ -1020,7 +862,7 @@ export class LicenseService {
       let validationResult: LicenseStatus | null = null;
       try {
         if (this.licenseKey === licenseKey && this.instanceId) {
-          validationResult = await this.handleValidate(licenseKey, uiReady);
+          validationResult = await this.handleValidate(licenseKey);
         }
       } catch (error) {
         console.warn('[LICENSE] ⚠️ Error validating existing license:', error);
@@ -1035,50 +877,199 @@ export class LicenseService {
         };
       }
 
-      // Attiva la licenza
-      const activationResponse = await this.activateLicense(licenseKey, uiReady);
+      console.log('[LICENSE] 🔄 Proceeding with license activation for key:', licenseKey);
 
-      // Log the raw response for debugging
-      console.log(
-        '[LICENSE] 🔍 Raw activation response:',
-        JSON.stringify(activationResponse, null, 2),
-      );
+      // Attiva la licenza usando il meccanismo di retry
+      let activationResponse: LemonSqueezyActivationResponse;
+      try {
+        activationResponse = await this.makeRequestWithRetry<LemonSqueezyActivationResponse>(
+          'activate',
+          {
+            license_key: licenseKey,
+            instance_name: (await this.getDeviceInfo()).deviceName,
+            instance_identifier: (await this.getDeviceInfo()).deviceId,
+            store_id: LEMONSQUEEZY_CONFIG.STORE_ID,
+            product_id: LEMONSQUEEZY_CONFIG.PRODUCT_ID,
+          },
+        );
 
-      // Check if the activation was successful
-      if (activationResponse.activated === true && activationResponse.license_key) {
-        const licenseData = activationResponse.license_key;
-        const instanceData = activationResponse.instance;
+        // Log the raw response for debugging
+        console.log(
+          '[LICENSE] 🔍 Raw activation response:',
+          JSON.stringify(activationResponse, null, 2),
+        );
 
-        console.log('[LICENSE] ✅ Valid activation response detected');
+        // Check if the activation was successful
+        if (activationResponse.activated === true && activationResponse.license_key) {
+          const licenseData = activationResponse.license_key;
+          const instanceData = activationResponse.instance;
 
-        if (licenseData && licenseData.status === 'active') {
-          console.log('[LICENSE] ✅ License activated successfully, saving to storage');
-          await figma.clientStorage.setAsync(STORAGE_KEYS.LICENSE_KEY, licenseKey);
-          this.licenseKey = licenseKey;
-          this.instanceId = instanceData?.id || null;
-          this.licenseStatusType = 'active';
-          this.licenseFeatures = ['all']; // LemonSqueezy doesn't provide features in the response
-          this.activationDate = (instanceData?.created_at as string) || null;
-          this.saveLicenseData();
+          console.log('[LICENSE] ✅ Valid activation response detected');
 
-          // Return success status
-          return {
-            tier: 'premium',
-            isValid: true,
-            features: this.licenseFeatures,
-            status: 'success',
-            activationLimit: licenseData.activation_limit as number,
-            activationsCount: licenseData.activation_usage as number,
-            expiresAt: licenseData.expires_at as string | null,
-            licenseKey: licenseData.key as string,
-            instanceId: this.instanceId as string | undefined,
-            activationDate: this.activationDate,
-          };
+          if (licenseData && licenseData.status === 'active') {
+            console.log('[LICENSE] ✅ License activated successfully, saving to storage');
+            await figma.clientStorage.setAsync(STORAGE_KEYS.LICENSE_KEY, licenseKey);
+            this.licenseKey = licenseKey;
+            this.instanceId = instanceData?.id || null;
+            this.licenseStatusType = 'active';
+            this.licenseFeatures = ['all']; // LemonSqueezy doesn't provide features in the response
+            this.activationDate = (instanceData?.created_at as string) || null;
+            this.saveLicenseData();
+
+            // Return success status
+            return {
+              tier: 'premium',
+              isValid: true,
+              features: this.licenseFeatures,
+              status: 'success',
+              activationLimit: licenseData.activation_limit as number,
+              activationsCount: licenseData.activation_usage as number,
+              expiresAt: licenseData.expires_at as string | null,
+              licenseKey: licenseData.key as string,
+              instanceId: this.instanceId as string | undefined,
+              activationDate: this.activationDate,
+            };
+          } else {
+            // La licenza esiste ma non è attiva
+            console.log(
+              '[LICENSE] ⚠️ License exists but status is not active:',
+              licenseData?.status,
+            );
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'INVALID_LICENSE',
+                message: `This license key is not active (status: ${licenseData?.status || 'unknown'}).`,
+                actions: ['Contact support for assistance', 'Purchase a new license if needed'],
+              },
+            };
+          }
+        } else if (activationResponse.error) {
+          // Errore specifico restituito dall'API
+          console.log('[LICENSE] ❌ API returned an error:', activationResponse.error);
+
+          // Controlla se l'errore contiene informazioni sullo stato della licenza
+          const errorLower = activationResponse.error.toLowerCase();
+          if (errorLower.includes('disabled')) {
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'LICENSE_DISABLED',
+                message: 'This license key has been disabled or revoked.',
+                actions: [
+                  'Contact the store where you purchased the license',
+                  'Purchase a new license if needed',
+                ],
+              },
+            };
+          } else if (errorLower.includes('expired')) {
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'LICENSE_EXPIRED',
+                message: 'This license key has expired.',
+                actions: ['Renew your license if possible', 'Purchase a new license if needed'],
+              },
+            };
+          } else if (errorLower.includes('inactive')) {
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'INVALID_LICENSE',
+                message: 'This license key is inactive and needs to be activated.',
+                actions: [
+                  'Make sure you are using the correct license key',
+                  'Contact support if you need assistance with activation',
+                ],
+              },
+            };
+          }
         }
+      } catch (activationError) {
+        console.error('[LICENSE] ❌ Error during activation request:', activationError);
+
+        // Log dettagliato dell'errore
+        if (activationError instanceof Error) {
+          console.log('[LICENSE] 🔍 Activation error message:', activationError.message);
+          console.log('[LICENSE] 🔍 Activation error stack:', activationError.stack);
+
+          // Controlla se l'errore contiene informazioni sullo stato della licenza
+          const errorMsg = activationError.message.toLowerCase();
+          console.log('[LICENSE] 🔍 Checking activation error for status info:', errorMsg);
+
+          if (errorMsg.includes('disabled') || errorMsg.includes('revoked')) {
+            console.log('[LICENSE] 🔍 Detected disabled license in activation error');
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'LICENSE_DISABLED',
+                message: 'This license key has been disabled or revoked.',
+                actions: [
+                  'Contact the store where you purchased the license',
+                  'Purchase a new license if needed',
+                ],
+              },
+            };
+          } else if (errorMsg.includes('expired')) {
+            console.log('[LICENSE] 🔍 Detected expired license in activation error');
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'LICENSE_EXPIRED',
+                message: 'This license key has expired.',
+                actions: ['Renew your license if possible', 'Purchase a new license if needed'],
+              },
+            };
+          } else if (errorMsg.includes('inactive')) {
+            console.log('[LICENSE] 🔍 Detected inactive license in activation error');
+            return {
+              tier: 'free',
+              isValid: false,
+              features: [],
+              status: 'error',
+              error: {
+                code: 'INVALID_LICENSE',
+                message: 'This license key is inactive and needs to be activated.',
+                actions: [
+                  'Make sure you are using the correct license key',
+                  'Contact support if you need assistance with activation',
+                ],
+              },
+            };
+          }
+        }
+
+        // Gestisci l'errore di attivazione
+        return {
+          tier: 'free',
+          isValid: false,
+          features: [],
+          status: 'error',
+          error: this.handleError(activationError),
+        };
       }
 
       // Verifica se l'errore è dovuto a una licenza già attivata su un altro dispositivo
       if (
+        activationResponse &&
         activationResponse.error &&
         (activationResponse.error.includes('already activated') ||
           activationResponse.error.includes('activation limit'))
@@ -1095,7 +1086,7 @@ export class LicenseService {
             actions: [
               'Use a different license key',
               'Deactivate the license on another device',
-              'Contact support',
+              'Contact support for assistance',
             ],
           },
         };
@@ -1110,8 +1101,12 @@ export class LicenseService {
         status: 'error',
         error: {
           code: 'API_ERROR',
-          message: 'Failed to activate license. Invalid response from server.',
-          actions: ['Check your license key', 'Contact support'],
+          message:
+            "We couldn't activate your license. Please check your license key and try again.",
+          actions: [
+            'Verify your license key is correct',
+            'Contact support if the problem persists',
+          ],
         },
       };
     } catch (error) {
@@ -1126,37 +1121,198 @@ export class LicenseService {
     }
   }
 
-  private async checkRateLimit(licenseKey: string): Promise<boolean> {
-    try {
-      const attempts = this.activationAttempts.get(licenseKey) || 0;
-
-      if (attempts >= this.MAX_ATTEMPTS) {
-        return false;
-      }
-
-      this.activationAttempts.set(licenseKey, attempts + 1);
-
-      // Reset attempts after the window
-      setTimeout(() => {
-        this.activationAttempts.set(licenseKey, 0);
-      }, this.ATTEMPT_WINDOW);
-
-      return true;
-    } catch (error) {
-      console.error('[LICENSE] ❌ Error checking rate limit:', error);
-      return false;
-    }
-  }
-
   private handleError(error: unknown): LemonSqueezyError {
     if (error && typeof error === 'object' && 'code' in error) {
+      console.log('[LICENSE] 🔍 Error object with code detected:', error);
       return error as LemonSqueezyError;
     }
 
+    // Determina il tipo di errore in base al messaggio
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Log completo del messaggio di errore per diagnostica
+    console.log('[LICENSE] 🔍 Full error message for diagnosis:', errorMessage);
+    console.log('[LICENSE] 🔍 Error type:', typeof error);
+    if (error instanceof Error) {
+      console.log('[LICENSE] 🔍 Error stack:', error.stack);
+    }
+    if (typeof error === 'object' && error !== null) {
+      console.log('[LICENSE] 🔍 Error object keys:', Object.keys(error));
+      try {
+        console.log('[LICENSE] 🔍 Error object stringified:', JSON.stringify(error));
+      } catch (e) {
+        console.log('[LICENSE] 🔍 Error object cannot be stringified');
+      }
+    }
+
+    // Test di tutti i possibili pattern per licenze disabilitate
+    const disabledPatterns = [
+      'disabled',
+      'license key is disabled',
+      '"status":"disabled"',
+      '"status": "disabled"',
+      'status.*disabled',
+      'license.*disabled',
+      'revoked',
+    ];
+
+    console.log('[LICENSE] 🔍 Testing disabled patterns:');
+    for (const pattern of disabledPatterns) {
+      const regex = new RegExp(pattern, 'i');
+      const matches = regex.test(errorMessage);
+      console.log(`[LICENSE] 🔍 Pattern "${pattern}": ${matches ? 'MATCH' : 'no match'}`);
+    }
+
+    // Errore specifico per licenze disabilitate - condizione ampliata
+    if (
+      errorMessage.includes('disabled') ||
+      errorMessage.includes('license key is disabled') ||
+      errorMessage.includes('"status":"disabled"') ||
+      errorMessage.includes('"status": "disabled"') ||
+      (errorMessage.includes('status') && errorMessage.includes('disabled')) ||
+      errorMessage.includes('revoked') ||
+      /status.*disabled/i.test(errorMessage) ||
+      /license.*disabled/i.test(errorMessage) ||
+      /disabled.*license/i.test(errorMessage)
+    ) {
+      console.log('[LICENSE] 🔍 Detected disabled license from error message');
+      return {
+        code: 'LICENSE_DISABLED',
+        message: 'This license key has been disabled or revoked.',
+        actions: [
+          'Contact the store where you purchased the license',
+          'Purchase a new license if needed',
+        ],
+      };
+    }
+
+    // Errore specifico per licenze scadute
+    if (
+      errorMessage.includes('expired') ||
+      errorMessage.includes('"status":"expired"') ||
+      errorMessage.includes('"status": "expired"') ||
+      (errorMessage.includes('status') && errorMessage.includes('expired'))
+    ) {
+      console.log('[LICENSE] 🔍 Detected expired license from error message');
+      return {
+        code: 'LICENSE_EXPIRED',
+        message: 'This license key has expired.',
+        actions: ['Renew your license if possible', 'Purchase a new license if needed'],
+      };
+    }
+
+    // Errore specifico per licenze inattive
+    if (
+      errorMessage.includes('inactive') ||
+      errorMessage.includes('"status":"inactive"') ||
+      errorMessage.includes('"status": "inactive"') ||
+      (errorMessage.includes('status') && errorMessage.includes('inactive'))
+    ) {
+      console.log('[LICENSE] 🔍 Detected inactive license from error message');
+      return {
+        code: 'INVALID_LICENSE',
+        message: 'This license key is inactive and needs to be activated.',
+        actions: [
+          'Make sure you are using the correct license key',
+          'Contact support if you need assistance with activation',
+        ],
+      };
+    }
+
+    // Errore di connessione o rete
+    if (
+      errorMessage.includes('network') ||
+      errorMessage.includes('fetch') ||
+      errorMessage.includes('connect')
+    ) {
+      return {
+        code: 'NETWORK_ERROR',
+        message: 'Unable to connect to the license server. Please check your internet connection.',
+        actions: [
+          'Check your internet connection',
+          'Try again when you are online',
+          'Contact support if you are already online',
+        ],
+      };
+    }
+
+    // Errore di timeout
+    if (errorMessage.includes('timeout')) {
+      return {
+        code: 'CONNECTION_ERROR',
+        message: 'The connection to the license server timed out.',
+        actions: [
+          'Check your internet connection',
+          'Try again later',
+          'Contact support if the problem persists',
+        ],
+      };
+    }
+
+    // Errore 404 (licenza non trovata)
+    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+      return {
+        code: 'INVALID_LICENSE',
+        message: 'The license key you entered does not exist.',
+        actions: [
+          'Check if you typed the license key correctly',
+          'Make sure you are using a valid license key',
+          'Contact support if you need assistance',
+        ],
+      };
+    }
+
+    // Errore 401 (non autorizzato)
+    if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+      return {
+        code: 'API_ERROR',
+        message: 'Authorization failed. The plugin cannot connect to the license server.',
+        actions: ['Contact the plugin developer', 'Try again later'],
+      };
+    }
+
+    // Errore 429 (troppe richieste)
+    if (errorMessage.includes('429') || errorMessage.includes('too many requests')) {
+      return {
+        code: 'API_ERROR',
+        message: 'Too many license activation attempts. Please try again later.',
+        actions: [
+          'Wait a few minutes before trying again',
+          'Contact support if the problem persists',
+        ],
+      };
+    }
+
+    // Errori server (500, 502, 503, 504)
+    if (
+      errorMessage.includes('500') ||
+      errorMessage.includes('502') ||
+      errorMessage.includes('503') ||
+      errorMessage.includes('504') ||
+      errorMessage.includes('server error')
+    ) {
+      return {
+        code: 'API_ERROR',
+        message: 'The license server is currently experiencing issues.',
+        actions: [
+          'Try again later',
+          'Check the service status',
+          'Contact support if the problem persists',
+        ],
+      };
+    }
+
+    // Errore generico
+    console.log('[LICENSE] ⚠️ No specific error pattern matched, returning generic error');
     return {
       code: 'API_ERROR',
-      message: error instanceof Error ? error.message : String(error),
-      actions: ['Try again later', 'Contact support'],
+      message:
+        'There was a problem with your license activation. The license may be invalid, disabled, or there might be a connection issue.',
+      actions: [
+        'Verify your license key is correct and active',
+        'Check your internet connection',
+        'Contact support if the problem persists',
+      ],
     };
   }
 
