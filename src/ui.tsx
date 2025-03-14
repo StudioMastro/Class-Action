@@ -28,8 +28,10 @@ import {
   Download,
 } from './components/common/icons';
 import { ClassCounter } from './components/ClassCounter';
+import { ExcessClassesNotification } from './components/ExcessClassesNotification';
 import { makeApiRequest } from './ui/services/apiService';
 import { MAX_CLASSES } from './config/featureFlags';
+import { isClassActive, hasExcessClasses } from './utils/classUtils';
 
 // Definizione dei possibili stati di caricamento
 type LoadingState = {
@@ -472,6 +474,7 @@ function Plugin() {
   };
 
   const filteredClasses = savedClasses.filter((cls: SavedClass) =>
+    // Filtra in base al termine di ricerca, senza limitazioni per il piano free
     cls.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
@@ -598,6 +601,7 @@ function Plugin() {
   };
 
   const handleExportClasses = async () => {
+    // L'export è già disabilitato per il piano freemium tramite isFeatureAllowed
     await emit('EXPORT_CLASSES');
   };
 
@@ -612,6 +616,8 @@ function Plugin() {
       reader.onload = (e) => {
         if (!(e.target instanceof FileReader) || !e.target.result) return;
         const jsonString = e.target.result as string;
+
+        // L'import è già disabilitato per il piano freemium tramite isFeatureAllowed
         emit('IMPORT_CLASSES', jsonString);
         input.value = '';
       };
@@ -918,8 +924,19 @@ function Plugin() {
             isPremium={licenseStatus.tier === 'premium'}
             onUpgradeClick={() => handlePremiumFeatureClick('Unlimited Classes')}
             onActivateClick={handleLicenseActivationOpen}
+            hasExcessClasses={hasExcessClasses(savedClasses, licenseStatus.tier === 'premium')}
           />
         )}
+
+        {/* Mostra la notifica di errore quando ci sono classi in eccesso */}
+        {!licenseStatus.isValid &&
+          hasExcessClasses(savedClasses, licenseStatus.tier === 'premium') && (
+            <ExcessClassesNotification
+              totalClasses={savedClasses.length}
+              maxClasses={MAX_CLASSES.FREE}
+              onUpgradeClick={() => handlePremiumFeatureClick('Unlimited Classes')}
+            />
+          )}
       </div>
 
       <hr className="border-0 h-px bg-[var(--figma-color-border)]" />
@@ -1088,107 +1105,127 @@ function Plugin() {
 
           <div>
             {filteredClasses.length > 0 ? (
-              filteredClasses.map((savedClass) => (
-                <div
-                  key={savedClass.name}
-                  className="relative flex flex-col px-3 py-2 border rounded-md mb-2"
-                  style={{ borderColor: 'var(--figma-color-border)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <Text mono size="xs">
-                      {savedClass.name}
-                    </Text>
-                    <div className="flex items-center gap-2">
-                      <IconButton
-                        onClick={(e) => handleMenuClick(e, savedClass.name)}
-                        variant="secondary"
-                        size="small"
-                      >
-                        <Ellipsis size={16} />
-                      </IconButton>
-                      <Button
-                        onClick={() => handleApplyClass(savedClass)}
-                        variant="primary"
-                        size="small"
-                      >
-                        Apply
-                      </Button>
-                    </div>
-                  </div>
+              filteredClasses.map((savedClass) => {
+                // Determina se la classe è attiva
+                const isActive = isClassActive(
+                  savedClass,
+                  savedClasses,
+                  licenseStatus.tier === 'premium',
+                );
 
-                  {activeMenu === savedClass.name && (
-                    <div
-                      ref={dropdownRef}
-                      className={`absolute right-10 p-1 rounded-md z-50 overflow-hidden whitespace-nowrap shadow-lg ${
-                        dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
-                      }`}
-                      style={{
-                        backgroundColor: 'var(--figma-color-bg)',
-                        border: '1px solid var(--figma-color-border)',
-                      }}
-                    >
-                      <div className="flex flex-col gap-1">
-                        <DropdownItem
-                          onClick={() => handleViewDetails(savedClass)}
-                          icon={<Info size={16} />}
+                return (
+                  <div
+                    key={savedClass.name}
+                    className={`relative flex flex-col px-3 py-2 border rounded-md mb-2 ${
+                      !isActive ? 'opacity-75' : ''
+                    }`}
+                    style={{ borderColor: 'var(--figma-color-border)' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <Text mono size="xs">
+                        {savedClass.name}
+                      </Text>
+                      <div className="flex items-center gap-2">
+                        <IconButton
+                          onClick={(e) => handleMenuClick(e, savedClass.name)}
+                          variant="secondary"
+                          size="small"
+                          className={!isActive ? 'cursor-not-allowed opacity-50' : ''}
+                          disabled={!isActive}
                         >
-                          Info
-                        </DropdownItem>
-
-                        <DropdownItem
-                          onClick={() => handleRename(savedClass)}
-                          icon={<Rename size={16} />}
-                        >
-                          Rename
-                        </DropdownItem>
-
-                        <DropdownItem
-                          onClick={() => handleUpdate(savedClass)}
-                          icon={<Update size={16} />}
-                        >
-                          Update
-                        </DropdownItem>
-
-                        <DropdownItem
+                          <Ellipsis size={16} />
+                        </IconButton>
+                        <Button
                           onClick={() => {
-                            if (isFeatureAllowed('batch-operations')) {
-                              handleApplyClassToAll(savedClass);
+                            if (isActive) {
+                              handleApplyClass(savedClass);
                             } else {
-                              handlePremiumFeatureClick('batch-operations');
+                              handlePremiumFeatureClick('Unlimited Classes');
                             }
                           }}
-                          icon={
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              class="lucide lucide-sparkle"
-                            >
-                              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-                            </svg>
-                          }
+                          variant="primary"
+                          size="small"
+                          className={!isActive ? 'cursor-not-allowed opacity-50' : ''}
                         >
-                          {'Apply All'}
-                        </DropdownItem>
-
-                        <DropdownItem
-                          onClick={() => handleDeleteClick(savedClass)}
-                          icon={<Trash size={16} />}
-                          variant="danger"
-                        >
-                          Delete
-                        </DropdownItem>
+                          Apply
+                        </Button>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))
+
+                    {activeMenu === savedClass.name && (
+                      <div
+                        ref={dropdownRef}
+                        className={`absolute right-10 p-1 rounded-md z-50 overflow-hidden whitespace-nowrap shadow-lg ${
+                          dropdownPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+                        }`}
+                        style={{
+                          backgroundColor: 'var(--figma-color-bg)',
+                          border: '1px solid var(--figma-color-border)',
+                        }}
+                      >
+                        <div className="flex flex-col gap-1">
+                          <DropdownItem
+                            onClick={() => handleViewDetails(savedClass)}
+                            icon={<Info size={16} />}
+                          >
+                            Info
+                          </DropdownItem>
+
+                          <DropdownItem
+                            onClick={() => handleRename(savedClass)}
+                            icon={<Rename size={16} />}
+                          >
+                            Rename
+                          </DropdownItem>
+
+                          <DropdownItem
+                            onClick={() => handleUpdate(savedClass)}
+                            icon={<Update size={16} />}
+                          >
+                            Update
+                          </DropdownItem>
+
+                          <DropdownItem
+                            onClick={() => {
+                              if (isFeatureAllowed('batch-operations')) {
+                                handleApplyClassToAll(savedClass);
+                              } else {
+                                handlePremiumFeatureClick('batch-operations');
+                              }
+                            }}
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-sparkle"
+                              >
+                                <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+                              </svg>
+                            }
+                          >
+                            {'Apply All'}
+                          </DropdownItem>
+
+                          <DropdownItem
+                            onClick={() => handleDeleteClick(savedClass)}
+                            icon={<Trash size={16} />}
+                            variant="danger"
+                          >
+                            Delete
+                          </DropdownItem>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             ) : (
               <div className="text-center py-4">
                 <Text size="sm" variant="muted">

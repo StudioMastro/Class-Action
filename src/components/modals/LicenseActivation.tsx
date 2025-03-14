@@ -9,6 +9,7 @@ import { Check } from '../common/icons';
 import { emit } from '@create-figma-plugin/utilities';
 import type { LicenseStatus, LemonSqueezyError as LicenseError } from '../../types/lemonSqueezy';
 import { LEMONSQUEEZY_CONFIG } from '../../config/lemonSqueezy';
+import { NotificationCard } from '../common/NotificationCard';
 
 interface LicenseActivationProps {
   currentStatus: LicenseStatus;
@@ -271,17 +272,10 @@ export function LicenseActivation({
         onClick: onClose,
       }}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
         {/* Success Message - mostrato solo dopo un'attivazione riuscita e non in caso di apertura manuale */}
         {showSuccess && !isManualOpen && (
-          <div
-            className="px-4 py-2 rounded-md"
-            style={{ backgroundColor: 'var(--figma-color-bg-success-tertiary)' }}
-          >
-            <Text size="sm" weight="bold" className="text-[var(--figma-color-text-success)]">
-              License successfully activated!
-            </Text>
-          </div>
+          <NotificationCard type="success" title="License successfully activated!" />
         )}
 
         {/* Informational message - solo quando la licenza è attiva */}
@@ -402,12 +396,23 @@ export function LicenseActivation({
 
             {/* Error Display - sotto l'input */}
             {activeError && (
-              <div className="p-3 rounded bg-[var(--figma-color-bg-danger)]">
-                <Text size="sm" className="text-[var(--figma-color-text-onbrand)]">
-                  {activeError.message}
-                </Text>
+              <NotificationCard
+                type="error"
+                title={activeError.message}
+                actions={
+                  activeError.managementUrl && (
+                    <Button
+                      onClick={() => emit('OPEN_EXTERNAL_URL', activeError.managementUrl)}
+                      variant="secondary"
+                      size="small"
+                    >
+                      Manage License
+                    </Button>
+                  )
+                }
+              >
                 {activeError.actions && activeError.actions.length > 0 && (
-                  <ul className="mt-2 text-sm list-disc list-inside">
+                  <ul className="mt-1 text-sm list-disc list-inside">
                     {activeError.actions.map((action: string, index: number) => (
                       <li key={index} className="text-[var(--figma-color-text-onbrand)]">
                         {action}
@@ -415,17 +420,7 @@ export function LicenseActivation({
                     ))}
                   </ul>
                 )}
-                {activeError.managementUrl && (
-                  <Button
-                    onClick={() => emit('OPEN_EXTERNAL_URL', activeError.managementUrl)}
-                    variant="secondary"
-                    size="small"
-                    className="mt-2"
-                  >
-                    Manage License
-                  </Button>
-                )}
-              </div>
+              </NotificationCard>
             )}
           </div>
         )}

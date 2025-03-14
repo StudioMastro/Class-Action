@@ -9,6 +9,7 @@ interface ClassCounterProps {
   isPremium: boolean;
   onUpgradeClick: () => void;
   onActivateClick: () => void;
+  hasExcessClasses?: boolean;
 }
 
 export const ClassCounter = ({
@@ -17,18 +18,20 @@ export const ClassCounter = ({
   isPremium,
   onUpgradeClick,
   onActivateClick,
+  hasExcessClasses = false,
 }: ClassCounterProps) => {
   // Calcola la percentuale di utilizzo
-  const usagePercentage = (currentClasses / maxClasses) * 100;
+  // Se ci sono classi in eccesso, la barra è piena
+  const usagePercentage = hasExcessClasses ? 100 : (currentClasses / maxClasses) * 100;
 
   // Determina lo stato di utilizzo
   const isNearLimit = usagePercentage >= 80;
-  const isAtLimit = currentClasses === maxClasses;
+  const isAtLimit = currentClasses >= maxClasses || hasExcessClasses;
 
   // Determina il colore della barra di progresso
   const getProgressBarColor = () => {
     if (isPremium) return 'var(--figma-color-bg-brand)';
-    if (isAtLimit) return 'var(--figma-color-bg-danger)';
+    if (hasExcessClasses || isAtLimit) return 'var(--figma-color-bg-danger)';
     if (isNearLimit) return 'var(--figma-color-bg-warning)';
     return 'var(--figma-color-bg-success)';
   };
@@ -43,7 +46,13 @@ export const ClassCounter = ({
 
   // Determina il testo di stato
   const getStatusText = () => {
-    if (isAtLimit) {
+    if (hasExcessClasses) {
+      return (
+        <Text size="xs" className="text-[var(--figma-color-text-danger)]">
+          Class limit exceeded
+        </Text>
+      );
+    } else if (isAtLimit) {
       return (
         <Text size="xs" className="text-[var(--figma-color-text-danger)]">
           Class limit reached
@@ -60,8 +69,11 @@ export const ClassCounter = ({
     return null;
   };
 
+  // Per il conteggio, mostriamo sempre massimo maxClasses/maxClasses quando ci sono classi in eccesso
+  const displayClasses = hasExcessClasses ? maxClasses : Math.min(currentClasses, maxClasses);
+
   return (
-    <div className="flex flex-col gap-1 mt-2">
+    <div className="flex flex-col gap-1 my-2">
       {/* Titolo e stato */}
       <div className="flex justify-between items-center">
         <Text size="sm" weight="bold">
@@ -82,7 +94,7 @@ export const ClassCounter = ({
           />
         </div>
         <Text size="xs" className="whitespace-nowrap">
-          {currentClasses}/{maxClasses}
+          {displayClasses}/{maxClasses}
         </Text>
       </div>
 

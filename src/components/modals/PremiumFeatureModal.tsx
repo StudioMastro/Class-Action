@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { Text } from '../common/Text';
 import { emit } from '@create-figma-plugin/utilities';
 import { LEMONSQUEEZY_CONFIG } from '../../config/lemonSqueezy';
+import { NotificationCard } from '../common';
 
 // Dichiarazione delle variabili globali che verranno sostituite durante la build
 declare const __PRODUCTION_CHECKOUT_URL__: string;
@@ -154,17 +155,11 @@ export function PremiumFeatureModal({ isOpen, onClose, featureName }: PremiumFea
             </div>
           </div>
 
-          <div
-            className="mt-2 px-4 py-3 rounded-md"
-            style={{ backgroundColor: 'var(--figma-color-bg-success-tertiary)' }}
-          >
-            <div className="flex flex-col gap-1">
-              <Text size="sm" weight="bold" className="text-[var(--figma-color-text-success)]">
-                Special Launch Offer!
-              </Text>
-              <Text size="sm">
-                Get Premium for just <strong>€9/year.</strong>
-              </Text>
+          <NotificationCard type="success" title="Special Launch Offer!">
+            <Text size="sm">
+              Get Premium for just <strong>€9/year.</strong>
+            </Text>
+            <div className="mt-1">
               <Text size="xs">
                 Use code{' '}
                 <span className="font-mono font-bold bg-[var(--figma-color-bg)] px-1.5 rounded text-[var(--figma-color-text-success)]">
@@ -173,7 +168,7 @@ export function PremiumFeatureModal({ isOpen, onClose, featureName }: PremiumFea
                 for <strong>50% off</strong> until <strong>May 31, 2025.</strong>
               </Text>
             </div>
-          </div>
+          </NotificationCard>
         </div>
       </div>
     </Modal>
