@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2024-05-15
+
+### Added
+
+- New reusable `NotificationCard` component for standardized user notifications
+- Improved notification system with consistent styling and layout
+- Support for different notification types (success, error, warning, info)
+- Separation of notification content and actions for better UX
+
+### Changed
+
+- Reorganized UI layout for better visibility of important notifications
+- Standardized padding, margins, and border-radius across all notifications
+- Updated Cursor Rules with comprehensive guidelines for notification components
+- Improved text wrapping in notification messages
+
 ## [1.0.0] - 2025-03-06
 
 ### Added

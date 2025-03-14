@@ -35,6 +35,16 @@ alwaysApply: false
 - Handle plugin-UI communication efficiently
 - Support both light and dark themes
 
+## User Notifications and Feedback
+- Use the `NotificationCard` component for all user notifications
+- Follow the established notification type system (success, error, warning, info)
+- Separate action buttons from notification content using the `actions` prop
+- Maintain consistent padding, margins, and border-radius across all notifications
+- Use appropriate color schemes based on notification type
+- Ensure notifications are accessible and clearly visible
+- Position notifications logically in the UI based on their context and importance
+- Group related notifications together when appropriate
+
 ## Component Testing
 - Write unit tests for each component
 - Test component interactions
