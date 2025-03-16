@@ -17,6 +17,7 @@ import { SearchInput } from './components/SearchInput';
 import { TextInput } from './components/TextInput';
 import type { SavedClass, ImportResult } from './types';
 import type { LicenseStatus, LemonSqueezyError as LicenseError } from './types/lemonSqueezy';
+import { LEMONSQUEEZY_CONFIG } from './config/lemonSqueezy';
 import {
   Info,
   Edit as Rename,
