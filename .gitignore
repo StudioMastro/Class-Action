@@ -82,6 +82,9 @@ manifest.json
 .cursor/
 docs/
 
+# Project Assets
+assets/
+
 # Figma Plugin Build Configuration
 build-figma-plugin.main.js
 !build-figma-plugin.example.js
