@@ -38,9 +38,10 @@ yarn-error.log*
 *.swo
 *~
 .cursor/*
-!.cursor/rules/
 !.cursor/scripts/
 .cursorignore
+.cursorrules/
+.cursor/rules/
 
 # System and Environment
 .DS_Store
